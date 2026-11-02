@@ -135,6 +135,7 @@ const TAGS = {
   passkeys: { title: 'Passkeys', side: 'More passkeys &amp; device links' },
   data: { title: 'Data', side: 'State sync' },
   push: { title: 'Push', side: 'Notifications &amp; rest timer' },
+  social: { title: 'Social', side: 'Friends, squad stats &amp; reactions' },
   activity: { title: 'Activity', side: 'Live presence' },
   media: { title: 'Media', side: 'Photos &amp; videos of your exercises &amp; workouts' },
   // A tag missing from this map renders nowhere at all, silently, so every tag in the

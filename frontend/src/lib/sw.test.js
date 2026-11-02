@@ -5,7 +5,7 @@
  * without a network comes back from. So an install that did not get the shell fails, and the
  * previous build's cache is swept only once this build's shell is in its own. */
 import { readFileSync } from 'node:fs'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 class FakeCache {
   constructor(name) { this.name = name; this.m = new Map() }
@@ -165,6 +165,41 @@ describe('sw.js install and activate', () => {
 // usually with no page open. It sent no device id, so the server's row lost it and the rest-timer
 // alert for that account went to every device until a page next booted. The page leaves the id
 // in a cache the worker can read (lib/push.js shareDeviceId).
+describe('sw.js notifications carry their inside route and open it', () => {
+  it('keeps data.url on the notification', async () => {
+    await loadSW()
+    const shown = []
+    globalThis.self.registration.showNotification = async (title, opts) => shown.push([title, opts])
+    await fire('push', { data: { json: () => ({ title: 'New friend request', body: 'Ada', tag: 'friend-request', url: '#/social' }) } })
+    expect(shown[0][1].data).toEqual({ url: '#/social' })
+  })
+
+  it('a click with a window open focuses it and asks the app to navigate', async () => {
+    await loadSW()
+    globalThis.self.registration.scope = 'https://gym.test/myGym/'
+    const client = { focus: vi.fn(async () => {}), postMessage: vi.fn() }
+    globalThis.self.clients.matchAll = vi.fn(async () => [client])
+    globalThis.self.clients.openWindow = vi.fn(async () => {})
+
+    await fire('notificationclick', { notification: { data: { url: '#/social' }, close: vi.fn() } })
+
+    expect(client.focus).toHaveBeenCalledTimes(1)
+    expect(client.postMessage).toHaveBeenCalledWith({ type: 'opengym:open', url: 'https://gym.test/myGym/#/social' })
+    expect(globalThis.self.clients.openWindow).not.toHaveBeenCalled()
+  })
+
+  it('a click without a window opens the route directly', async () => {
+    await loadSW()
+    globalThis.self.registration.scope = 'https://gym.test/myGym/'
+    globalThis.self.clients.matchAll = vi.fn(async () => [])
+    globalThis.self.clients.openWindow = vi.fn(async () => {})
+
+    await fire('notificationclick', { notification: { data: { url: '#/social' }, close: vi.fn() } })
+
+    expect(globalThis.self.clients.openWindow).toHaveBeenCalledWith('https://gym.test/myGym/#/social')
+  })
+})
+
 describe('sw.js re-registers a rotated push subscription with the page\'s device id', () => {
   const rotated = {
     endpoint: 'https://push.example/e2',

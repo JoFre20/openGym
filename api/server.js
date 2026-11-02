@@ -18,7 +18,7 @@ import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
-import { dayReminderPush, nudgePush, restTimerPush, testPush } from './push-messages.js';
+import { dayReminderPush, friendRequestPush, nudgePush, planSharePush, reactionPush, restTimerPush, testPush } from './push-messages.js';
 import { verifyError, isMisconfigured, originHint } from './verify-error.js';
 import {
   hashPassword, verifyPassword, needsRehash, passwordProblem, passwordLength, nameKey, BusyError,
@@ -37,6 +37,13 @@ import { effectiveRoutineId } from './queue.js';
 import { stampPut } from './sync-stamps.js';
 import { atomicWrite as durableWrite } from './durable.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
+import {
+  acceptedFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial, ensureProfile, feedItems,
+  feedWorkoutId, findPlanShare, findWorkout, friendCodeValid, friendshipBetween, normalizeSocial,
+  pendingFriendships, planShareProblem, planShareSummary, PLAN_SHARE_MAX_FRIENDS, profileByCode,
+  reactionSummary, receivedPlanShares, sentPlanShares, SOCIAL_EMOJI, SOCIAL_SHARE_WEIGHT,
+  splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
+} from './social.js';
 
 const PORT = +(process.env.PORT || 3000);
 const DATA = process.env.DATA_DIR || '/data';
@@ -181,6 +188,114 @@ function saveDb() {
 // Flushed before and after the rename (durable.js): a host reset must not bring back the file
 // the client was told had been replaced.
 function atomicWrite(file, content, mode) { durableWrite(file, content, mode); }
+
+const socialFile = path.join(DATA, 'social.json');
+function loadSocial() {
+  try { return normalizeSocial(JSON.parse(fs.readFileSync(socialFile, 'utf8'))); }
+  catch (e) {
+    if (e.code !== 'ENOENT') console.error('social.json cannot be read:', e.message);
+    return emptySocial();
+  }
+}
+let social = loadSocial();
+function saveSocial() {
+  atomicWrite(socialFile, JSON.stringify(social, null, 2), 0o600);
+}
+function ensureSocialProfile(uid) {
+  const { profile, changed } = ensureProfile(social, uid);
+  if (changed) saveSocial();
+  return profile;
+}
+function ensureSocialProfiles() {
+  const before = JSON.stringify(social);
+  for (const user of db.users) ensureProfile(social, user.id);
+  if (JSON.stringify(social) !== before) saveSocial();
+}
+function removeSocialUser(uid) {
+  let changed = false;
+  if (social.profiles[uid]) { delete social.profiles[uid]; changed = true; }
+  const friendships = social.friendships.length;
+  social.friendships = social.friendships.filter(f => f.from !== uid && f.to !== uid);
+  if (social.friendships.length !== friendships) changed = true;
+  const reactions = social.reactions.length;
+  social.reactions = social.reactions.filter(r => r.userId !== uid && r.ownerId !== uid);
+  if (social.reactions.length !== reactions) changed = true;
+  if (dropPlanSharesForUser(social, uid)) changed = true;
+  if (changed) saveSocial();
+}
+try { ensureSocialProfiles(); } catch (e) { console.error('social: could not prepare profiles at boot:', e.message); }
+
+const socialUserById = uid => db.users.find(u => u.id === uid && !u.disabled) || null;
+const socialSettings = profile => ({ shareWorkouts: profile.shareWorkouts, shareWeight: profile.shareWeight });
+function socialFriendRow(friendship, viewerId) {
+  const otherId = friendship.from === viewerId ? friendship.to : friendship.from;
+  const other = socialUserById(otherId);
+  if (!other) return null;
+  return {
+    friendshipId: friendship.id,
+    id: other.id,
+    name: other.name,
+    since: Number(friendship.acceptedAt || friendship.createdAt) || 0
+  };
+}
+function socialPendingRow(friendship, viewerId) {
+  const incoming = friendship.to === viewerId;
+  const other = socialUserById(incoming ? friendship.from : friendship.to);
+  if (!other) return null;
+  return {
+    id: friendship.id,
+    direction: incoming ? 'incoming' : 'outgoing',
+    userId: other.id,
+    name: other.name,
+    createdAt: Number(friendship.createdAt) || 0
+  };
+}
+function socialFriends(uid) {
+  return acceptedFriendIds(social, uid)
+    .map(friendId => socialFriendRow(friendshipBetween(social, uid, friendId), uid))
+    .filter(Boolean);
+}
+// One row of the plan inbox or outbox. The summary is read from the snapshot itself, so it can
+// never disagree with the plan the recipient will import. A disabled or deleted counterpart
+// hides the row; the record itself is removed when the account is deleted or the friendship ends.
+function socialPlanRow(share, viewerId) {
+  const incoming = share.to === viewerId;
+  const other = socialUserById(incoming ? share.from : share.to);
+  if (!other) return null;
+  return {
+    id: share.id,
+    ...(incoming
+      ? { from: { id: other.id, name: other.name } }
+      : { to: { id: other.id, name: other.name } }),
+    ...planShareSummary(share.plan),
+    createdAt: Number(share.createdAt) || 0
+  };
+}
+function socialPlanCount(uid) {
+  return receivedPlanShares(social, uid).filter(share => socialUserById(share.from)).length;
+}
+function socialReactionTarget(viewer, value) {
+  const friendIds = acceptedFriendIds(social, viewer.id).filter(id => socialUserById(id));
+  const split = splitFeedWorkoutId(value);
+  if (split) {
+    if (!friendIds.includes(split[0])) return { error: 'not-friends' };
+    const state = readState(split[0]);
+    if (!state) return { error: 'workout-not-found' };
+    const workout = findWorkout(state, split[0], value);
+    return workout ? { ownerId: split[0], workout } : { error: 'workout-not-found' };
+  }
+  let found = null;
+  for (const friendId of friendIds) {
+    const state = readState(friendId);
+    if (!state) continue;
+    const workout = findWorkout(state, friendId, value);
+    if (!workout) continue;
+    if (found) return { error: 'workout-ambiguous' };
+    found = { ownerId: friendId, workout };
+  }
+  return found || { error: 'workout-not-found' };
+}
+
 // How many earlier write ids a document keeps (`_wids`, see PUT /api/data): a device that last
 // synced more writes ago than this merges on its next pull instead of taking the server's copy.
 const WID_KEEP = 50;
@@ -1381,6 +1496,7 @@ function removeAccount(u) {
   // The training history and any Coach credential of theirs, both outside db.json.
   try { fs.unlinkSync(stateFile(u.id)); } catch { /* already gone */ }
   try { coachConfig.clearProfileAuth(u.id); } catch { /* nothing stored */ }
+  try { removeSocialUser(u.id); } catch (e) { console.error('social: could not remove profile of', u.id, e.message); }
   // Their photos and videos — the one place a profile's folder under uploads/ is removed.
   try { MEDIA.removeUser(u.id); } catch (e) { console.error('media: could not remove uploads of', u.id, e.message); }
   saveDb();
@@ -1488,6 +1604,7 @@ const passwordRoutes = {
     claimFirstAdmin(req, user);
     db.users.push(user);
     saveDb();
+    try { ensureSocialProfile(user.id); } catch (e) { console.error('social: could not create profile for', user.id, e.message); }
     audit(req, 'auth.register.ok', { user, msg: inv ? inv.code + ' · password' : 'password' });
     json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
   },
@@ -1970,7 +2087,13 @@ setInterval(() => {
 // person taps "send test" a few times and starts a rest after each set; a loop does neither.
 const PUSH_TESTS = createWindow({ max: 10, windowMs: 600000 });
 const REST_TIMER_SETS = createWindow({ max: 60, windowMs: 60000 });
-setInterval(() => { PUSH_TESTS.sweep(); REST_TIMER_SETS.sweep(); }, 600000).unref();
+const SOCIAL_REQUESTS = createWindow({ max: 20, windowMs: 3600000 });
+const SOCIAL_REACTIONS = createWindow({ max: 120, windowMs: 3600000 });
+const SOCIAL_PLAN_SHARES = createWindow({ max: 20, windowMs: 3600000 });
+setInterval(() => {
+  PUSH_TESTS.sweep(); REST_TIMER_SETS.sweep(); SOCIAL_REQUESTS.sweep();
+  SOCIAL_REACTIONS.sweep(); SOCIAL_PLAN_SHARES.sweep();
+}, 600000).unref();
 function pushThrottled(res, win, user) {
   const wait = win.take(user.id);
   if (!wait) return false;
@@ -2237,6 +2360,7 @@ const routes = {
       created: user.created, lastUsed: user.created
     });
     saveDb();
+    try { ensureSocialProfile(user.id); } catch (e) { console.error('social: could not create profile for', user.id, e.message); }
     audit(req, 'auth.register.ok', { user, msg: invite ? invite.code : null });
     json(res, 200, { user: publicUser(user) }, { 'Set-Cookie': sessionCookie(user) });
   },
@@ -2669,6 +2793,264 @@ const routes = {
     if (!user) return json(res, 401, { error: 'not signed in' });
     const body = await readBody(req);
     cancelRestTimer(user.id, deviceIdOf(body.deviceId));
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/social/me': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const profile = ensureSocialProfile(user.id);
+    json(res, 200, {
+      friendCode: profile.friendCode,
+      settings: socialSettings(profile),
+      friends: socialFriends(user.id),
+      pending: pendingFriendships(social, user.id).map(f => socialPendingRow(f, user.id)).filter(Boolean),
+      planShares: socialPlanCount(user.id)
+    });
+  },
+
+  'PUT /api/social/settings': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (body.shareWorkouts !== undefined && typeof body.shareWorkouts !== 'boolean') {
+      return json(res, 400, { error: 'shareWorkouts must be true or false', code: 'invalid-share-workouts' });
+    }
+    if (body.shareWeight !== undefined && !SOCIAL_SHARE_WEIGHT.includes(body.shareWeight)) {
+      return json(res, 400, { error: 'shareWeight must be none, absolute or delta', code: 'invalid-share-weight' });
+    }
+    const profile = ensureSocialProfile(user.id);
+    let changed = false;
+    if (body.shareWorkouts !== undefined && profile.shareWorkouts !== body.shareWorkouts) {
+      profile.shareWorkouts = body.shareWorkouts;
+      changed = true;
+    }
+    if (body.shareWeight !== undefined && profile.shareWeight !== body.shareWeight) {
+      profile.shareWeight = body.shareWeight;
+      changed = true;
+    }
+    if (changed) {
+      profile.updatedAt = Date.now();
+      saveSocial();
+    }
+    json(res, 200, { settings: socialSettings(profile) });
+  },
+
+  'POST /api/social/friends/request': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const raw = text(body.friendCode).trim().slice(0, 64);
+    if (!friendCodeValid(raw)) return json(res, 400, { error: 'that is not a friend code', code: 'invalid-friend-code' });
+    if (pushThrottled(res, SOCIAL_REQUESTS, user)) return;
+    const target = profileByCode(social, raw);
+    const targetUser = target ? socialUserById(target.uid) : null;
+    if (!target || !targetUser) return json(res, 404, { error: 'no profile has that friend code', code: 'friend-code-not-found' });
+    if (target.uid === user.id) return json(res, 400, { error: 'that is your own friend code', code: 'own-friend-code' });
+    ensureSocialProfile(user.id);
+    const existing = friendshipBetween(social, user.id, target.uid);
+    if (existing?.status === 'accepted') {
+      return json(res, 409, { error: 'you are already friends', code: 'already-friends' });
+    }
+    if (existing?.status === 'pending') {
+      if (existing.from === user.id) {
+        return json(res, 409, { error: 'request already sent', code: 'already-requested', requestId: existing.id });
+      }
+      return json(res, 409, { error: 'this person already sent you a request', code: 'incoming-request', requestId: existing.id });
+    }
+    const now = Date.now();
+    const request = {
+      id: crypto.randomBytes(12).toString('base64url'),
+      from: user.id, to: target.uid, status: 'pending',
+      createdAt: now, updatedAt: now
+    };
+    social.friendships.push(request);
+    saveSocial();
+    sendPush(target.uid, friendRequestPush(readStateCached(target.uid)?.lang, user.name)).catch(e => console.error('social: friend request push failed', e.message));
+    json(res, 200, { request: socialPendingRow(request, user.id) });
+  },
+
+  'POST /api/social/friends/respond': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const action = text(body.action);
+    if (!['accept', 'decline', 'remove'].includes(action)) {
+      return json(res, 400, { error: 'action must be accept, decline or remove', code: 'invalid-action' });
+    }
+    const friendship = social.friendships.find(f => f.id === text(body.requestId).slice(0, 128));
+    if (!friendship || (friendship.from !== user.id && friendship.to !== user.id)) {
+      return json(res, 404, { error: 'no such friend request', code: 'request-not-found' });
+    }
+    if ((action === 'accept' || action === 'decline') && friendship.to !== user.id) {
+      return json(res, 403, { error: 'only the person who received the request can do that', code: 'not-recipient' });
+    }
+    if (action === 'accept') {
+      if (friendship.status === 'accepted') {
+        return json(res, 200, { ok: true, friend: socialFriendRow(friendship, user.id) });
+      }
+      if (friendship.status !== 'pending') {
+        return json(res, 409, { error: 'this request is no longer pending', code: 'not-pending' });
+      }
+      friendship.status = 'accepted';
+      friendship.acceptedAt = Date.now();
+      friendship.updatedAt = friendship.acceptedAt;
+      saveSocial();
+      return json(res, 200, { ok: true, friend: socialFriendRow(friendship, user.id) });
+    }
+    if (action === 'decline' && friendship.status !== 'pending') {
+      return json(res, 409, { error: 'this request is no longer pending', code: 'not-pending' });
+    }
+    social.friendships = social.friendships.filter(f => f.id !== friendship.id);
+    if (action === 'remove') {
+      social.reactions = social.reactions.filter(r => !(
+        (r.userId === friendship.from && r.ownerId === friendship.to) ||
+        (r.userId === friendship.to && r.ownerId === friendship.from)
+      ));
+      dropPlanSharesBetween(social, friendship.from, friendship.to);
+    }
+    saveSocial();
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/social/feed': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    ensureSocialProfile(user.id);
+    const friendIds = acceptedFriendIds(social, user.id).filter(id => socialUserById(id));
+    const viewerState = readStateCached(user.id) || {};
+    const today = userNow(viewerState.reminder?.tz)?.date || new Date().toISOString().slice(0, 10);
+    const states = new Map();
+    const stateById = id => {
+      if (!states.has(id)) states.set(id, readState(id));
+      return states.get(id);
+    };
+    const userById = id => socialUserById(id);
+    json(res, 200, {
+      weekStart: weekStartISO(new Date(), viewerState.weekStart === 0 ? 0 : 1),
+      squadStats: squadStats(social, friendIds, userById, stateById, { today }),
+      feed: feedItems(social, friendIds, userById, stateById, user.id, { today })
+    });
+  },
+
+  'POST /api/social/react': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const emoji = text(body.emoji);
+    if (!SOCIAL_EMOJI.includes(emoji)) {
+      return json(res, 400, { error: 'unsupported reaction', code: 'invalid-emoji' });
+    }
+    const value = text(body.workoutId).trim().slice(0, 512);
+    if (!value) return json(res, 400, { error: 'workoutId required', code: 'workout-required' });
+    if (pushThrottled(res, SOCIAL_REACTIONS, user)) return;
+    const target = socialReactionTarget(user, value);
+    if (target.error === 'workout-ambiguous') {
+      return json(res, 409, { error: 'that workout id belongs to more than one friend', code: 'workout-ambiguous' });
+    }
+    if (target.error === 'not-friends') {
+      return json(res, 403, { error: 'you can only react to a friend workout', code: 'not-friends' });
+    }
+    if (target.error) return json(res, 404, { error: 'workout not found', code: 'workout-not-found' });
+    const owner = ensureSocialProfile(target.ownerId);
+    if (owner.shareWorkouts === false) {
+      return json(res, 403, { error: 'that friend does not share workouts', code: 'not-shared' });
+    }
+    const workoutId = feedWorkoutId(target.ownerId, target.workout);
+    const previous = social.reactions.find(r => r.workoutId === workoutId && r.userId === user.id);
+    let changed = false;
+    if (!previous || previous.emoji !== emoji) {
+      if (previous) social.reactions = social.reactions.filter(r => r !== previous);
+      social.reactions.push({
+        workoutId, ownerId: target.ownerId, userId: user.id, emoji, at: Date.now()
+      });
+      changed = true;
+    }
+    if (changed) {
+      saveSocial();
+      sendPush(target.ownerId, reactionPush(readStateCached(target.ownerId)?.lang, user.name, emoji)).catch(e => console.error('social: reaction push failed', e.message));
+    }
+    json(res, 200, { ok: true, reactions: reactionSummary(social, workoutId, user.id) });
+  },
+
+  // Send a snapshot of a plan to one or more accepted friends. The plan itself travels as the
+  // same bundle the file export writes (lib/plan-share.js buildPlanBundle), so the recipient can
+  // run parsePlan and mergePlan on it exactly as if they had picked the file. Sharing never
+  // touches either profile's synced state: the recipient chooses whether to import it.
+  'POST /api/social/plans/share': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    if (!Array.isArray(body.friendIds) || !body.friendIds.length || body.friendIds.length > PLAN_SHARE_MAX_FRIENDS
+      || body.friendIds.some(id => typeof id !== 'string' || !id.trim())) {
+      return json(res, 400, { error: 'friendIds must be one or more friend ids', code: 'invalid-friends' });
+    }
+    const friendIds = [...new Set(body.friendIds.map(id => id.trim()))];
+    const problem = planShareProblem(body.plan);
+    if (problem === 'plan-empty') return json(res, 400, { error: 'the plan has no exercises', code: 'plan-empty' });
+    if (problem === 'plan-too-large') return json(res, 413, { error: 'the plan is too large to share', code: 'plan-too-large' });
+    if (problem) return json(res, 400, { error: 'that is not an openGym plan', code: 'plan-invalid' });
+    if (pushThrottled(res, SOCIAL_PLAN_SHARES, user)) return;
+    const accepted = acceptedFriendIds(social, user.id);
+    const recipients = friendIds.map(id => socialUserById(id)).filter(Boolean);
+    if (recipients.length !== friendIds.length || friendIds.some(id => !accepted.includes(id))) {
+      return json(res, 403, { error: 'you can only share a plan with a friend', code: 'friend-not-found' });
+    }
+    ensureSocialProfile(user.id);
+    const now = Date.now();
+    for (const friend of recipients) {
+      social.planShares.push({
+        id: crypto.randomBytes(12).toString('base64url'),
+        from: user.id,
+        to: friend.id,
+        plan: body.plan,
+        createdAt: now
+      });
+      trimPlanShares(social, friend.id);
+    }
+    saveSocial();
+    for (const friend of recipients) {
+      sendPush(friend.id, planSharePush(readStateCached(friend.id)?.lang, user.name))
+        .catch(e => console.error('social: plan share push failed', e.message));
+    }
+    json(res, 200, { ok: true, shared: recipients.length });
+  },
+
+  'GET /api/social/plans': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    ensureSocialProfile(user.id);
+    json(res, 200, {
+      received: receivedPlanShares(social, user.id).map(share => socialPlanRow(share, user.id)).filter(Boolean),
+      sent: sentPlanShares(social, user.id).map(share => socialPlanRow(share, user.id)).filter(Boolean)
+    });
+  },
+
+  // The bundle is fetched only when the recipient opens the card, so the inbox stays small.
+  // Either side may read it: the sender already has the plan, and the recipient needs it to import.
+  'GET /api/social/plans/plan': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const shareId = new URL(req.url, 'http://x').searchParams.get('shareId') || '';
+    const share = findPlanShare(social, shareId);
+    if (!share || (share.from !== user.id && share.to !== user.id)) {
+      return json(res, 404, { error: 'that shared plan is not available', code: 'share-not-found' });
+    }
+    json(res, 200, { plan: share.plan });
+  },
+
+  // Closing the card on either side removes the snapshot. Routines the recipient already added
+  // stay in their own plan, because importing is a copy, never a subscription.
+  'POST /api/social/plans/remove': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const share = findPlanShare(social, text(body.shareId).trim());
+    if (!share || (share.from !== user.id && share.to !== user.id)) {
+      return json(res, 404, { error: 'that shared plan is not available', code: 'share-not-found' });
+    }
+    social.planShares = social.planShares.filter(row => row !== share);
+    saveSocial();
     json(res, 200, { ok: true });
   },
 

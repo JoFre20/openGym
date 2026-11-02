@@ -434,3 +434,49 @@ export async function passwordRegister(name, password, code, email) {
 export async function passwordResetRedeem(name, code, next) {
   return (await post('/api/login/password-reset', { name, code, next })).user
 }
+
+// Friends & squad. Their data lives in api/social.json, never in the synced profile state: a
+// reaction or a privacy change must not create a 409 for the next workout save. The view keeps
+// the answers in local state; these six calls are the whole surface.
+export const socialMe = () => api('/api/social/me')
+export const socialFeed = () => api('/api/social/feed')
+export const saveSocialSettings = settings => api('/api/social/settings', { method: 'PUT', body: JSON.stringify(settings) })
+export const sendFriendRequest = friendCode => post('/api/social/friends/request', { friendCode })
+export const respondToFriendRequest = (requestId, action) => post('/api/social/friends/respond', { requestId, action })
+export const reactToWorkout = (workoutId, emoji) => post('/api/social/react', { workoutId, emoji })
+export const socialPlans = () => api('/api/social/plans')
+export const sharePlanWithFriends = (friendIds, plan) => post('/api/social/plans/share', { friendIds, plan })
+export const getSharedPlan = shareId => api('/api/social/plans/plan?shareId=' + encodeURIComponent(shareId))
+export const removeSharedPlan = shareId => post('/api/social/plans/remove', { shareId })
+
+// The social routes answer with stable codes; the view words them in the UI language instead of
+// showing the server's English line in the middle of a translated screen.
+export function socialError(e) {
+  switch (e?.data?.code) {
+    case 'invalid-friend-code': return t('That doesn’t look like a friend code.')
+    case 'friend-code-not-found': return t('No profile has that friend code.')
+    case 'own-friend-code': return t('That is your own friend code.')
+    case 'already-friends': return t('You are already friends.')
+    case 'already-requested': return t('Request already sent.')
+    case 'incoming-request': return t('They already sent you a request.')
+    case 'friend-not-found': return t('That friend is no longer in your squad.')
+    case 'invalid-friends': return t('Choose at least one friend.')
+    case 'plan-empty': return t('Add an exercise to a routine first.')
+    case 'plan-too-large': return t('This plan is too big to share.')
+    case 'plan-invalid': return t('Couldn’t read that plan.')
+    case 'share-not-found': return t('That shared plan is no longer available.')
+    case 'not-friends':
+    case 'not-shared':
+    case 'workout-not-found':
+    case 'workout-ambiguous': return t('That workout is no longer available.')
+    case 'request-not-found':
+    case 'not-recipient':
+    case 'invalid-action': return t('Something went wrong')
+    case 'invalid-share-workouts':
+    case 'invalid-share-weight': return t('Could not save')
+    case 'locked': return t('Too many requests. Try again later.')
+  }
+  if (e?.code) return e.message || t('Something went wrong')
+  if (e?.status && e?.data?.error) return e.message
+  return t('Something went wrong')
+}

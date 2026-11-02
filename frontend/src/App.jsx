@@ -26,7 +26,7 @@ import { startLiveActivitySync } from './lib/live-activity.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { installViewportGuard } from './lib/viewport-guard.js'
 import { installChipDrag } from './lib/hchips.js'
-import { syncPushSubscription } from './lib/push.js'
+import { pushCanNavigate, pushRoutePath, syncPushSubscription } from './lib/push.js'
 import { MOBILE, nativePlatform } from './lib/mobile.js'
 import { exitWorkoutEdit, startFlow, beginWorkout } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
@@ -65,6 +65,7 @@ function lazyView(load) {
 const Admin = lazyView(() => import('./views/Admin.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
+const Social = lazyView(() => import('./views/Social.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
 const CoachSetup = lazyView(() => import('./views/CoachSetup.jsx'))
 const StructuralBalance = lazyView(() => import('./views/StructuralBalance.jsx'))
@@ -181,6 +182,17 @@ function Shell() {
     if (MOBILE || !user || !ready) return
     syncPushSubscription().catch(() => {})
   }, [user?.id, ready])
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return
+    const onMessage = event => {
+      const path = pushRoutePath(event.data)
+      if (!path) return
+      if (!pushCanNavigate(useStore.getState().S)) return
+      navigate(path)
+    }
+    navigator.serviceWorker.addEventListener('message', onMessage)
+    return () => navigator.serviceWorker.removeEventListener('message', onMessage)
+  }, [navigate])
   // Opened from a device-link QR code (#95): once boot knows who is here, the sheet that redeems
   // it opens by itself — over the sign-in screen, or over the app for a guest or a signed-in
   // browser. Once per visit; closed, the code stays for the sign-in screen's own button.
@@ -304,6 +316,7 @@ function Shell() {
       <Route path="/structural-balance" element={<StructuralBalance />} />
       <Route path="/progress-photos" element={<ProgressPhotos />} />
       <Route path="/measurements" element={<Measurements />} />
+      <Route path="/social" element={<Social />} />
       <Route path="/settings" element={<SettingsRoute />} />
       <Route path="/settings/:page" element={<SettingsRoute />} />
       {/* The Coach screens gate themselves on the instance config; the routes exist

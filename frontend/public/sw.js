@@ -216,15 +216,20 @@ self.addEventListener('push', e => {
       icon: 'icon-512.png',
       badge: 'icon-180.png',
       tag,
-      renotify: true
+      renotify: true,
+      data: { url: typeof data.url === 'string' ? data.url : null }
     })
   })())
 })
 self.addEventListener('notificationclick', e => {
   e.notification.close()
-  e.waitUntil(self.clients.matchAll({ type: 'window' }).then(clients => {
+  const target = e.notification.data && e.notification.data.url
+  const url = target ? new URL(target, self.registration.scope).href : null
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async clients => {
     const c = clients.find(c => 'focus' in c)
-    return c ? c.focus() : self.clients.openWindow('./')
+    if (!c) return self.clients.openWindow(url || './')
+    await c.focus()
+    if (url) c.postMessage({ type: 'opengym:open', url })
   }))
 })
 // The push service rotated the subscription (key change, expiry): subscribe again with the same

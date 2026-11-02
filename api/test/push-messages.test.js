@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dayReminderPush, restTimerPush, routineEmoji, testPush } from '../push-messages.js';
+import { dayReminderPush, friendRequestPush, planSharePush, reactionPush, restTimerPush, routineEmoji, testPush } from '../push-messages.js';
 
 test('localizes every server-generated notification in pt-BR', () => {
   assert.deepEqual(restTimerPush('pt-BR'), {
@@ -47,4 +47,48 @@ test('leaves a literal emoji alone and falls back for anything else', () => {
   assert.equal(routineEmoji('trophy'), '🏋️');
   assert.equal(routineEmoji(''), '🏋️');
   assert.equal(routineEmoji(undefined), '🏋️');
+});
+
+
+test('social pushes follow the target language', () => {
+  assert.deepEqual(friendRequestPush('de', 'Ada'), {
+    title: 'Neue Freundschaftsanfrage',
+    body: 'Ada möchte deinem Squad beitreten.',
+    tag: 'friend-request',
+    url: '#/social',
+  });
+  assert.deepEqual(reactionPush('pt-BR', 'Ada', '🔥'), {
+    title: '🔥 Ada reagiu ao seu treino',
+    body: 'Continue assim.',
+    tag: 'social-reaction',
+    url: '#/social',
+  });
+  assert.equal(friendRequestPush('ar', 'Ada').body.includes('Ada'), true);
+  assert.equal(reactionPush('zh', 'Ada', '💪').title, '💪 Ada 回应了你的训练');
+  assert.deepEqual(planSharePush('de', 'Ada'), {
+    title: 'Neuer Plan von Ada',
+    body: 'Bereit in deinem Squad. Öffne openGym, um ihn zu übernehmen.',
+    tag: 'social-plan',
+    url: '#/social',
+  });
+});
+
+test('every app language has social push copy', () => {
+  for (const lang of ['en', 'de', 'pt', 'pt-BR', 'es', 'fr', 'it', 'pl', 'ru', 'uk', 'sv', 'hu', 'tr', 'ar', 'hi', 'bn', 'ko', 'zh', 'zh-TW', 'th', 'de-CH']) {
+    const friend = friendRequestPush(lang, 'Ada');
+    const reaction = reactionPush(lang, 'Ada', '🔥');
+    const plan = planSharePush(lang, 'Ada');
+    assert.ok(friend.title && friend.body.includes('Ada'), lang);
+    assert.ok(reaction.title.includes('Ada') && reaction.title.includes('🔥'), lang);
+    assert.ok(reaction.body, lang);
+    assert.ok(plan.title.includes('Ada') && plan.body, lang);
+  }
+});
+
+test('social pushes fall back to English for an unknown language', () => {
+  assert.deepEqual(friendRequestPush('xx', 'Ada'), friendRequestPush('en', 'Ada'));
+  assert.deepEqual(reactionPush(undefined, 'Ada', '👑'), reactionPush('en', 'Ada', '👑'));
+  assert.equal(friendRequestPush('en', 'Ada').body, 'Ada wants to join your squad.');
+  assert.equal(reactionPush('en', 'Ada', '💪').title, '💪 Ada reacted to your workout');
+  assert.deepEqual(planSharePush('xx', 'Ada'), planSharePush('en', 'Ada'));
 });

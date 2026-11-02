@@ -2510,15 +2510,19 @@ export function importPlanFile(f, onRead) {
   rd.readAsText(f)
 }
 
-export const planImportSheet = bundle => ui().openSheet(close => <PlanImport bundle={bundle} close={close} />)
+export const planImportSheet = (bundle, opts) =>
+  ui().openSheet(close => <PlanImport bundle={bundle} close={close} {...opts} />)
 
-function PlanImport({ bundle, close }) {
+function PlanImport({ bundle, close, onApplied }) {
   const [schedule, setSchedule] = useState(false)
   const apply = () => {
     update(s => mergePlan(s, bundle, { schedule }))
     close()
     toast(tn('Added {0} routine to your plan', 'Added {0} routines to your plan', bundle.routineCount))
     nav('/plan')
+    // A plan shared through the squad is closed once it has been imported. The merge above is
+    // already in the local state, so a failed clean-up only leaves the card for later.
+    if (onApplied) Promise.resolve().then(onApplied).catch(() => {})
   }
   return <>
     <h3>{bundle.name ? t('Import “{0}”', bundle.name) : t('Import this plan')}</h3>

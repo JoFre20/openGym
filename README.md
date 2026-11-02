@@ -102,7 +102,8 @@ if you want to try it before installing anything.
   [sync](#how-sync-works)).
 - Import from FitNotes, Strong, Hevy (CSV or API key) and Apple Health weight exports. Export
   everything as one JSON file, or your workouts and body data as a spreadsheet (CSV).
-- Share a plan as a small file or print it as a PDF.
+- Share a plan as a small file, print it as a PDF, or send it to a friend from the squad screen.
+- A friends and squad screen: friend codes, privacy controls, a weekly squad board, one-tap reactions and plans shared between friends.
 - Optional admin dashboard with invite-only signup and an activity log.
 - 20 languages, including right-to-left Arabic and Traditional Chinese. Exercise names and
   instructions are translated for most of them.
@@ -257,6 +258,7 @@ Everything lives in `./data` on your host:
 | `db.json` | Profiles and public passkey data |
 | `db.json.bak` | A copy of the last good `db.json`, used if the main file can't be read |
 | `state-<user>.json` | Each user's plan, workouts, body weight and settings |
+| `social.json` | Friend codes, privacy settings, friendships, workout reactions and shared plan snapshots |
 | `audit.log` | Admin activity log (no IP addresses unless you turn that on) |
 | `secret` | Session-cookie signing key |
 

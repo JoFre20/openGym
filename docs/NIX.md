@@ -429,8 +429,9 @@ unit exactly as you write them (see [Extra environment variables](#extra-environ
 ## 7. Data, backups and updates
 
 **Everything** lives under `dataDir` (`/var/lib/opengym`): `db.json` (profiles + public passkeys),
-`state-<uid>.json` (each user's plan, workouts, body weight, settings), `secret` (session-cookie
-key), `vapid.json` (push keys), and `audit.log`. Passkey private keys never reach the server.
+`state-<uid>.json` (each user's plan, workouts, body weight, settings), `social.json` (friend
+codes, friendships and reactions), `secret` (session-cookie key), `vapid.json` (push keys), and
+`audit.log`. Passkey private keys never reach the server.
 
 ```bash
 sudo tar czf opengym-backup-$(date +%F).tar.gz /var/lib/opengym

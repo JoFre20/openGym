@@ -9,6 +9,7 @@ import {
   planHasRoutines, exportPlanFile, printWholePlan, importPlanFile,
 } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
+import SharePlanSheet from '../components/SharePlanSheet.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import { Button, Row, Section, Segmented } from '../components/ui.jsx'
 import SwipeRow from '../components/SwipeRow.jsx'
@@ -156,6 +157,14 @@ export default function Plan() {
       title: t('Plan'),
       subtitle: has ? null : t('Add an exercise to a routine first. An empty plan has nothing to share.'),
       items: [
+        {
+          icon: 'people', label: t('Share with friends'),
+          sub: user
+            ? t('Send this plan to your squad. They choose whether to add it.')
+            : t('Sign in to share with friends.'),
+          disabled: !has || !user,
+          onClick: () => useUI.getState().openSheet(close => <SharePlanSheet close={close} />),
+        },
         { icon: 'share', label: t('Export plan file'), sub: t('A small file a friend can import into their own openGym. Routines only, none of your workouts or weigh-ins.'), disabled: !has, onClick: exportPlanFile },
         { icon: 'note', label: t('Print / Save as PDF'), disabled: !has, onClick: printWholePlan },
         { icon: 'download', label: t('Import a plan file'), onClick: () => fileRef.current?.click() },
