@@ -26,7 +26,7 @@ export const PAGES = {
   gym: { title: 'Gym reminder', icon: 'mapPin', tint: 'var(--green)', parent: 'reminders' },
   'gym-edit': { title: 'Your gym', icon: 'mapPin', tint: 'var(--orange)', parent: 'gym' },
   // Seasonal themes (lib/seasonal.js), one section per theme.
-  themes: { title: 'Seasonal themes', icon: 'pumpkin', tint: 'var(--orange)', parent: 'look' },
+  themes: { title: 'Seasonal themes', icon: 'sparkles', tint: 'var(--purple)', parent: 'look' },
 }
 export const PAGE_IDS = Object.keys(PAGES)
 
@@ -127,11 +127,19 @@ export const SEARCH = [
   { page: 'look', title: 'Exercise drawings', icon: 'figureStrength', tint: 'var(--teal)', kw: 'figure male female woman man picture', opts: ['Male', 'Female'] },
   { page: 'look', title: 'Gym check-in', icon: 'qr', tint: 'var(--blue)', kw: 'qr code membership card check in barcode' },
   { page: 'look', title: 'Body weight', icon: 'scale', tint: 'var(--green)', kw: 'weight card home' },
-  { page: 'look', title: 'Seasonal themes', icon: 'pumpkin', tint: 'var(--orange)', kw: 'seasonal season holiday halloween theme decoration' },
+  { page: 'look', title: 'Seasonal themes', icon: 'sparkles', tint: 'var(--purple)', kw: 'seasonal season holiday halloween christmas newyear chinesenewyear easter theme decoration' },
   // Seasonal themes
   { page: 'themes', title: 'Halloween', icon: 'pumpkin', tint: 'var(--orange)', kw: 'halloween seasonal theme spooky spider pumpkin bats witch october decoration', opts: ['Auto', 'On', 'Off'] },
-  { page: 'themes', title: 'Also during workouts', icon: 'play', tint: 'var(--green)', kw: 'halloween seasonal workout training decoration' },
+  { page: 'themes', title: 'Christmas', icon: 'tree', tint: 'var(--red)', kw: 'christmas xmas seasonal theme festive holiday december january tree snow presents bauble decoration', opts: ['Auto', 'On', 'Off'] },
+  { page: 'themes', title: 'New Year’s Eve', icon: 'firework', tint: 'var(--yellow)', kw: 'new year newyear silvester fireworks confetti countdown party december january decoration', opts: ['Auto', 'On', 'Off'] },
+  { page: 'themes', title: 'Chinese New Year', icon: 'lantern', tint: 'var(--red)', kw: 'chinese lunar new year newyear spring festival lantern red envelope blossom lucky january february decoration', opts: ['Auto', 'On', 'Off'] },
+  { page: 'themes', title: 'Easter', icon: 'egg', tint: 'var(--pink)', kw: 'easter spring egg bunny rabbit chick flowers seasonal theme march april decoration', opts: ['Auto', 'On', 'Off'] },
+  { page: 'themes', title: 'Also during workouts', icon: 'play', tint: 'var(--green)', kw: 'halloween christmas newyear chinesenewyear easter seasonal workout training decoration' },
   { page: 'themes', title: 'Spooky colors', icon: 'palette', tint: 'var(--purple)', kw: 'halloween orange purple accent color colour seasonal' },
+  { page: 'themes', title: 'Festive colors', icon: 'palette', tint: 'var(--purple)', kw: 'christmas red green accent color colour seasonal' },
+  { page: 'themes', title: 'Party colors', icon: 'palette', tint: 'var(--yellow)', kw: 'new year silvester gold party accent color colour seasonal' },
+  { page: 'themes', title: 'Lucky colors', icon: 'palette', tint: 'var(--red)', kw: 'chinese lunar new year red gold lucky accent color colour seasonal' },
+  { page: 'themes', title: 'Spring colors', icon: 'palette', tint: 'var(--pink)', kw: 'easter pink spring accent color colour seasonal' },
   { page: 'look', title: 'Show connection status', icon: 'cloud', tint: 'var(--blue)', kw: 'sync offline banner bar connection', when: c => !c.demo },
   // Data & backup
   { page: 'data', title: 'Export backup (JSON)', icon: 'share', tint: 'var(--blue)', kw: 'export backup json download save' },

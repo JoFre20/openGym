@@ -9,6 +9,10 @@ import { activeSeason, seasonInWorkout } from '../lib/seasonal.js'
    and only through import(). */
 const LOADERS = {
   halloween: () => import('../seasonal/halloween.jsx'),
+  christmas: () => import('../seasonal/christmas.jsx'),
+  newyear: () => import('../seasonal/newyear.jsx'),
+  chinesenewyear: () => import('../seasonal/chinesenewyear.jsx'),
+  easter: () => import('../seasonal/easter.jsx'),
 }
 const mods = {}
 const modOf = id => (mods[id] ||= {
@@ -18,11 +22,11 @@ const modOf = id => (mods[id] ||= {
 
 const useSeason = () => useStore(s => activeSeason(s.S))
 
-// Whether the first screen this session drew was one the theme may decorate. The spider's
-// "first open of the day" is an app start, so a start straight into a running workout skips it.
+// Whether the first screen this session drew was one the theme may decorate. A theme's opening
+// animation belongs to an app start, so a start straight into a running workout skips it.
 let firstVisible = null
 
-/** The screen-wide layer (the spider, the witch). `hidden` on the workout screen: no theme there. */
+/** The screen-wide layer (spider, snowfall, confetti, petals). `hidden` on the workout screen: no theme there. */
 export function SeasonalLayer({ hidden = false }) {
   const id = useSeason()
   if (id && firstVisible === null) firstVisible = !hidden

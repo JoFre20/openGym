@@ -852,9 +852,9 @@ export default function Settings({ page = null, find = null, via = null, entryKe
           />
         </Row>
       </Section>
-      {/* Halloween and whatever comes after it (lib/seasonal.js), on a page of their own. */}
+      {/* Halloween, Christmas and whatever comes after them (lib/seasonal.js), on a page of their own. */}
       <Section>
-        <Row icon="pumpkin" iconTint="var(--orange)" title={t('Seasonal themes')} subtitle={t('Little extras for the time of year.')}
+        <Row icon="sparkles" iconTint="var(--purple)" title={t('Seasonal themes')} subtitle={t('Little extras for the time of year.')}
           value={activeSeasonTitle(S)} accessory="chevron" onClick={() => open('themes')} />
       </Section>
       <Section title={t('On Home')}>

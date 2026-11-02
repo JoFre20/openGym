@@ -108,6 +108,14 @@ const P = {
   globe: <><circle cx="12" cy="12" r="8.2" /><path d="M3.8 12h16.4M12 3.8c2.1 2.2 3.2 5.1 3.2 8.2s-1.1 6-3.2 8.2c-2.1-2.2-3.2-5.1-3.2-8.2s1.1-6 3.2-8.2Z" /></>,
   // Seasonal themes (lib/seasonal.js): two halves of a pumpkin and its stem.
   pumpkin: <><path d="M12 7.4c-1.6-1.2-4.9-1.4-6.8.6-2.4 2.6-2.4 8.4 0 11 1.9 2 5.2 1.8 6.8.6 1.6 1.2 4.9 1.4 6.8-.6 2.4-2.6 2.4-8.4 0-11-1.9-2-5.2-1.8-6.8-.6Z" /><path d="M12 7.4c-1.4 2.2-1.4 10 0 12.2M12 7.4c.1-1.6.6-2.9 1.8-3.8" /></>,
+  // A fir tree with its trunk: the Christmas theme's own icon, next to the pumpkin.
+  tree: <><path d="M12 3.4 7.4 9.8h2.4L6.2 14.6h2.9L5.4 19.4h13.2l-3.7-4.8h2.9l-3.6-4.8h2.4Z" /><path d="M12 19.4v2.2" /></>,
+  // An Easter egg with a painted zigzag across its middle.
+  egg: <><path d="M12 3.4c-3 0-5.4 4-5.4 8.2 0 4.6 2.4 8 5.4 8s5.4-3.4 5.4-8c0-4.2-2.4-8.2-5.4-8.2Z" /><path d="m7.4 12.8 2.2 1.6 2.4-1.8 2.4 1.8 2.2-1.6" /></>,
+  // A firework burst: the New Year's Eve theme's own icon.
+  firework: <><path d="M12 2.8v3.4M12 17.8v3.4M2.8 12h3.4M17.8 12h3.4M5.6 5.6l2.4 2.4M16 16l2.4 2.4M18.4 5.6 16 8M8 16l-2.4 2.4" /><circle cx="12" cy="12" r="2.2" /><circle cx="19.6" cy="6.4" r=".7" fill="currentColor" stroke="none" /><circle cx="4.8" cy="18.2" r=".6" fill="currentColor" stroke="none" /></>,
+  // A hanging paper lantern: Chinese New Year's own icon.
+  lantern: <><path d="M12 2.6v2.4M9.2 5h5.6M12 5v2.2" /><rect x="8.4" y="7.2" width="7.2" height="7.4" rx="2.4" /><path d="M12 7.2v7.4M8.4 14.6h7.2M12 14.6v3.6" /></>,
   moon: <path d="M19.4 14.2A7.8 7.8 0 0 1 9.8 4.6a8.2 8.2 0 1 0 9.6 9.6Z" />,
   sun: <><circle cx="12" cy="12" r="4.4" /><path d="M12 3.6v2M12 18.4v2M20.4 12h-2M5.6 12h-2M17.94 6.06l-1.42 1.42M7.48 16.52l-1.42 1.42M17.94 17.94l-1.42-1.42M7.48 7.48 6.06 6.06" /></>,
   key: <><circle cx="8.2" cy="15.8" r="3.8" /><path d="m10.9 13.1 8-8M16.6 7.4l2 2M14.6 9.4l2 2" /></>,
