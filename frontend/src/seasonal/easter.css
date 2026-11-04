@@ -1,0 +1,272 @@
+/* Easter (seasonal/easter.jsx). Loaded only while the theme shows, and scoped to
+   html[data-season="easter"] so switching it off mid-session leaves nothing behind.
+   Transforms and opacity only; every animation runs a fixed number of times and stops. */
+
+:root[data-season="easter"]{
+  --ea-petal:#f7a8c4;
+  --ea-petal-2:#ffd98a;
+  --ea-petal-3:#b8a4f0;
+  --ea-leaf:#6fbf73;
+  --ea-egg:#f4ead9;
+  --ea-egg-2:#f7d6e2;
+  --ea-egg-line:#d96c8a;
+  --ea-bunny:#d9c7b6;
+  --ea-bunny-2:#f0e4da;
+  --ea-bunny-line:#b79c86;
+  --ea-basket:#b8872e;
+  --ea-basket-2:#f4c95d;
+  --ea-eye:#5b3a4a;
+  --ea-pink:#ff8fb3;
+  --ea-ink:#7a3f57;
+  --ea-thread:rgba(235,235,245,.42);
+  --ea-meadow-1:#3f7d55;
+  --ea-meadow-2:#5c9b70;
+  --ea-meadow-3:#8fbf9e;
+}
+:root[data-season="easter"][data-theme="light"]{
+  --ea-petal:#e96b98;
+  --ea-petal-2:#c99500;
+  --ea-petal-3:#7a5bd6;
+  --ea-leaf:#248a3d;
+  --ea-egg:#fffaf3;
+  --ea-egg-2:#f3cfe0;
+  --ea-egg-line:#c2456a;
+  --ea-bunny:#b79c86;
+  --ea-bunny-2:#e8d9cc;
+  --ea-bunny-line:#9a7f6b;
+  --ea-basket:#a8751f;
+  --ea-basket-2:#b8872e;
+  --ea-eye:#3b2a33;
+  --ea-pink:#d93f6e;
+  --ea-ink:#7a3f57;
+  --ea-thread:rgba(60,60,67,.38);
+}
+
+/* ------------------------------------------------------------ the art -- */
+.ea-eggsvg{display:block;width:100%;height:auto;overflow:visible}
+.ea-eggsvg .ea-eggbody{fill:var(--ea-egg);stroke:var(--ea-egg-line);stroke-width:1.1}
+.ea-eggsvg .ea-eggband{fill:none;stroke:var(--ea-egg-line);stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.ea-eggsvg .ea-eggshine{fill:none;stroke:var(--ea-egg-2);stroke-width:1.6;stroke-linecap:round}
+.ea-eggsvg .ea-eggdot{fill:var(--ea-petal-2)}
+.ea-bunnysvg{display:block;width:100%;height:auto;overflow:visible}
+.ea-bunnysvg .ea-ear{fill:rgba(217,199,182,.06);stroke:var(--ea-bunny-line);stroke-width:1.8;stroke-linejoin:round}
+.ea-bunnysvg .ea-ear-in{fill:var(--ea-pink);opacity:.85}
+.ea-bunnysvg .ea-head{fill:rgba(217,199,182,.06);stroke:var(--ea-bunny-line);stroke-width:2.2;stroke-linejoin:round}
+.ea-bunnysvg .ea-muzzle{fill:rgba(240,228,218,.12);stroke:var(--ea-bunny-line);stroke-width:1.6}
+.ea-bunnysvg .ea-eye{fill:var(--ea-bunny-line)}
+.ea-bunnysvg .ea-nose{fill:var(--ea-pink)}
+.ea-bunnysvg .ea-whiskers,.ea-bunnysvg .ea-paws{fill:none;stroke:var(--ea-bunny-line);stroke-width:1.3;stroke-linecap:round}
+.ea-flowersvg{display:block;width:100%;height:100%;overflow:visible}
+.ea-flowersvg .ea-petals{fill:var(--ea-petal)}
+.ea-flowersvg .ea-center{fill:var(--ea-petal-2)}
+.ea-petalsvg{display:block;width:100%;height:100%;fill:var(--ea-petal);overflow:visible}
+
+/* ------------------------------------------------------------- meadow -- */
+.ea-runnerbunny{display:block;width:100%;height:100%;overflow:visible}
+.ea-runnerbunny .ea-rb-body{fill:rgba(217,199,182,.07);stroke:var(--ea-bunny-line);stroke-width:2.4;stroke-linejoin:round}
+.ea-runnerbunny .ea-rb-light{display:none}
+.ea-runnerbunny .ea-rb-ear{fill:rgba(217,199,182,.06);stroke:var(--ea-bunny-line);stroke-width:2;stroke-linejoin:round}
+.ea-runnerbunny .ea-rb-ear-in{fill:var(--ea-pink)}
+.ea-runnerbunny .ea-rb-eye{fill:var(--ea-bunny-line)}
+.ea-runnerbunny .ea-rb-nose{fill:var(--ea-pink)}
+.ea-runnerbunny .ea-rb-whisker{fill:none;stroke:var(--ea-bunny-line);stroke-width:1.2;stroke-linecap:round}
+.ea-runnerbunny .ea-rb-leg{fill:none;stroke:var(--ea-bunny-line);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+.ea-runnerbunny .ea-rb-tail{fill:none;stroke:var(--ea-bunny-line);stroke-width:2}
+.ea-runnerbunny .ea-rb-basket{fill:none;stroke:var(--ea-basket);stroke-width:2;stroke-linejoin:round}
+.ea-runnerbunny .ea-rb-basket-rim{fill:none;stroke:var(--ea-basket-2);stroke-width:1.6;stroke-linecap:round}
+.ea-runnerbunny .ea-rb-candy{fill:var(--ea-petal)}
+.ea-runnerbunny .ea-rb-candy-2{fill:var(--ea-petal-2)}
+.ea-meadow{
+  position:fixed;left:0;right:0;bottom:calc(62px + var(--sab));height:82px;z-index:55;pointer-events:none;
+  overflow:hidden;animation:ea-meadow-in .6s ease-out both;
+}
+.ea-meadow-hill{position:absolute;left:0;right:0;bottom:0;width:100%;height:62px;display:block;overflow:visible}
+.ea-meadow-hill .ea-hill-back{fill:var(--ea-meadow-1)}
+.ea-meadow-hill .ea-hill-front{fill:var(--ea-meadow-2)}
+.ea-meadow-hill .ea-grass path{fill:none;stroke:var(--ea-meadow-3);stroke-width:1.8;stroke-linecap:round;opacity:.85}
+.ea-runner{position:absolute;bottom:28px;left:-64px;width:46px;height:35px;animation:ea-run 7.5s linear .4s 1 both}
+.ea-runner .ea-runnerbunny{animation:ea-hop .45s ease-in-out 16 alternate}
+.ea-runner-b{bottom:18px;width:36px;height:28px;animation-delay:2.7s;animation-duration:8.5s}
+.ea-runner-b .ea-runnerbunny{animation-delay:.2s}
+@keyframes ea-run{0%{transform:translate3d(0,0,0)}100%{transform:translate3d(calc(100vw + 96px),0,0)}}
+@keyframes ea-hop{from{transform:translateY(0)}to{transform:translateY(-4px)}}
+.ea-candy{
+  position:absolute;bottom:30px;left:var(--x);width:16px;height:10px;opacity:0;
+  animation:ea-candy-drop 1.3s ease-in var(--delay) 1 both;
+}
+.ea-candysvg{display:block;width:100%;height:100%;overflow:visible}
+.ea-candysvg .ea-candy-wrap{fill:var(--ea-petal)}
+.ea-candysvg .ea-candy-body{fill:var(--ea-petal-2)}
+.ea-candysvg .ea-candy-line{fill:none;stroke:var(--ea-petal-3);stroke-width:1.2;stroke-linecap:round;opacity:.8}
+.ea-candysvg.ea-candy-alt .ea-candy-wrap{fill:var(--ea-petal-2)}
+.ea-candysvg.ea-candy-alt .ea-candy-body{fill:var(--ea-petal)}
+@keyframes ea-candy-drop{
+  0%{transform:translateY(-16px) rotate(0);opacity:0}
+  15%{opacity:1}
+  100%{transform:translateY(10px) rotate(200deg);opacity:0}
+}
+.ea-mflower{position:absolute;bottom:8px;width:18px;height:18px;opacity:.9}
+.ea-mf0{left:10%}.ea-mf1{left:34%;bottom:12px}.ea-mf2{left:56%;bottom:7px}.ea-mf3{left:78%;bottom:11px}.ea-mf4{left:90%;bottom:6px}
+.ea-meadow-still{animation:none}
+.ea-meadow-still .ea-runner{animation:none;left:20%}
+.ea-meadow-still .ea-runner-b{left:66%}
+.ea-meadow-still .ea-runner .ea-runnerbunny{animation:none}
+.ea-meadow-still .ea-candy{display:none}
+@keyframes ea-meadow-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ------------------------------------------------------------ petals -- */
+.ea-fall{position:fixed;inset:0;z-index:54;pointer-events:none;overflow:hidden}
+.ea-fpetal{
+  position:absolute;top:-30px;left:var(--x);width:var(--size);height:var(--size);opacity:0;
+  animation:ea-fall var(--dur) linear var(--delay) 1 both;
+}
+.ea-fpetal:nth-child(3n+2) .ea-petalsvg{fill:var(--ea-petal-2)}
+.ea-fpetal:nth-child(3n) .ea-petalsvg{fill:var(--ea-petal-3)}
+@keyframes ea-fall{
+  0%{transform:translate3d(0,-50px,0) rotate(0);opacity:0}
+  8%{opacity:.9}
+  88%{opacity:.7}
+  100%{transform:translate3d(var(--drift),105vh,0) rotate(220deg);opacity:0}
+}
+
+/* -------------------------------------------------------- header petals -- */
+[data-season="easter"] .hdr:has(> .ea-hdrpetals),
+[data-season="easter"] .hdr:has(> .ea-hdrflower){position:relative}
+[data-season="easter"] .hdr:has(> .ea-hdrpetals) > :not(.ea-hdrpetals):not(.ea-hdrflower),
+[data-season="easter"] .hdr:has(> .ea-hdrflower) > :not(.ea-hdrpetals):not(.ea-hdrflower){position:relative;z-index:1}
+[data-season="easter"] .ea-hdrpetals{position:absolute;inset:-6px 0 -4px;overflow:hidden;pointer-events:none;z-index:0}
+[data-season="easter"] .ea-hpetal{
+  position:absolute;top:-12px;left:var(--x);width:var(--size);height:var(--size);opacity:0;
+  animation:ea-hdrfall 7s ease-in-out var(--delay) 3 both;
+}
+@keyframes ea-hdrfall{
+  0%{transform:translate3d(0,-10px,0);opacity:0}
+  12%{opacity:.8}
+  80%{opacity:.65}
+  100%{transform:translate3d(var(--drift),34px,0);opacity:0}
+}
+[data-season="easter"] .ea-hdrpetals.ea-still .ea-hpetal{animation:none;opacity:.5;top:6px}
+[data-season="easter"] .ea-hdrpetals.ea-still .ea-hp2,
+[data-season="easter"] .ea-hdrpetals.ea-still .ea-hp4{top:14px;opacity:.35}
+
+/* A flower in the Stats header's quiet middle, left of its buttons. */
+[data-season="easter"] .ea-hdrflower{
+  position:absolute;top:2px;inset-inline-end:112px;width:26px;height:26px;z-index:0;pointer-events:none;
+  opacity:.9;animation:ea-sway 3s ease-in-out 6 alternate;
+}
+
+/* ------------------------------------------------------------ home art -- */
+/* A bunny in the hero card's corner, under its content and never in a tap's way. */
+[data-season="easter"] .card:has(> .ea-bunny-br){position:relative}
+[data-season="easter"] .ea-bunny-br{position:absolute;right:0;bottom:0;width:52px;height:auto;pointer-events:none;opacity:.85}
+[dir="rtl"][data-season="easter"] .ea-bunny-br{right:auto;left:0}
+
+/* A painted egg in the plan card's empty top corner, behind its rows. */
+[data-season="easter"] :is(.card, .sect-b):has(> .ea-egg-tr){position:relative}
+[data-season="easter"] .ea-egg-tr{position:absolute;right:0;top:0;width:34px;height:auto;opacity:.38;pointer-events:none}
+[dir="rtl"][data-season="easter"] .ea-egg-tr{right:auto;left:0}
+
+/* --------------------------------------------------------------- egg -- */
+/* Behind the top edge of its card: only the cap and the band show above it. */
+[data-season="easter"] .card:has(> .ea-peek){position:relative}
+[data-season="easter"] .ea-peek{
+  position:absolute;bottom:100%;inset-inline-end:52px;width:52px;height:22px;overflow:hidden;pointer-events:none;
+}
+[data-season="easter"] .ea-egg{
+  all:unset;position:absolute;left:10px;top:1px;width:32px;height:40px;cursor:pointer;pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;animation:ea-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both;
+}
+[data-season="easter"] .ea-egg.ea-hop{animation:ea-hop .5s cubic-bezier(.3,1.6,.5,1)}
+[data-season="easter"] .ea-peek.ea-peek-two{width:66px;inset-inline-end:40px}
+.ea-peek-two .ea-egg-wrap{position:absolute;left:4px;top:2px;width:30px;animation:ea-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both}
+.ea-peek-two .ea-egg-s{left:36px;top:6px;width:24px;animation-delay:.85s}
+@keyframes ea-peek{from{transform:translateY(22px)}to{transform:none}}
+@keyframes ea-hop{0%{transform:none}35%{transform:translateY(-7px) rotate(-6deg)}70%{transform:translateY(1px) rotate(3deg)}100%{transform:none}}
+
+.ea-burst{position:fixed;width:0;height:0;z-index:58;pointer-events:none}
+.ea-burstpetal{
+  position:absolute;left:-8px;top:-8px;width:16px;height:16px;opacity:0;
+  animation:ea-burst 1.15s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes ea-burst{
+  0%{transform:translate3d(0,0,0) scale(.3) rotate(0);opacity:0}
+  12%{opacity:1}
+  70%{opacity:.9}
+  100%{transform:translate3d(var(--dx),var(--dy),0) scale(1.15) rotate(var(--r));opacity:0}
+}
+
+/* ---------------------------------------------------------------- Stats -- */
+/* Eggs hanging into the empty end of a tile, from its top edge. */
+[data-season="easter"] .ea-hang{position:absolute;top:0;inset-inline-end:20px;width:16px;animation:ea-bob 2.6s ease-in-out 6 alternate}
+[data-season="easter"] .ea-hangthread{position:absolute;left:7.5px;top:0;width:1px;height:var(--len);background:var(--ea-thread)}
+[data-season="easter"] .ea-hang .ea-eggsvg{position:absolute;left:0;top:calc(var(--len) - 3px);width:16px;height:20px}
+[data-season="easter"] .tile:has(> .ea-tileeggs){position:relative}
+.ea-tileeggs{position:absolute;top:0;inset-inline-end:20px;width:44px;height:0;pointer-events:none}
+.ea-tileeggs .ea-hang{inset-inline-end:0}
+.ea-tileeggs .ea-hang-b{inset-inline-end:26px;animation-duration:3.1s;animation-delay:.8s}
+@keyframes ea-bob{from{transform:translateY(0)}to{transform:translateY(3px)}}
+
+/* A small garland of flowers in the activity card's top-right corner. */
+[data-season="easter"] .card:has(> .ea-garland){position:relative}
+[data-season="easter"] .card:has(> .ea-garland) > h2{position:relative;z-index:1}
+[data-season="easter"] .ea-garland{position:absolute;top:-2px;inset-inline-end:12px;width:96px;height:20px;pointer-events:none}
+.ea-gflower{position:absolute;top:2px;width:16px;height:16px;animation:ea-sway 3s ease-in-out 4 alternate}
+.ea-gf0{inset-inline-end:0;top:7px}
+.ea-gf1{inset-inline-end:18px;top:3px;animation-delay:.2s}
+.ea-gf2{inset-inline-end:36px;top:0;animation-delay:.4s}
+.ea-gf3{inset-inline-end:54px;top:3px;animation-delay:.6s}
+.ea-gf4{inset-inline-end:72px;top:7px;animation-delay:.8s}
+.ea-gf1 .ea-petals,.ea-gf3 .ea-petals{fill:var(--ea-petal-2)}
+.ea-gf2 .ea-petals{fill:var(--ea-petal-3)}
+@keyframes ea-sway{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+
+/* A flower in a card's bottom corner. */
+[data-season="easter"] .card:has(> .ea-flower-bl){position:relative}
+[data-season="easter"] .ea-flower-bl{position:absolute;left:0;bottom:0;width:46px;height:46px;opacity:.45;pointer-events:none}
+[dir="rtl"][data-season="easter"] .ea-flower-bl{left:auto;right:0}
+
+/* --------------------------------------------------------- the workout -- */
+/* Nothing here takes a tap, and nothing moves anything: the flower sits under the header's own
+   content (isolation, z-index -1), from the screen's top corner, and the egg hangs in the side
+   gutter, outside every button. */
+[data-season="easter"] .whdr:has(> .ea-wcorner){isolation:isolate}
+[data-season="easter"] .whdr:not(.stick):has(> .ea-wcorner){position:relative}
+[data-season="easter"] .ea-wcorner{
+  position:absolute;z-index:-1;pointer-events:none;width:0;height:0;
+  top:calc(-1 * (var(--sat) + var(--conn, 0px) + 8px));inset-inline-start:calc(-1 * var(--pad));
+}
+[data-season="easter"] .whdr.stick > .ea-wcorner{position:absolute;top:0;inset-inline-start:0}
+[data-season="easter"] .ea-wcorner .ea-flower-tl{position:absolute;left:0;top:0;width:42px;height:42px;opacity:.7}
+[dir="rtl"][data-season="easter"] .ea-wcorner .ea-flower-tl{left:auto;right:0}
+[data-season="easter"] .ea-hang.ea-hang-w{right:auto;left:1px;top:calc(var(--sat) + var(--conn, 0px) + 8px);width:14px}
+[dir="rtl"][data-season="easter"] .ea-hang.ea-hang-w{left:auto;right:1px}
+.ea-hang-w .ea-hangthread{left:6.5px}
+[data-season="easter"] .ea-hang-w .ea-eggsvg{width:14px;height:18px}
+
+/* The rest bar: three petals along its top edge, under its clock and buttons. */
+#timer > .ea-restpetals{position:absolute;left:0;right:0;top:4px;height:11px;z-index:-1;pointer-events:none;overflow:hidden}
+.ea-rpetal{position:absolute;left:0;top:0;width:11px;height:11px;opacity:0;animation:ea-restfall 4.4s linear .4s 1 both}
+.ea-rp1{animation-delay:1.3s;animation-duration:5.2s}
+.ea-rp2{animation-delay:2.2s;animation-duration:4.8s}
+@keyframes ea-restfall{
+  0%{transform:translate3d(-8%,-4px,0) rotate(0);opacity:0}
+  10%,82%{opacity:.7}
+  100%{transform:translate3d(105%,2px,0) rotate(200deg);opacity:0}
+}
+
+/* The finish screen: an egg on each side of the trophy. */
+.ea-finish{position:absolute;inset:0;pointer-events:none}
+.ea-finish .ea-eggsvg{position:absolute;bottom:0;width:30px;height:auto}
+.ea-finish .ea-egg-l{right:calc(50% + 34px)}
+.ea-finish .ea-egg-r{left:calc(50% + 34px);width:24px}
+
+@media (prefers-reduced-motion: reduce){
+  .ea-fall,.ea-burst,.ea-restpetals{display:none}
+  .ea-meadow,.ea-runner,.ea-runnerbunny,.ea-candy{animation:none}
+  [data-season="easter"] .ea-hpetal,
+  [data-season="easter"] .ea-egg,
+  [data-season="easter"] .ea-egg-wrap,
+  [data-season="easter"] .ea-hang,
+  [data-season="easter"] .ea-hdrflower,
+  [data-season="easter"] .ea-gflower{animation:none}
+}

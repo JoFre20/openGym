@@ -1,0 +1,229 @@
+/* New Year's Eve (seasonal/newyear.jsx). Loaded only while the theme shows, and scoped to
+   html[data-season="newyear"] so switching it off mid-session leaves nothing behind.
+   Transforms and opacity only; every animation runs a fixed number of times and stops. */
+
+:root[data-season="newyear"]{
+  --ny-gold:#ffd60a;
+  --ny-gold-2:#f4a51c;
+  --ny-pink:#ff375f;
+  --ny-blue:#0a84ff;
+  --ny-green:#30d158;
+  --ny-ink:#f2e3a2;
+  --ny-thread:rgba(235,235,245,.42);
+  --ny-c1:var(--ny-gold);
+  --ny-c2:var(--ny-pink);
+  --ny-c3:var(--ny-blue);
+  --ny-c4:var(--ny-green);
+}
+:root[data-season="newyear"][data-theme="light"]{
+  --ny-gold:#b25000;
+  --ny-gold-2:#8a5a00;
+  --ny-pink:#d70036;
+  --ny-blue:#0060df;
+  --ny-green:#248a3d;
+  --ny-ink:#7a5a00;
+  --ny-thread:rgba(60,60,67,.38);
+}
+
+/* ------------------------------------------------------------ the art -- */
+.ny-fwsvg{display:block;width:100%;height:100%;overflow:visible}
+.ny-fwsvg .ny-rays{fill:none;stroke:var(--ny-gold);stroke-width:2.2;stroke-linecap:round}
+.ny-fwsvg .ny-rays-2{fill:none;stroke:var(--ny-pink);stroke-width:1.8;stroke-linecap:round;opacity:.95}
+.ny-fwsvg .ny-core{fill:var(--ny-gold)}
+.ny-fwsvg .ny-core-2{fill:#fff6c2}
+.ny-fwsvg .ny-spark{fill:var(--ny-gold)}
+.ny-fwsvg .ny-spark-2{fill:var(--ny-pink)}
+.ny-fwsvg .ny-spark-3{fill:var(--ny-blue)}
+.ny-fwsvg .ny-trail{fill:none;stroke:var(--ny-gold);stroke-width:1.2;stroke-linecap:round;opacity:.55}
+.ny-fwsvg .ny-glow-stop-a{stop-color:var(--ny-gold);stop-opacity:.42}
+.ny-fwsvg .ny-glow-stop-b{stop-color:var(--ny-gold);stop-opacity:.1}
+.ny-fwsvg .ny-glow-stop-c{stop-color:var(--ny-gold);stop-opacity:0}
+.ny-glasssvg{display:block;width:100%;height:auto;overflow:visible}
+.ny-glasssvg .ny-bowl{fill:none;stroke:var(--ny-gold);stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}
+.ny-glasssvg .ny-champagne{fill:var(--ny-gold);opacity:.18}
+.ny-glasssvg .ny-rim{fill:none;stroke:var(--ny-gold);stroke-width:1.6;stroke-linecap:round}
+.ny-glasssvg .ny-stem{fill:none;stroke:var(--ny-gold);stroke-width:1.6;stroke-linecap:round}
+.ny-glasssvg .ny-base{fill:none;stroke:var(--ny-gold);stroke-width:2;stroke-linecap:round}
+.ny-glasssvg .ny-bubble{fill:var(--ny-gold);opacity:.8}
+.ny-poppersvg{display:block;width:100%;height:auto;overflow:visible}
+.ny-poppersvg .ny-cone{fill:var(--ny-pink)}
+.ny-poppersvg .ny-cone-rim{fill:none;stroke:var(--ny-gold);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.ny-poppersvg .ny-streamer{fill:none;stroke:var(--ny-gold);stroke-width:1.8;stroke-linecap:round}
+.ny-poppersvg .ny-streamer-2{stroke:var(--ny-pink);stroke-width:1.6}
+.ny-poppersvg .ny-conf{fill:var(--ny-gold)}
+.ny-poppersvg .ny-conf-2{fill:var(--ny-blue)}
+.ny-poppersvg .ny-conf-3{fill:var(--ny-pink)}
+.ny-starsvg{display:block;width:100%;height:100%;fill:var(--ny-gold)}
+.ny-clocksvg{display:block;width:100%;height:100%;fill:none;stroke:var(--ny-ink);stroke-width:1.4;stroke-linecap:round;stroke-linejoin:round}
+.ny-hatsvg{display:block;width:100%;height:auto;overflow:visible}
+.ny-hatsvg .ny-hat{fill:var(--ny-pink)}
+.ny-hatsvg .ny-hat-band{fill:none;stroke:var(--ny-gold);stroke-width:1.4}
+.ny-hatsvg .ny-pom{fill:var(--ny-gold)}
+.ny-hatsvg .ny-hat-stripes{fill:none;stroke:var(--ny-gold);stroke-width:1.1;stroke-linecap:round}
+
+/* ------------------------------------------------------------ confetti -- */
+.ny-fall{position:fixed;inset:0;z-index:54;pointer-events:none;overflow:hidden}
+.ny-confetti{
+  position:absolute;top:-24px;left:var(--x);width:var(--w);height:var(--h);border-radius:1.5px;
+  background:var(--c);opacity:0;animation:ny-fall var(--dur) linear var(--delay) 1 both;
+}
+@keyframes ny-fall{
+  0%{transform:translate3d(0,-30px,0) rotate(0);opacity:0}
+  8%{opacity:.95}
+  88%{opacity:.8}
+  100%{transform:translate3d(var(--drift),105vh,0) rotate(540deg);opacity:0}
+}
+
+/* ---------------------------------------------------------- fireworks -- */
+.ny-fireworks{position:fixed;inset:0;z-index:55;pointer-events:none;overflow:hidden}
+.ny-firework{
+  position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);opacity:0;
+  animation:ny-firework-burst 1.8s ease-out var(--delay) 1 both;
+}
+@keyframes ny-firework-burst{
+  0%{transform:scale(.2);opacity:0}
+  12%{opacity:1}
+  70%{opacity:.9}
+  100%{transform:scale(1.15);opacity:0}
+}
+.ny-fireworks-still .ny-firework{animation:none;opacity:.85;transform:scale(1)}
+
+/* ------------------------------------------------------- header sparks -- */
+[data-season="newyear"] .hdr:has(> .ny-sparkles),
+[data-season="newyear"] .hdr:has(> .ny-hdrclock){position:relative}
+[data-season="newyear"] .hdr:has(> .ny-sparkles) > :not(.ny-sparkles):not(.ny-hdrclock),
+[data-season="newyear"] .hdr:has(> .ny-hdrclock) > :not(.ny-sparkles):not(.ny-hdrclock){position:relative;z-index:1}
+[data-season="newyear"] .ny-sparkles{position:absolute;inset:-6px 0 -4px;overflow:hidden;pointer-events:none;z-index:0}
+[data-season="newyear"] .ny-spark{
+  position:absolute;left:var(--x);top:var(--y);width:var(--size);height:var(--size);opacity:0;
+  animation:ny-twinkle 5s ease-in-out var(--delay) 4 both;
+}
+@keyframes ny-twinkle{
+  0%{transform:scale(.4);opacity:0}
+  18%{transform:scale(1);opacity:.9}
+  70%{opacity:.65}
+  100%{transform:scale(.5);opacity:0}
+}
+[data-season="newyear"] .ny-sparkles.ny-still .ny-spark{animation:none;opacity:.55}
+
+/* A midnight clock in the Stats header's quiet middle, left of its buttons. */
+[data-season="newyear"] .ny-hdrclock{
+  position:absolute;top:2px;inset-inline-end:112px;width:26px;height:26px;z-index:0;pointer-events:none;
+  opacity:.8;animation:ny-float 3s ease-in-out 6 alternate;
+}
+@keyframes ny-float{from{transform:translateY(0)}to{transform:translateY(-3px)}}
+
+/* ------------------------------------------------------------ home art -- */
+/* A champagne glass in the hero card's corner, under its content and never in a tap's way. */
+[data-season="newyear"] .card:has(> .ny-glass-br){position:relative}
+[data-season="newyear"] .ny-glass-br{position:absolute;right:0;bottom:0;width:32px;height:auto;pointer-events:none;opacity:.8}
+[dir="rtl"][data-season="newyear"] .ny-glass-br{right:auto;left:0}
+
+/* A firework in the plan card's empty top corner, behind its rows. */
+[data-season="newyear"] :is(.card, .sect-b):has(> .ny-fw-tr){position:relative}
+[data-season="newyear"] .ny-fw-tr{position:absolute;right:0;top:0;width:42px;height:42px;opacity:.35;pointer-events:none}
+[dir="rtl"][data-season="newyear"] .ny-fw-tr{right:auto;left:0}
+
+/* ------------------------------------------------------------ popper -- */
+/* Behind the top edge of its card: only the top and the burst show above it. */
+[data-season="newyear"] .card:has(> .ny-peek){position:relative}
+[data-season="newyear"] .ny-peek{
+  position:absolute;bottom:100%;inset-inline-end:52px;width:52px;height:22px;overflow:hidden;pointer-events:none;
+}
+[data-season="newyear"] .ny-popper{
+  all:unset;position:absolute;left:9px;top:1px;width:36px;height:33px;cursor:pointer;pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;animation:ny-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both;
+}
+[data-season="newyear"] .ny-popper.ny-hop{animation:ny-hop .5s cubic-bezier(.3,1.6,.5,1)}
+[data-season="newyear"] .ny-peek.ny-peek-two{width:66px;inset-inline-end:40px}
+.ny-peek-two .ny-hat-wrap{position:absolute;left:4px;top:2px;width:30px;animation:ny-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both}
+.ny-peek-two .ny-hat-s{left:36px;top:6px;width:24px;animation-delay:.85s}
+@keyframes ny-peek{from{transform:translateY(22px)}to{transform:none}}
+@keyframes ny-hop{0%{transform:none}35%{transform:translateY(-7px) rotate(-6deg)}70%{transform:translateY(1px) rotate(3deg)}100%{transform:none}}
+
+.ny-burstbox{position:fixed;width:0;height:0;z-index:58;pointer-events:none}
+.ny-burstbit{
+  position:absolute;left:-4px;top:-4px;width:8px;height:9px;border-radius:1.5px;background:var(--c);opacity:0;
+  animation:ny-burst 1.15s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes ny-burst{
+  0%{transform:translate3d(0,0,0) scale(.3) rotate(0);opacity:0}
+  12%{opacity:1}
+  70%{opacity:.9}
+  100%{transform:translate3d(var(--dx),var(--dy),0) scale(1.15) rotate(var(--r));opacity:0}
+}
+
+/* ---------------------------------------------------------------- Stats -- */
+/* Stars hanging into the empty end of a tile, from its top edge. */
+[data-season="newyear"] .ny-hang{position:absolute;top:0;inset-inline-end:20px;width:14px;animation:ny-bob 2.6s ease-in-out 6 alternate}
+[data-season="newyear"] .ny-hangthread{position:absolute;left:6.5px;top:0;width:1px;height:var(--len);background:var(--ny-thread)}
+[data-season="newyear"] .ny-hang .ny-starsvg{position:absolute;left:0;top:calc(var(--len) - 3px);width:14px;height:14px}
+[data-season="newyear"] .tile:has(> .ny-tilestars){position:relative}
+.ny-tilestars{position:absolute;top:0;inset-inline-end:20px;width:44px;height:0;pointer-events:none}
+.ny-tilestars .ny-hang{inset-inline-end:0}
+.ny-tilestars .ny-hang-b{inset-inline-end:26px;animation-duration:3.1s;animation-delay:.8s}
+@keyframes ny-bob{from{transform:translateY(0)}to{transform:translateY(3px)}}
+
+/* A small garland of stars in the activity card's top-right corner. */
+[data-season="newyear"] .card:has(> .ny-garland){position:relative}
+[data-season="newyear"] .card:has(> .ny-garland) > h2{position:relative;z-index:1}
+[data-season="newyear"] .ny-garland{position:absolute;top:-2px;inset-inline-end:12px;width:96px;height:20px;pointer-events:none}
+.ny-gstar{position:absolute;top:2px;width:16px;height:16px;animation:ny-sway 3s ease-in-out 4 alternate}
+.ny-gs0{inset-inline-end:0;top:7px}
+.ny-gs1{inset-inline-end:18px;top:3px;animation-delay:.2s}
+.ny-gs2{inset-inline-end:36px;top:0;animation-delay:.4s}
+.ny-gs3{inset-inline-end:54px;top:3px;animation-delay:.6s}
+.ny-gs4{inset-inline-end:72px;top:7px;animation-delay:.8s}
+@keyframes ny-sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+
+/* A firework in a card's bottom corner. */
+[data-season="newyear"] .card:has(> .ny-fw-bl){position:relative}
+[data-season="newyear"] .ny-fw-bl{position:absolute;left:0;bottom:0;width:50px;height:50px;opacity:.35;pointer-events:none}
+[dir="rtl"][data-season="newyear"] .ny-fw-bl{left:auto;right:0}
+
+/* --------------------------------------------------------- the workout -- */
+/* Nothing here takes a tap, and nothing moves anything: the firework sits under the header's own
+   content (isolation, z-index -1), from the screen's top corner, and the star hangs in the side
+   gutter, outside every button. */
+[data-season="newyear"] .whdr:has(> .ny-wcorner){isolation:isolate}
+[data-season="newyear"] .whdr:not(.stick):has(> .ny-wcorner){position:relative}
+[data-season="newyear"] .ny-wcorner{
+  position:absolute;z-index:-1;pointer-events:none;width:0;height:0;
+  top:calc(-1 * (var(--sat) + var(--conn, 0px) + 8px));inset-inline-start:calc(-1 * var(--pad));
+}
+[data-season="newyear"] .whdr.stick > .ny-wcorner{position:absolute;top:0;inset-inline-start:0}
+[data-season="newyear"] .ny-wcorner .ny-fw-tl{position:absolute;left:0;top:0;width:44px;height:44px;opacity:.65}
+[dir="rtl"][data-season="newyear"] .ny-wcorner .ny-fw-tl{left:auto;right:0}
+[data-season="newyear"] .ny-hang.ny-hang-w{right:auto;left:1px;top:calc(var(--sat) + var(--conn, 0px) + 8px);width:14px}
+[dir="rtl"][data-season="newyear"] .ny-hang.ny-hang-w{left:auto;right:1px}
+.ny-hang-w .ny-hangthread{left:6.5px}
+[data-season="newyear"] .ny-hang-w .ny-starsvg{width:14px;height:14px}
+
+/* The rest bar: four confetti pieces along its top edge, under its clock and buttons. */
+#timer > .ny-restconfetti{position:absolute;left:0;right:0;top:4px;height:11px;z-index:-1;pointer-events:none;overflow:hidden}
+.ny-rconf{position:absolute;left:0;top:0;width:7px;height:9px;border-radius:1.5px;background:var(--c);opacity:0;animation:ny-restfall 4.4s linear .4s 1 both}
+.ny-rc1{animation-delay:1.1s;animation-duration:5.2s}
+.ny-rc2{animation-delay:2s;animation-duration:4.8s}
+.ny-rc3{animation-delay:3s;animation-duration:5.6s}
+@keyframes ny-restfall{
+  0%{transform:translate3d(-8%,-4px,0) rotate(0);opacity:0}
+  10%,82%{opacity:.8}
+  100%{transform:translate3d(105%,2px,0) rotate(440deg);opacity:0}
+}
+
+/* The finish screen: a popper at each side of the trophy. */
+.ny-finish{position:absolute;inset:0;pointer-events:none}
+.ny-finish .ny-poppersvg{position:absolute;bottom:0;width:32px;height:auto}
+.ny-finish .ny-popper-l{right:calc(50% + 34px)}
+.ny-finish .ny-popper-r{left:calc(50% + 34px);width:26px;transform:scaleX(-1)}
+
+@media (prefers-reduced-motion: reduce){
+  .ny-fall,.ny-burstbox,.ny-restconfetti{display:none}
+  .ny-firework,
+  [data-season="newyear"] .ny-spark,
+  [data-season="newyear"] .ny-hdrclock,
+  [data-season="newyear"] .ny-popper,
+  [data-season="newyear"] .ny-hat-wrap,
+  [data-season="newyear"] .ny-hang,
+  [data-season="newyear"] .ny-gstar{animation:none}
+}

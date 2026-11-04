@@ -1,0 +1,216 @@
+/* Chinese New Year (seasonal/chinesenewyear.jsx). Loaded only while the theme shows, and scoped
+   to html[data-season="chinesenewyear"] so switching it off mid-session leaves nothing behind.
+   Transforms and opacity only; every animation runs a fixed number of times and stops. */
+
+:root[data-season="chinesenewyear"]{
+  --cny-red:#e63b4a;
+  --cny-red-2:#c92038;
+  --cny-gold:#ffd60a;
+  --cny-gold-2:#f4a51c;
+  --cny-pink:#ff8fb3;
+  --cny-ink:#f2e3a2;
+  --cny-thread:rgba(235,235,245,.42);
+  --cny-c1:var(--cny-red);
+  --cny-c2:var(--cny-gold);
+  --cny-c3:var(--cny-pink);
+}
+:root[data-season="chinesenewyear"][data-theme="light"]{
+  --cny-red:#d70015;
+  --cny-red-2:#b00020;
+  --cny-gold:#b25000;
+  --cny-gold-2:#8a5a00;
+  --cny-pink:#d93f6e;
+  --cny-ink:#7a3a00;
+  --cny-thread:rgba(60,60,67,.38);
+}
+
+/* ------------------------------------------------------------ the art -- */
+.cny-lanternsvg{display:block;width:100%;height:auto;overflow:visible}
+.cny-lanternsvg .cny-string{fill:none;stroke:var(--cny-ink);stroke-width:1.2;stroke-linecap:round}
+.cny-lanternsvg .cny-cap{fill:var(--cny-gold)}
+.cny-lanternsvg .cny-body{fill:var(--cny-red)}
+.cny-lanternsvg .cny-rib{fill:none;stroke:var(--cny-gold);stroke-width:1;stroke-linecap:round;opacity:.8}
+.cny-lanternsvg .cny-tassel{fill:none;stroke:var(--cny-gold);stroke-width:1.2;stroke-linecap:round}
+.cny-envsvg{display:block;width:100%;height:auto;overflow:visible}
+.cny-envsvg .cny-env{fill:var(--cny-red)}
+.cny-envsvg .cny-env-flap{fill:none;stroke:var(--cny-gold);stroke-width:1.2;stroke-linecap:round;stroke-linejoin:round}
+.cny-envsvg .cny-seal{fill:var(--cny-gold)}
+.cny-envsvg .cny-seal-mark{fill:none;stroke:var(--cny-red-2);stroke-width:1.2}
+.cny-blossomsvg{display:block;width:100%;height:100%;overflow:visible}
+.cny-blossomsvg .cny-petals{fill:var(--cny-pink)}
+.cny-blossomsvg .cny-center{fill:var(--cny-gold)}
+.cny-coinsvg{display:block;width:100%;height:100%;overflow:visible}
+.cny-coinsvg .cny-coin{fill:var(--cny-gold)}
+.cny-coinsvg .cny-hole{fill:none;stroke:var(--cny-red-2);stroke-width:1.3}
+
+/* --------------------------------------------------------------- dragon -- */
+.cny-dragonsvg{display:block;width:100%;height:auto;filter:drop-shadow(0 0 6px rgba(255,214,10,.45))}
+.cny-dragon-flight{
+  position:fixed;top:12vh;left:0;z-index:55;width:min(300px,80vw);pointer-events:none;
+  will-change:transform;animation:cny-dragon-fly 8.2s linear .35s both;
+}
+.cny-dragon-still{
+  position:fixed;top:calc(var(--sat) + var(--conn, 0px) + 8px);inset-inline-end:12px;
+  z-index:55;width:170px;pointer-events:none;opacity:.9;
+}
+@keyframes cny-dragon-fly{
+  0%{transform:translate3d(-82vw,-8vh,0) rotate(-4deg);opacity:0}
+  8%{opacity:1}
+  50%{transform:translate3d(20vw,5vh,0) rotate(2deg)}
+  92%{opacity:1}
+  100%{transform:translate3d(110vw,2vh,0) rotate(-2deg);opacity:0}
+}
+
+/* ------------------------------------------------------------ confetti -- */
+.cny-fall{position:fixed;inset:0;z-index:54;pointer-events:none;overflow:hidden}
+.cny-confetti{
+  position:absolute;top:-24px;left:var(--x);width:var(--w);height:var(--h);border-radius:1.5px;
+  background:var(--c);opacity:0;animation:cny-fall var(--dur) linear var(--delay) 1 both;
+}
+@keyframes cny-fall{
+  0%{transform:translate3d(0,-30px,0) rotate(0);opacity:0}
+  8%{opacity:.95}
+  88%{opacity:.8}
+  100%{transform:translate3d(var(--drift),105vh,0) rotate(540deg);opacity:0}
+}
+
+/* --------------------------------------------------------- header flowers -- */
+[data-season="chinesenewyear"] .hdr:has(> .cny-hblossoms),
+[data-season="chinesenewyear"] .hdr:has(> .cny-hdrblossom){position:relative}
+[data-season="chinesenewyear"] .hdr:has(> .cny-hblossoms) > :not(.cny-hblossoms):not(.cny-hdrblossom),
+[data-season="chinesenewyear"] .hdr:has(> .cny-hdrblossom) > :not(.cny-hblossoms):not(.cny-hdrblossom){position:relative;z-index:1}
+[data-season="chinesenewyear"] .cny-hblossoms{position:absolute;inset:-6px 0 -4px;overflow:hidden;pointer-events:none;z-index:0}
+[data-season="chinesenewyear"] .cny-hblossom{
+  position:absolute;top:-12px;left:var(--x);width:var(--size);height:var(--size);opacity:0;
+  animation:cny-hdrfall 7s ease-in-out var(--delay) 3 both;
+}
+@keyframes cny-hdrfall{
+  0%{transform:translate3d(0,-10px,0);opacity:0}
+  12%{opacity:.8}
+  80%{opacity:.65}
+  100%{transform:translate3d(var(--drift),34px,0);opacity:0}
+}
+[data-season="chinesenewyear"] .cny-hblossoms.cny-still .cny-hblossom{animation:none;opacity:.5;top:6px}
+[data-season="chinesenewyear"] .cny-hblossoms.cny-still .cny-hb2,
+[data-season="chinesenewyear"] .cny-hblossoms.cny-still .cny-hb4{top:14px;opacity:.35}
+
+/* A blossom in the Stats header's quiet middle, left of its buttons. */
+[data-season="chinesenewyear"] .cny-hdrblossom{
+  position:absolute;top:2px;inset-inline-end:112px;width:26px;height:26px;z-index:0;pointer-events:none;
+  opacity:.9;animation:cny-sway 3s ease-in-out 6 alternate;
+}
+
+/* ------------------------------------------------------------ home art -- */
+/* A lantern in the hero card's corner, under its content and never in a tap's way. */
+[data-season="chinesenewyear"] .card:has(> .cny-lantern-br){position:relative}
+[data-season="chinesenewyear"] .cny-lantern-br{position:absolute;right:0;bottom:0;width:44px;height:auto;pointer-events:none;opacity:.85}
+[dir="rtl"][data-season="chinesenewyear"] .cny-lantern-br{right:auto;left:0}
+
+/* A red envelope in the plan card's empty top corner, behind its rows. */
+[data-season="chinesenewyear"] :is(.card, .sect-b):has(> .cny-env-tr){position:relative}
+[data-season="chinesenewyear"] .cny-env-tr{position:absolute;right:0;top:0;width:38px;height:auto;opacity:.4;pointer-events:none}
+[dir="rtl"][data-season="chinesenewyear"] .cny-env-tr{right:auto;left:0}
+
+/* ---------------------------------------------------------- red envelope -- */
+/* Behind the top edge of its card: only the seal and the flap show above it. */
+[data-season="chinesenewyear"] .card:has(> .cny-peek){position:relative}
+[data-season="chinesenewyear"] .cny-peek{
+  position:absolute;bottom:100%;inset-inline-end:52px;width:52px;height:20px;overflow:hidden;pointer-events:none;
+}
+[data-season="chinesenewyear"] .cny-envelope{
+  all:unset;position:absolute;left:10px;top:1px;width:34px;height:28px;cursor:pointer;pointer-events:auto;
+  -webkit-tap-highlight-color:transparent;animation:cny-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both;
+}
+[data-season="chinesenewyear"] .cny-envelope.cny-hop{animation:cny-hop .5s cubic-bezier(.3,1.6,.5,1)}
+[data-season="chinesenewyear"] .cny-peek.cny-peek-two{width:66px;inset-inline-end:40px}
+.cny-peek-two .cny-env-wrap{position:absolute;left:4px;top:2px;width:30px;animation:cny-peek .9s cubic-bezier(.3,1.5,.5,1) .6s both}
+.cny-peek-two .cny-env-s{left:36px;top:6px;width:24px;animation-delay:.85s}
+@keyframes cny-peek{from{transform:translateY(20px)}to{transform:none}}
+@keyframes cny-hop{0%{transform:none}35%{transform:translateY(-7px) rotate(-6deg)}70%{transform:translateY(1px) rotate(3deg)}100%{transform:none}}
+
+.cny-burstbox{position:fixed;width:0;height:0;z-index:58;pointer-events:none}
+.cny-burstbit{
+  position:absolute;left:-4px;top:-4px;width:8px;height:9px;border-radius:1.5px;background:var(--c);opacity:0;
+  animation:cny-burst 1.15s cubic-bezier(.2,.7,.3,1) both;
+}
+@keyframes cny-burst{
+  0%{transform:translate3d(0,0,0) scale(.3) rotate(0);opacity:0}
+  12%{opacity:1}
+  70%{opacity:.9}
+  100%{transform:translate3d(var(--dx),var(--dy),0) scale(1.15) rotate(var(--r));opacity:0}
+}
+
+/* ---------------------------------------------------------------- Stats -- */
+/* Lanterns hanging into the empty end of a tile, from its top edge. */
+[data-season="chinesenewyear"] .cny-hang{position:absolute;top:0;inset-inline-end:20px;width:18px;animation:cny-bob 2.6s ease-in-out 6 alternate}
+[data-season="chinesenewyear"] .cny-hangthread{position:absolute;left:8.5px;top:0;width:1px;height:var(--len);background:var(--cny-thread)}
+[data-season="chinesenewyear"] .cny-hang .cny-lanternsvg{position:absolute;left:0;top:calc(var(--len) - 3px);width:18px;height:24px}
+[data-season="chinesenewyear"] .tile:has(> .cny-tilelanterns){position:relative}
+.cny-tilelanterns{position:absolute;top:0;inset-inline-end:20px;width:48px;height:0;pointer-events:none}
+.cny-tilelanterns .cny-hang{inset-inline-end:0}
+.cny-tilelanterns .cny-hang-b{inset-inline-end:28px;animation-duration:3.1s;animation-delay:.8s}
+@keyframes cny-bob{from{transform:translateY(0)}to{transform:translateY(3px)}}
+
+/* A small garland of gold coins in the activity card's top-right corner. */
+[data-season="chinesenewyear"] .card:has(> .cny-garland){position:relative}
+[data-season="chinesenewyear"] .card:has(> .cny-garland) > h2{position:relative;z-index:1}
+[data-season="chinesenewyear"] .cny-garland{position:absolute;top:-2px;inset-inline-end:12px;width:96px;height:20px;pointer-events:none}
+.cny-gcoin{position:absolute;top:2px;width:16px;height:16px;animation:cny-sway 3s ease-in-out 4 alternate}
+.cny-gc0{inset-inline-end:0;top:7px}
+.cny-gc1{inset-inline-end:18px;top:3px;animation-delay:.2s}
+.cny-gc2{inset-inline-end:36px;top:0;animation-delay:.4s}
+.cny-gc3{inset-inline-end:54px;top:3px;animation-delay:.6s}
+.cny-gc4{inset-inline-end:72px;top:7px;animation-delay:.8s}
+@keyframes cny-sway{from{transform:rotate(-6deg)}to{transform:rotate(6deg)}}
+
+/* A blossom in a card's bottom corner. */
+[data-season="chinesenewyear"] .card:has(> .cny-blossom-bl){position:relative}
+[data-season="chinesenewyear"] .cny-blossom-bl{position:absolute;left:0;bottom:0;width:46px;height:46px;opacity:.45;pointer-events:none}
+[dir="rtl"][data-season="chinesenewyear"] .cny-blossom-bl{left:auto;right:0}
+
+/* --------------------------------------------------------- the workout -- */
+/* Nothing here takes a tap, and nothing moves anything: the blossom sits under the header's own
+   content (isolation, z-index -1), from the screen's top corner, and the lantern hangs in the side
+   gutter, outside every button. */
+[data-season="chinesenewyear"] .whdr:has(> .cny-wcorner){isolation:isolate}
+[data-season="chinesenewyear"] .whdr:not(.stick):has(> .cny-wcorner){position:relative}
+[data-season="chinesenewyear"] .cny-wcorner{
+  position:absolute;z-index:-1;pointer-events:none;width:0;height:0;
+  top:calc(-1 * (var(--sat) + var(--conn, 0px) + 8px));inset-inline-start:calc(-1 * var(--pad));
+}
+[data-season="chinesenewyear"] .whdr.stick > .cny-wcorner{position:absolute;top:0;inset-inline-start:0}
+[data-season="chinesenewyear"] .cny-wcorner .cny-blossom-tl{position:absolute;left:0;top:0;width:42px;height:42px;opacity:.7}
+[dir="rtl"][data-season="chinesenewyear"] .cny-wcorner .cny-blossom-tl{left:auto;right:0}
+[data-season="chinesenewyear"] .cny-hang.cny-hang-w{right:auto;left:1px;top:calc(var(--sat) + var(--conn, 0px) + 8px);width:16px}
+[dir="rtl"][data-season="chinesenewyear"] .cny-hang.cny-hang-w{left:auto;right:1px}
+.cny-hang-w .cny-hangthread{left:7.5px}
+[data-season="chinesenewyear"] .cny-hang.cny-hang-w .cny-lanternsvg{width:16px;height:21px}
+
+/* The rest bar: four confetti pieces along its top edge, under its clock and buttons. */
+#timer > .cny-restconfetti{position:absolute;left:0;right:0;top:4px;height:11px;z-index:-1;pointer-events:none;overflow:hidden}
+.cny-rconf{position:absolute;left:0;top:0;width:7px;height:9px;border-radius:1.5px;background:var(--c);opacity:0;animation:cny-restfall 4.4s linear .4s 1 both}
+.cny-rc1{animation-delay:1.1s;animation-duration:5.2s}
+.cny-rc2{animation-delay:2s;animation-duration:4.8s}
+.cny-rc3{animation-delay:3s;animation-duration:5.6s}
+@keyframes cny-restfall{
+  0%{transform:translate3d(-8%,-4px,0) rotate(0);opacity:0}
+  10%,82%{opacity:.8}
+  100%{transform:translate3d(105%,2px,0) rotate(440deg);opacity:0}
+}
+
+/* The finish screen: a lantern at each side of the trophy. */
+.cny-finish{position:absolute;inset:0;pointer-events:none}
+.cny-finish .cny-lanternsvg{position:absolute;bottom:0;width:28px;height:auto}
+.cny-finish .cny-lantern-l{right:calc(50% + 34px)}
+.cny-finish .cny-lantern-r{left:calc(50% + 34px);width:22px}
+
+@media (prefers-reduced-motion: reduce){
+  .cny-fall,.cny-burstbox,.cny-restconfetti{display:none}
+  .cny-dragon-flight,
+  [data-season="chinesenewyear"] .cny-hblossom,
+  [data-season="chinesenewyear"] .cny-hdrblossom,
+  [data-season="chinesenewyear"] .cny-envelope,
+  [data-season="chinesenewyear"] .cny-env-wrap,
+  [data-season="chinesenewyear"] .cny-hang,
+  [data-season="chinesenewyear"] .cny-gcoin{animation:none}
+}
