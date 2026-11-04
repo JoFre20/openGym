@@ -157,6 +157,8 @@ tags:
     description: Per-user state sync (the whole app state as one JSON blob)
   - name: push
     description: Web Push (VAPID) subscriptions, rest-timer and test pushes
+  - name: social
+    description: Friends, squad stats, workout reactions and shared plans
   - name: activity
     description: Live-workout presence heartbeat
   - name: admin
@@ -2254,6 +2256,465 @@ paths:
               schema: { $ref: '#/components/schemas/Ok' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/social/me:
+    get:
+      tags: [social]
+      operationId: socialMe
+      summary: The caller's friend code, privacy settings, friends and pending requests
+      description: >-
+        Social data lives in `social.json`, separate from the synced profile state. The
+        caller's 6-character friend code is created on first use and stays stable. `pending`
+        carries both incoming requests (the caller may accept or decline) and outgoing ones
+        (shown as sent); `direction` says which. `planShares` is the number of unread plan
+        snapshots in the caller's inbox, used for the app's friends badge.
+      responses:
+        '200':
+          description: The caller's social profile.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SocialMe' }
+              example:
+                friendCode: "A7X-92B"
+                settings: { shareWorkouts: true, shareWeight: none }
+                friends:
+                  - { friendshipId: "fJ8sK2mQ", id: "u_2", name: "Ada", since: 1762000000000 }
+                pending:
+                  - { id: "fT4pL9xR", direction: incoming, userId: "u_3", name: "Ben", createdAt: 1762100000000 }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/social/settings:
+    put:
+      tags: [social]
+      operationId: socialSettings
+      summary: Update what friends may see
+      description: >-
+        Updates either field or both. `shareWorkouts` hides the caller's workouts from the
+        squad board and the activity feed. `shareWeight` is `none` (no weight), `absolute`
+        (the latest weigh-in and its trend) or `delta` (the trend only, never the number).
+        Missing fields are left as they are.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                shareWorkouts: { type: boolean }
+                shareWeight: { type: string, enum: [none, absolute, delta] }
+            example: { shareWorkouts: true, shareWeight: delta }
+      responses:
+        '200':
+          description: Saved. The full settings object is returned.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  settings: { $ref: '#/components/schemas/SocialSettings' }
+              example: { settings: { shareWorkouts: true, shareWeight: delta } }
+        '400':
+          description: A field has an unsupported value.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                workouts: { value: { error: "shareWorkouts must be true or false", code: "invalid-share-workouts" } }
+                weight: { value: { error: "shareWeight must be none, absolute or delta", code: "invalid-share-weight" } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/social/friends/request:
+    post:
+      tags: [social]
+      operationId: socialFriendRequest
+      summary: Send a friend request by friend code
+      description: >-
+        Creates one pending friendship. A second request for the same pair is refused, as is
+        one to the caller's own code. When the target has Web Push subscriptions, they get a
+        notification naming the caller. At most 20 requests an hour per profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [friendCode]
+              properties:
+                friendCode:
+                  type: string
+                  description: The other profile's code, with or without the hyphen, case-insensitive.
+            example: { friendCode: "A7X-92B" }
+      responses:
+        '200':
+          description: Request created.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  request: { $ref: '#/components/schemas/SocialPending' }
+              example:
+                request: { id: "fT4pL9xR", direction: outgoing, userId: "u_2", name: "Ada", createdAt: 1762100000000 }
+        '400':
+          description: Not a friend code, or the caller's own.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                malformed: { value: { error: "that is not a friend code", code: "invalid-friend-code" } }
+                own: { value: { error: "that is your own friend code", code: "own-friend-code" } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No active profile carries that code.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no profile has that friend code", code: "friend-code-not-found" }
+        '409':
+          description: A friendship or request already exists in either direction.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                friends: { value: { error: "you are already friends", code: "already-friends" } }
+                sent: { value: { error: "request already sent", code: "already-requested", requestId: "fT4pL9xR" } }
+                incoming: { value: { error: "this person already sent you a request", code: "incoming-request", requestId: "fT4pL9xR" } }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/social/friends/respond:
+    post:
+      tags: [social]
+      operationId: socialFriendRespond
+      summary: Accept, decline or remove a friendship
+      description: >-
+        `accept` and `decline` are for the profile that received the request. `remove` works
+        for either side and also cancels a pending request. Removing a friendship deletes the
+        reactions the two profiles left on each other's workouts.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [requestId, action]
+              properties:
+                requestId: { type: string, description: The `id` from `GET /api/social/me` or a friend request. }
+                action: { type: string, enum: [accept, decline, remove] }
+            example: { requestId: "fT4pL9xR", action: accept }
+      responses:
+        '200':
+          description: Accepted (with the friend), or declined/removed.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  friend: { $ref: '#/components/schemas/SocialFriend' }
+              examples:
+                accepted:
+                  value: { ok: true, friend: { friendshipId: "fT4pL9xR", id: "u_2", name: "Ada", since: 1762100000000 } }
+                removed: { value: { ok: true } }
+        '400':
+          description: Unknown action.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "action must be accept, decline or remove", code: "invalid-action" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The caller is the sender, not the recipient of this request.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "only the person who received the request can do that", code: "not-recipient" }
+        '404':
+          description: No such request for this caller.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such friend request", code: "request-not-found" }
+        '409':
+          description: The request was already accepted or otherwise is no longer pending.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "this request is no longer pending", code: "not-pending" }
+
+  /api/social/feed:
+    get:
+      tags: [social]
+      operationId: socialFeed
+      summary: Squad stats and the friends' recent workouts
+      description: >-
+        Reads only confirmed friends whose `shareWorkouts` is on, from their own state files.
+        `squadStats` has one row per confirmed friend: workouts since their own week start
+        and weight progress filtered by their `shareWeight`. `feed` holds the last 30 workouts
+        across all friends, newest first, with volume, duration, PR exercise ids, up to three
+        top sets and the three supported reactions. A friend who turned workout sharing off
+        has `workoutsThisWeek: null` and is absent from `feed`; their weight can still appear
+        if they share it.
+      responses:
+        '200':
+          description: The squad board and activity feed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SocialFeed' }
+              example:
+                weekStart: "2026-10-27"
+                squadStats:
+                  - { id: "u_2", name: "Ada", workoutsThisWeek: 3, weight: { mode: absolute, unit: kg, current: 78.4, delta: -0.6, since: "2026-10-06", trend: down } }
+                  - { id: "u_3", name: "Ben", workoutsThisWeek: null, weight: null }
+                feed:
+                  - workoutId: "u_2:8k2m1"
+                    friend: { id: "u_2", name: "Ada" }
+                    date: "2026-11-01"
+                    name: "Push Day"
+                    start: 1762000000000
+                    end: 1762003600000
+                    durationSec: 3600
+                    volume: 8400
+                    unit: kg
+                    prs: ["0025"]
+                    prCount: 1
+                    topSets:
+                      - { exerciseId: "0025", weight: 80, reps: 5 }
+                    reactions:
+                      "🔥": { count: 2, mine: true }
+                      "💪": { count: 0, mine: false }
+                      "👑": { count: 0, mine: false }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/social/react:
+    post:
+      tags: [social]
+      operationId: socialReact
+      summary: React to a friend's workout
+      description: >-
+        Stores one reaction per caller per workout; sending a different emoji replaces the
+        previous one. The workout's owner gets a Web Push notification. `workoutId` is the
+        value returned in `feed` (owner id plus the workout's own id). At most 120 reactions
+        an hour per profile.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [workoutId, emoji]
+              properties:
+                workoutId: { type: string, description: The `workoutId` from `GET /api/social/feed`. }
+                emoji: { type: string, enum: ["🔥", "💪", "👑"] }
+            example: { workoutId: "u_2:8k2m1", emoji: "🔥" }
+      responses:
+        '200':
+          description: The reaction counts for that workout.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  reactions: { $ref: '#/components/schemas/SocialReactions' }
+        '400':
+          description: Missing workout, or an emoji outside the three supported ones.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                workout: { value: { error: "workoutId required", code: "workout-required" } }
+                emoji: { value: { error: "unsupported reaction", code: "invalid-emoji" } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: The workout belongs to no confirmed friend, or its owner turned sharing off.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                stranger: { value: { error: "you can only react to a friend workout", code: "not-friends" } }
+                hidden: { value: { error: "that friend does not share workouts", code: "not-shared" } }
+        '404':
+          description: No workout with that id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "workout not found", code: "workout-not-found" }
+        '409':
+          description: A bare workout id is shared by more than one friend; send the full `feed` id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that workout id belongs to more than one friend", code: "workout-ambiguous" }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/social/plans/share:
+    post:
+      tags: [social]
+      operationId: socialPlanShare
+      summary: Send a plan snapshot to one or more friends
+      description: >-
+        Stores one snapshot per recipient in `social.json` and sends a Web Push to each friend
+        that has subscriptions. The plan is the same self-contained bundle the file export
+        writes (`opengym_plan`, routines, week and the custom exercises they use); neither
+        profile's synced state is changed. Recipients choose whether to import it. Only accepted
+        friends are allowed. At most 20 friends per send, 20 sends an hour per profile, 10
+        unread snapshots per recipient and 256 KiB per plan; the oldest unread snapshot is
+        dropped when the recipient exceeds 10.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [friendIds, plan]
+              properties:
+                friendIds:
+                  type: array
+                  minItems: 1
+                  maxItems: 20
+                  items: { type: string, description: A friend's user id from `GET /api/social/me`. }
+                plan:
+                  type: object
+                  description: The bundle from the client's plan export.
+                  required: [opengym_plan, routines]
+                  properties:
+                    opengym_plan: { type: integer, example: 1 }
+                    name: { type: string, maxLength: 120 }
+                    unit: { type: string, enum: [kg, lb] }
+                    week: { type: object, additionalProperties: true }
+                    routines: { type: array, items: { type: object, additionalProperties: true } }
+                    customEx: { type: array, items: { type: object, additionalProperties: true } }
+                  additionalProperties: true
+            example:
+              friendIds: ["u_2"]
+              plan:
+                opengym_plan: 1
+                name: "Ada's plan"
+                unit: kg
+                week: { 1: ["r1"] }
+                routines:
+                  - id: r1
+                    name: Push
+                    ex: [{ id: "0025", sets: 3, reps: 5, weight: 80 }]
+                customEx: []
+      responses:
+        '200':
+          description: Snapshots stored. `shared` is the number of recipients.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  shared: { type: integer }
+              example: { ok: true, shared: 1 }
+        '400':
+          description: No usable friend ids, an empty plan, or a plan that is not an openGym bundle.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                friends: { value: { error: "friendIds must be one or more friend ids", code: "invalid-friends" } }
+                empty: { value: { error: "the plan has no exercises", code: "plan-empty" } }
+                invalid: { value: { error: "that is not an openGym plan", code: "plan-invalid" } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: One or more ids belong to no accepted friend.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "you can only share a plan with a friend", code: "friend-not-found" }
+        '413':
+          description: The plan is larger than 256 KiB.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "the plan is too large to share", code: "plan-too-large" }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/social/plans:
+    get:
+      tags: [social]
+      operationId: socialPlans
+      summary: Plans shared with the caller and plans they sent
+      description: >-
+        Returns metadata only; the plan snapshot itself is fetched with
+        `GET /api/social/plans/plan`. `received` rows name the sender in `from`; `sent` rows
+        name the recipient in `to`. Rows for a disabled or deleted profile are left out.
+      responses:
+        '200':
+          description: The caller's plan inbox and outbox, newest first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SocialPlans' }
+              example:
+                received:
+                  - { id: "pJ8sK2mQ", from: { id: "u_2", name: "Ada" }, name: "Ada's plan", unit: kg, routineCount: 4, exerciseCount: 27, scheduledDays: 5, createdAt: 1762100000000 }
+                sent: []
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/social/plans/plan:
+    get:
+      tags: [social]
+      operationId: socialPlanBundle
+      summary: The plan snapshot behind one share
+      description: >-
+        Readable by the sender and the recipient. The client validates it with the same
+        `parsePlan` used for an imported plan file before merging anything.
+      parameters:
+        - name: shareId
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The stored plan bundle.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  plan: { type: object, additionalProperties: true }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No such share for this caller.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that shared plan is not available", code: "share-not-found" }
+
+  /api/social/plans/remove:
+    post:
+      tags: [social]
+      operationId: socialPlanRemove
+      summary: Remove a shared plan snapshot
+      description: >-
+        The sender can revoke an unread share and the recipient can dismiss it. Removing a
+        snapshot never touches routines either side already imported: importing is a copy, not
+        a subscription.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [shareId]
+              properties:
+                shareId: { type: string, description: The `id` from `GET /api/social/plans`. }
+            example: { shareId: "pJ8sK2mQ" }
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: No such share for this caller.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that shared plan is not available", code: "share-not-found" }
+
   /api/activity:
     post:
       tags: [activity]
@@ -3602,6 +4063,187 @@ components:
             userHandle: { type: string }
           additionalProperties: true
       additionalProperties: true
+
+    # ------------------------------------------------------------------ social
+    SocialSettings:
+      type: object
+      required: [shareWorkouts, shareWeight]
+      properties:
+        shareWorkouts:
+          type: boolean
+          description: Show the profile's workouts on friends' squad board and activity feed.
+        shareWeight:
+          type: string
+          enum: [none, absolute, delta]
+          description: >-
+            `none` shares no body weight; `absolute` shares the latest weigh-in and its trend;
+            `delta` shares only the change and never the number.
+
+    SocialFriend:
+      type: object
+      properties:
+        friendshipId: { type: string, description: Send this as `requestId` to remove the friendship. }
+        id: { type: string, description: The friend's user id. }
+        name: { type: string }
+        since: { type: number, description: When the friendship was accepted, ms since epoch. }
+
+    SocialPending:
+      type: object
+      properties:
+        id: { type: string, description: Send this as `requestId` to accept, decline or remove. }
+        direction: { type: string, enum: [incoming, outgoing] }
+        userId: { type: string, description: The other profile's user id. }
+        name: { type: string }
+        createdAt: { type: number, description: When the request was made, ms since epoch. }
+
+    SocialMe:
+      type: object
+      properties:
+        friendCode: { type: string, pattern: '^[A-Z0-9]{3}-[A-Z0-9]{3}$', example: "A7X-92B" }
+        settings: { $ref: '#/components/schemas/SocialSettings' }
+        friends:
+          type: array
+          items: { $ref: '#/components/schemas/SocialFriend' }
+        pending:
+          type: array
+          description: Incoming and outgoing requests, newest first.
+          items: { $ref: '#/components/schemas/SocialPending' }
+        planShares:
+          type: integer
+          description: Unread plan snapshots in the caller's inbox, for the friends badge.
+
+    SocialPlanPeer:
+      type: object
+      properties:
+        id: { type: string, description: The other profile's user id. }
+        name: { type: string }
+
+    SocialPlanShare:
+      type: object
+      description: One plan snapshot, as shown in the inbox or the sender's outbox.
+      properties:
+        id: { type: string, description: Send this to the plan bundle and remove routes. }
+        from: { $ref: '#/components/schemas/SocialPlanPeer' }
+        to: { $ref: '#/components/schemas/SocialPlanPeer' }
+        name: { type: string, description: The plan's own name, trimmed; empty when it had none. }
+        unit: { type: string, enum: [kg, lb], description: The unit the snapshot's numbers were written in. }
+        routineCount: { type: integer }
+        exerciseCount: { type: integer }
+        scheduledDays: { type: integer, description: Weekdays with at least one routine. }
+        createdAt: { type: number, description: ms since epoch }
+
+    SocialPlans:
+      type: object
+      properties:
+        received:
+          type: array
+          description: Snapshots friends sent the caller, newest first.
+          items: { $ref: '#/components/schemas/SocialPlanShare' }
+        sent:
+          type: array
+          description: Snapshots the caller sent that are still open, newest first.
+          items: { $ref: '#/components/schemas/SocialPlanShare' }
+
+    SocialWeight:
+      type: object
+      required: [mode, unit]
+      properties:
+        mode: { type: string, enum: [absolute, delta] }
+        unit: { type: string, enum: [kg, lb], description: The friend's own display unit. }
+        current:
+          type: number
+          description: The latest weigh-in. Present only in `absolute` mode.
+        delta:
+          type: number
+          description: >-
+            Latest weigh-in minus the earliest one in the last 30 days, in `unit`. Absent
+            when there are not two weigh-ins to compare.
+        since: { type: string, format: date, description: The date the delta is measured from. }
+        trend: { type: string, enum: [up, down, flat], description: Derived from `delta`. }
+
+    SquadStat:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        workoutsThisWeek:
+          oneOf: [{ type: integer }, { type: 'null' }]
+          description: >-
+            Finished workouts in the friend's current week. `null` when they turned workout
+            sharing off or their state cannot be read.
+        weight:
+          oneOf: [{ $ref: '#/components/schemas/SocialWeight' }, { type: 'null' }]
+          description: Null when the friend shares no weight, or has no weigh-ins to show.
+
+    SocialReaction:
+      type: object
+      required: [count, mine]
+      properties:
+        count: { type: integer }
+        mine: { type: boolean, description: Whether the caller left this reaction. }
+
+    SocialReactions:
+      type: object
+      properties:
+        "🔥": { $ref: '#/components/schemas/SocialReaction' }
+        "💪": { $ref: '#/components/schemas/SocialReaction' }
+        "👑": { $ref: '#/components/schemas/SocialReaction' }
+
+    SocialTopSet:
+      type: object
+      properties:
+        exerciseId: { type: string, description: The exercise id; the client resolves its catalogue name. }
+        name:
+          type: string
+          description: >-
+            The friend's own name for this exercise, present only when it is one of their custom
+            exercises. The client uses it when the id is not in the shared catalogue.
+        weight: { type: number }
+        reps: { type: integer }
+
+    SocialFeedWorkout:
+      type: object
+      description: One completed workout of a confirmed friend, as the feed shows it.
+      properties:
+        workoutId:
+          type: string
+          description: >-
+            Stable id for a reaction: the owner's user id, a colon, then the workout's own id
+            (or its date and start when an older workout has no id).
+        friend:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        date: { type: string, format: date }
+        name: { type: string }
+        start: { type: number, description: ms since epoch }
+        end: { type: number }
+        durationSec: { type: integer }
+        volume: { type: integer, description: Work-set volume in the friend's unit. }
+        unit: { type: string, enum: [kg, lb] }
+        prs:
+          type: array
+          description: Exercise ids that hit a personal record in that workout.
+          items: { type: string }
+        prCount: { type: integer }
+        topSets:
+          type: array
+          description: Up to three heaviest completed work sets, one per exercise.
+          items: { $ref: '#/components/schemas/SocialTopSet' }
+        reactions: { $ref: '#/components/schemas/SocialReactions' }
+
+    SocialFeed:
+      type: object
+      properties:
+        weekStart: { type: string, format: date, description: The caller's first day of the current week. }
+        squadStats:
+          type: array
+          items: { $ref: '#/components/schemas/SquadStat' }
+        feed:
+          type: array
+          description: The last 30 workouts across confirmed friends, newest first.
+          items: { $ref: '#/components/schemas/SocialFeedWorkout' }
 
     # ------------------------------------------------------------------ state sync
     State:

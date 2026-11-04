@@ -330,3 +330,30 @@ describe('pushSupported', () => {
     expect(location.protocol).toBe('https:')
   })
 })
+
+describe('pushRoutePath', () => {
+  it('turns a notification URL into a router path, including under a subpath', async () => {
+    const { pushRoutePath } = await import('./push.js')
+    expect(pushRoutePath({ type: 'opengym:open', url: '#/social' })).toBe('/social')
+    expect(pushRoutePath({ type: 'opengym:open', url: 'https://gym.test/myGym/#/social' })).toBe('/social')
+  })
+
+  it('ignores messages that are not a navigation, and URLs that are not a route', async () => {
+    const { pushRoutePath } = await import('./push.js')
+    expect(pushRoutePath(null)).toBeNull()
+    expect(pushRoutePath({ type: 'other', url: '#/social' })).toBeNull()
+    expect(pushRoutePath({ type: 'opengym:open' })).toBeNull()
+    expect(pushRoutePath({ type: 'opengym:open', url: 'https://gym.test/' })).toBeNull()
+    expect(pushRoutePath({ type: 'opengym:open', url: 'not a url' })).toBeNull()
+  })
+})
+
+describe('pushCanNavigate', () => {
+  it('lets a notification through unless a workout is running', async () => {
+    const { pushCanNavigate } = await import('./push.js')
+    expect(pushCanNavigate({})).toBe(true)
+    expect(pushCanNavigate({ active: null })).toBe(true)
+    expect(pushCanNavigate({ active: { name: 'Push Day' } })).toBe(false)
+    expect(pushCanNavigate({ active: { name: 'Push Day', editingWorkoutId: 'w1' } })).toBe(true)
+  })
+})

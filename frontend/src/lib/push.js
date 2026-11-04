@@ -138,3 +138,17 @@ export async function syncPushSubscription() {
 }
 
 export const sendTestPush = () => api('/api/push/test', { method: 'POST', body: '{}' })
+
+export function pushRoutePath(data) {
+  if (!data || data.type !== 'opengym:open' || typeof data.url !== 'string') return null
+  try {
+    const base = typeof location !== 'undefined' ? location.href : 'https://localhost/'
+    const url = new URL(data.url, base)
+    const path = url.hash.replace(/^#/, '')
+    return path.startsWith('/') ? path : null
+  } catch {
+    return null
+  }
+}
+
+export const pushCanNavigate = S => !(S?.active && !S.active.editingWorkoutId)

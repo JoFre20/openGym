@@ -219,6 +219,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <a class="side-link" href="#passkeys"><b>Passkeys</b><span>More passkeys &amp; device links</span></a>
   <a class="side-link" href="#data"><b>Data</b><span>State sync</span></a>
   <a class="side-link" href="#push"><b>Push</b><span>Notifications &amp; rest timer</span></a>
+  <a class="side-link" href="#social"><b>Social</b><span>Friends, squad stats &amp; reactions</span></a>
   <a class="side-link" href="#activity"><b>Activity</b><span>Live presence</span></a>
   <a class="side-link" href="#media"><b>Media</b><span>Photos &amp; videos of your exercises &amp; workouts</span></a>
   <a class="side-link" href="#coach"><b>AI Coach</b><span>Plans, reviews, debriefs</span></a>
@@ -245,7 +246,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.3</span>
-    <span>75 endpoints</span>
+    <span>85 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -1898,6 +1899,493 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow rrow">
     <span class="r-code s4">401</span>
     <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+  </div>
+</section>
+
+<section class="api-sec" id="social">
+  <h2>Social</h2>
+  <p class="sub">Friends, squad stats, workout reactions and shared plans</p>
+  <div class="eps">
+
+<details class="ep" id="op-socialMe">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/social/me</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">The caller's friend code, privacy settings, friends and pending requests</span>
+  </summary>
+  <div class="ep-body">
+<p>Social data lives in <code>social.json</code>, separate from the synced profile state. The caller's 6-character friend code is created on first use and stays stable. <code>pending</code> carries both incoming requests (the caller may accept or decline) and outgoing ones (shown as sent); <code>direction</code> says which. <code>planShares</code> is the number of unread plan snapshots in the caller's inbox, used for the app's friends badge.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The caller's social profile.<span class="r-sig"><a href="#schema-SocialMe">SocialMe</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialSettings">
+  <summary>
+    <span class="m put">PUT</span>
+    <span class="ep-path"><code>/api/social/settings</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Update what friends may see</span>
+  </summary>
+  <div class="ep-body">
+<p>Updates either field or both. <code>shareWorkouts</code> hides the caller's workouts from the squad board and the activity feed. <code>shareWeight</code> is <code>none</code> (no weight), <code>absolute</code> (the latest weigh-in and its trend) or <code>delta</code> (the trend only, never the number). Missing fields are left as they are.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">shareWorkouts</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">shareWeight</span>
+    <span class="p-type">&quot;none&quot; | &quot;absolute&quot; | &quot;delta&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+<pre><code>{
+  &quot;shareWorkouts&quot;: true,
+  &quot;shareWeight&quot;: &quot;delta&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Saved. The full settings object is returned.<span class="r-sig">{ settings: <a href="#schema-SocialSettings">SocialSettings</a> }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">A field has an unsupported value.<span class="r-sig"><code>{&quot;error&quot;:&quot;shareWorkouts must be true or false&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;shareWeight must be none, absolute or delta&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialFriendRequest">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/friends/request</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Send a friend request by friend code</span>
+  </summary>
+  <div class="ep-body">
+<p>Creates one pending friendship. A second request for the same pair is refused, as is one to the caller's own code. When the target has Web Push subscriptions, they get a notification naming the caller. At most 20 requests an hour per profile.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">friendCode<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The other profile's code, with or without the hyphen, case-insensitive.</span>
+  </div>
+</div>
+<pre><code>{
+  &quot;friendCode&quot;: &quot;A7X-92B&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Request created.<span class="r-sig">{ request: <a href="#schema-SocialPending">SocialPending</a> }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Not a friend code, or the caller's own.<span class="r-sig"><code>{&quot;error&quot;:&quot;that is not a friend code&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;that is your own friend code&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No active profile carries that code.<span class="r-sig"><code>{&quot;error&quot;:&quot;no profile has that friend code&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">A friendship or request already exists in either direction.<span class="r-sig"><code>{&quot;error&quot;:&quot;you are already friends&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;request already sent&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;this person already sent you a request&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Paused by the sign-in throttle (see <i>Throttling</i> in the description). The request was not looked at; try again after <code>Retry-After</code> seconds.<span class="r-sig"><code>{&quot;error&quot;:&quot;too many attempts, try again later&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialFriendRespond">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/friends/respond</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Accept, decline or remove a friendship</span>
+  </summary>
+  <div class="ep-body">
+<p><code>accept</code> and <code>decline</code> are for the profile that received the request. <code>remove</code> works for either side and also cancels a pending request. Removing a friendship deletes the reactions the two profiles left on each other's workouts.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">requestId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The <code>id</code> from <code>GET /api/social/me</code> or a friend request.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">action<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;accept&quot; | &quot;decline&quot; | &quot;remove&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+<pre><code>{
+  &quot;requestId&quot;: &quot;fT4pL9xR&quot;,
+  &quot;action&quot;: &quot;accept&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Accepted (with the friend), or declined/removed.<span class="r-sig">{ ok: always true, friend: <a href="#schema-SocialFriend">SocialFriend</a> }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Unknown action.<span class="r-sig"><code>{&quot;error&quot;:&quot;action must be accept, decline or remove&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">The caller is the sender, not the recipient of this request.<span class="r-sig"><code>{&quot;error&quot;:&quot;only the person who received the request can do that&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such request for this caller.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such friend request&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">The request was already accepted or otherwise is no longer pending.<span class="r-sig"><code>{&quot;error&quot;:&quot;this request is no longer pending&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialFeed">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/social/feed</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Squad stats and the friends' recent workouts</span>
+  </summary>
+  <div class="ep-body">
+<p>Reads only confirmed friends whose <code>shareWorkouts</code> is on, from their own state files. <code>squadStats</code> has one row per confirmed friend: workouts since their own week start and weight progress filtered by their <code>shareWeight</code>. <code>feed</code> holds the last 30 workouts across all friends, newest first, with volume, duration, PR exercise ids, up to three top sets and the three supported reactions. A friend who turned workout sharing off has <code>workoutsThisWeek: null</code> and is absent from <code>feed</code>; their weight can still appear if they share it.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The squad board and activity feed.<span class="r-sig"><a href="#schema-SocialFeed">SocialFeed</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialReact">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/react</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">React to a friend's workout</span>
+  </summary>
+  <div class="ep-body">
+<p>Stores one reaction per caller per workout; sending a different emoji replaces the previous one. The workout's owner gets a Web Push notification. <code>workoutId</code> is the value returned in <code>feed</code> (owner id plus the workout's own id). At most 120 reactions an hour per profile.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">workoutId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The <code>workoutId</code> from <code>GET /api/social/feed</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">emoji<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;🔥&quot; | &quot;💪&quot; | &quot;👑&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+<pre><code>{
+  &quot;workoutId&quot;: &quot;u_2:8k2m1&quot;,
+  &quot;emoji&quot;: &quot;🔥&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The reaction counts for that workout.<span class="r-sig">{ ok: always true, reactions: <a href="#schema-SocialReactions">SocialReactions</a> }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Missing workout, or an emoji outside the three supported ones.<span class="r-sig"><code>{&quot;error&quot;:&quot;workoutId required&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;unsupported reaction&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">The workout belongs to no confirmed friend, or its owner turned sharing off.<span class="r-sig"><code>{&quot;error&quot;:&quot;you can only react to a friend workout&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;that friend does not share workouts&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No workout with that id.<span class="r-sig"><code>{&quot;error&quot;:&quot;workout not found&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">A bare workout id is shared by more than one friend; send the full <code>feed</code> id.<span class="r-sig"><code>{&quot;error&quot;:&quot;that workout id belongs to more than one friend&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Paused by the sign-in throttle (see <i>Throttling</i> in the description). The request was not looked at; try again after <code>Retry-After</code> seconds.<span class="r-sig"><code>{&quot;error&quot;:&quot;too many attempts, try again later&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialPlanShare">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/plans/share</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Send a plan snapshot to one or more friends</span>
+  </summary>
+  <div class="ep-body">
+<p>Stores one snapshot per recipient in <code>social.json</code> and sends a Web Push to each friend that has subscriptions. The plan is the same self-contained bundle the file export writes (<code>opengym_plan</code>, routines, week and the custom exercises they use); neither profile's synced state is changed. Recipients choose whether to import it. Only accepted friends are allowed. At most 20 friends per send, 20 sends an hour per profile, 10 unread snapshots per recipient and 256 KiB per plan; the oldest unread snapshot is dropped when the recipient exceeds 10.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">friendIds<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string[]</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan<em class="p-req" title="required">required</em></span>
+    <span class="p-type">object</span>
+    <span class="p-desc">The bundle from the client's plan export.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.opengym_plan<em class="p-req" title="required">required</em></span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.name</span>
+    <span class="p-type">string <span class="p-hint">(&le; 120 chars)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.unit</span>
+    <span class="p-type">&quot;kg&quot; | &quot;lb&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.week</span>
+    <span class="p-type">object</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.routines<em class="p-req" title="required">required</em></span>
+    <span class="p-type">object[]</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">plan.customEx</span>
+    <span class="p-type">object[]</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+<pre><code>{
+  &quot;friendIds&quot;: [
+    &quot;u_2&quot;
+  ],
+  &quot;plan&quot;: {
+    &quot;opengym_plan&quot;: 1,
+    &quot;name&quot;: &quot;Ada's plan&quot;,
+    &quot;unit&quot;: &quot;kg&quot;,
+    &quot;week&quot;: {
+      &quot;1&quot;: [
+        &quot;r1&quot;
+      ]
+    },
+    &quot;routines&quot;: [
+      {
+        &quot;id&quot;: &quot;r1&quot;,
+        &quot;name&quot;: &quot;Push&quot;,
+        &quot;ex&quot;: [
+          {
+            &quot;id&quot;: &quot;0025&quot;,
+            &quot;sets&quot;: 3,
+            &quot;reps&quot;: 5,
+            &quot;weight&quot;: 80
+          }
+        ]
+      }
+    ],
+    &quot;customEx&quot;: []
+  }
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Snapshots stored. <code>shared</code> is the number of recipients.<span class="r-sig">{ ok: always true, shared: integer }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">No usable friend ids, an empty plan, or a plan that is not an openGym bundle.<span class="r-sig"><code>{&quot;error&quot;:&quot;friendIds must be one or more friend ids&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;the plan has no exercises&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;that is not an openGym plan&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">403</span>
+    <span class="p-desc">One or more ids belong to no accepted friend.<span class="r-sig"><code>{&quot;error&quot;:&quot;you can only share a plan with a friend&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">413</span>
+    <span class="p-desc">The plan is larger than 256 KiB.<span class="r-sig"><code>{&quot;error&quot;:&quot;the plan is too large to share&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Paused by the sign-in throttle (see <i>Throttling</i> in the description). The request was not looked at; try again after <code>Retry-After</code> seconds.<span class="r-sig"><code>{&quot;error&quot;:&quot;too many attempts, try again later&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialPlans">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/social/plans</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Plans shared with the caller and plans they sent</span>
+  </summary>
+  <div class="ep-body">
+<p>Returns metadata only; the plan snapshot itself is fetched with <code>GET /api/social/plans/plan</code>. <code>received</code> rows name the sender in <code>from</code>; <code>sent</code> rows name the recipient in <code>to</code>. Rows for a disabled or deleted profile are left out.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The caller's plan inbox and outbox, newest first.<span class="r-sig"><a href="#schema-SocialPlans">SocialPlans</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialPlanBundle">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/social/plans/plan</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">The plan snapshot behind one share</span>
+  </summary>
+  <div class="ep-body">
+<p>Readable by the sender and the recipient. The client validates it with the same <code>parsePlan</code> used for an imported plan file before merging anything.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+<p class="ep-h">Query parameters</p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">shareId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The stored plan bundle.<span class="r-sig">{ plan: object }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such share for this caller.<span class="r-sig"><code>{&quot;error&quot;:&quot;that shared plan is not available&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialPlanRemove">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/plans/remove</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Remove a shared plan snapshot</span>
+  </summary>
+  <div class="ep-body">
+<p>The sender can revoke an unread share and the recipient can dismiss it. Removing a snapshot never touches routines either side already imported: importing is a copy, not a subscription.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">shareId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The <code>id</code> from <code>GET /api/social/plans</code>.</span>
+  </div>
+</div>
+<pre><code>{
+  &quot;shareId&quot;: &quot;pJ8sK2mQ&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Removed.<span class="r-sig"><a href="#schema-Ok">Ok</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">No such share for this caller.<span class="r-sig"><code>{&quot;error&quot;:&quot;that shared plan is not available&quot;}</code></span></span>
   </div>
     </div>
   </div>
@@ -3836,6 +4324,518 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">response.userHandle</span>
     <span class="p-type">string</span>
     <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialSettings">
+  <summary>
+    <span class="sch-name"><code>SocialSettings</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">shareWorkouts<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Show the profile's workouts on friends' squad board and activity feed.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">shareWeight<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;none&quot; | &quot;absolute&quot; | &quot;delta&quot;</span>
+    <span class="p-desc"><code>none</code> shares no body weight; <code>absolute</code> shares the latest weigh-in and its trend; <code>delta</code> shares only the change and never the number.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialFriend">
+  <summary>
+    <span class="sch-name"><code>SocialFriend</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">friendshipId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Send this as <code>requestId</code> to remove the friendship.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The friend's user id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">since</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">When the friendship was accepted</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialPending">
+  <summary>
+    <span class="sch-name"><code>SocialPending</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Send this as <code>requestId</code> to accept</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">direction</span>
+    <span class="p-type">&quot;incoming&quot; | &quot;outgoing&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">userId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The other profile's user id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">createdAt</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">When the request was made</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialMe">
+  <summary>
+    <span class="sch-name"><code>SocialMe</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">friendCode</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">settings</span>
+    <span class="p-type"><a href="#schema-SocialSettings">SocialSettings</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friends</span>
+    <span class="p-type"><a href="#schema-SocialFriend">SocialFriend</a>[]</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">pending</span>
+    <span class="p-type"><a href="#schema-SocialPending">SocialPending</a>[]</span>
+    <span class="p-desc">Incoming and outgoing requests, newest first.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">planShares</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Unread plan snapshots in the caller's inbox, for the friends badge.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialPlanPeer">
+  <summary>
+    <span class="sch-name"><code>SocialPlanPeer</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The other profile's user id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialPlanShare">
+  <summary>
+    <span class="sch-name"><code>SocialPlanShare</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">One plan snapshot, as shown in the inbox or the sender's outbox.</span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Send this to the plan bundle and remove routes.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">from</span>
+    <span class="p-type"><a href="#schema-SocialPlanPeer">SocialPlanPeer</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">to</span>
+    <span class="p-type"><a href="#schema-SocialPlanPeer">SocialPlanPeer</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The plan's own name</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">unit</span>
+    <span class="p-type">&quot;kg&quot; | &quot;lb&quot;</span>
+    <span class="p-desc">The unit the snapshot's numbers were written in.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">routineCount</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exerciseCount</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">scheduledDays</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Weekdays with at least one routine.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">createdAt</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialPlans">
+  <summary>
+    <span class="sch-name"><code>SocialPlans</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">received</span>
+    <span class="p-type"><a href="#schema-SocialPlanShare">SocialPlanShare</a>[]</span>
+    <span class="p-desc">Snapshots friends sent the caller, newest first.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">sent</span>
+    <span class="p-type"><a href="#schema-SocialPlanShare">SocialPlanShare</a>[]</span>
+    <span class="p-desc">Snapshots the caller sent that are still open, newest first.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialWeight">
+  <summary>
+    <span class="sch-name"><code>SocialWeight</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">mode<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;absolute&quot; | &quot;delta&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">unit<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;kg&quot; | &quot;lb&quot;</span>
+    <span class="p-desc">The friend's own display unit.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">current</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">The latest weigh-in. Present only in <code>absolute</code> mode.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">delta</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">Latest weigh-in minus the earliest one in the last 30 days, in <code>unit</code>. Absent when there are not two weigh-ins to compare.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">since</span>
+    <span class="p-type">string <span class="p-hint">(date)</span></span>
+    <span class="p-desc">The date the delta is measured from.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">trend</span>
+    <span class="p-type">&quot;up&quot; | &quot;down&quot; | &quot;flat&quot;</span>
+    <span class="p-desc">Derived from <code>delta</code>.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SquadStat">
+  <summary>
+    <span class="sch-name"><code>SquadStat</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">workoutsThisWeek</span>
+    <span class="p-type">integer | null</span>
+    <span class="p-desc">Finished workouts in the friend's current week. <code>null</code> when they turned workout sharing off or their state cannot be read.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">weight</span>
+    <span class="p-type"><a href="#schema-SocialWeight">SocialWeight</a> | null</span>
+    <span class="p-desc">Null when the friend shares no weight, or has no weigh-ins to show.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialReaction">
+  <summary>
+    <span class="sch-name"><code>SocialReaction</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">count<em class="p-req" title="required">required</em></span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">mine<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Whether the caller left this reaction.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialReactions">
+  <summary>
+    <span class="sch-name"><code>SocialReactions</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">🔥</span>
+    <span class="p-type"><a href="#schema-SocialReaction">SocialReaction</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">💪</span>
+    <span class="p-type"><a href="#schema-SocialReaction">SocialReaction</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">👑</span>
+    <span class="p-type"><a href="#schema-SocialReaction">SocialReaction</a></span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialTopSet">
+  <summary>
+    <span class="sch-name"><code>SocialTopSet</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">exerciseId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The exercise id; the client resolves its catalogue name.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The friend's own name for this exercise, present only when it is one of their custom exercises. The client uses it when the id is not in the shared catalogue.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">weight</span>
+    <span class="p-type">number</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">reps</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialFeedWorkout">
+  <summary>
+    <span class="sch-name"><code>SocialFeedWorkout</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">One completed workout of a confirmed friend, as the feed shows it.</span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">workoutId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Stable id for a reaction: the owner's user id, a colon, then the workout's own id (or its date and start when an older workout has no id).</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend</span>
+    <span class="p-type">object</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend.id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend.name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">date</span>
+    <span class="p-type">string <span class="p-hint">(date)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">start</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">end</span>
+    <span class="p-type">number</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">durationSec</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">volume</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Work-set volume in the friend's unit.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">unit</span>
+    <span class="p-type">&quot;kg&quot; | &quot;lb&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">prs</span>
+    <span class="p-type">string[]</span>
+    <span class="p-desc">Exercise ids that hit a personal record in that workout.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">prCount</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">topSets</span>
+    <span class="p-type"><a href="#schema-SocialTopSet">SocialTopSet</a>[]</span>
+    <span class="p-desc">Up to three heaviest completed work sets, one per exercise.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">reactions</span>
+    <span class="p-type"><a href="#schema-SocialReactions">SocialReactions</a></span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialFeed">
+  <summary>
+    <span class="sch-name"><code>SocialFeed</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">weekStart</span>
+    <span class="p-type">string <span class="p-hint">(date)</span></span>
+    <span class="p-desc">The caller's first day of the current week.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">squadStats</span>
+    <span class="p-type"><a href="#schema-SquadStat">SquadStat</a>[]</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">feed</span>
+    <span class="p-type"><a href="#schema-SocialFeedWorkout">SocialFeedWorkout</a>[]</span>
+    <span class="p-desc">The last 30 workouts across confirmed friends, newest first.</span>
   </div>
 </div>
   </div>

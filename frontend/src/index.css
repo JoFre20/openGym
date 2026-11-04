@@ -305,6 +305,26 @@ button.conn:active{filter:brightness(1.12)}
 .seg button::before{inset:-6px 0}
 .iconbtn.on-ss{background:var(--acc-soft);color:var(--acc)}
 .iconbtn:disabled{opacity:.32}
+.icon-badge{
+  position:absolute;top:-1px;inset-inline-end:-1px;min-width:16px;height:16px;padding:0 4px;
+  border-radius:99px;background:var(--red);color:#fff;font-size:10px;font-weight:700;line-height:16px;
+  text-align:center;font-variant-numeric:tabular-nums;box-shadow:0 0 0 2px var(--bg);pointer-events:none;
+}
+/* A header action with a word beside its icon (Home → Friends): the icon alone is not enough
+   for a first visit, and the pill keeps the tap target the same height as the round buttons. */
+.hdr-pill{
+  display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;flex:none;
+  border-radius:99px;background:var(--surface);color:var(--label);
+  font-size:14px;font-weight:600;letter-spacing:-.01em;white-space:nowrap;
+  transition:background var(--fast),transform var(--fast);
+}
+.hdr-pill .icn{font-size:17px;color:var(--acc);--icon-stroke:1.9}
+.hdr-pill:active{background:var(--surface-2);transform:scale(.97)}
+.hdr-pill .icon-badge{position:static;box-shadow:none;flex:none}
+@media (max-width:360px){
+  .hdr-pill{padding:0 9px}
+  .hdr-pill>span:not(.icon-badge){display:none}
+}
 
 h4.sec{
   font-size:13px;font-weight:400;letter-spacing:-.004em;color:var(--label-2);

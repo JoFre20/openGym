@@ -62,6 +62,203 @@ export function dayReminderPush(lang, routine) {
   };
 }
 
+const SOCIAL_COPY = {
+  en: {
+    friendTitle: 'New friend request',
+    friendBody: '{0} wants to join your squad.',
+    reactionTitle: '{1} {0} reacted to your workout',
+    reactionBody: 'Keep it up.',
+  },
+  de: {
+    friendTitle: 'Neue Freundschaftsanfrage',
+    friendBody: '{0} möchte deinem Squad beitreten.',
+    reactionTitle: '{1} {0} hat auf dein Workout reagiert',
+    reactionBody: 'Weiter so.',
+  },
+  pt: {
+    friendTitle: 'Novo pedido de amizade',
+    friendBody: '{0} quer juntar-se ao teu squad.',
+    reactionTitle: '{1} {0} reagiu ao teu treino',
+    reactionBody: 'Continua assim.',
+  },
+  'pt-BR': {
+    friendTitle: 'Nova solicitação de amizade',
+    friendBody: '{0} quer entrar no seu squad.',
+    reactionTitle: '{1} {0} reagiu ao seu treino',
+    reactionBody: 'Continue assim.',
+  },
+  es: {
+    friendTitle: 'Nueva solicitud de amistad',
+    friendBody: '{0} quiere unirse a tu squad.',
+    reactionTitle: '{1} {0} ha reaccionado a tu entrenamiento',
+    reactionBody: 'Sigue así.',
+  },
+  fr: {
+    friendTitle: 'Nouvelle demande d’ami',
+    friendBody: '{0} veut rejoindre ton squad.',
+    reactionTitle: '{1} {0} a réagi à ta séance',
+    reactionBody: 'Continue comme ça.',
+  },
+  it: {
+    friendTitle: 'Nuova richiesta di amicizia',
+    friendBody: '{0} vuole unirsi al tuo squad.',
+    reactionTitle: '{1} {0} ha reagito al tuo allenamento',
+    reactionBody: 'Continua così.',
+  },
+  pl: {
+    friendTitle: 'Nowe zaproszenie do znajomych',
+    friendBody: '{0} chce dołączyć do twojej ekipy.',
+    reactionTitle: '{1} Nowa reakcja od {0}',
+    reactionBody: 'Tak trzymaj.',
+  },
+  ru: {
+    friendTitle: 'Новый запрос в друзья',
+    friendBody: '{0} хочет присоединиться к твоему скваду.',
+    reactionTitle: '{1} Новая реакция от {0}',
+    reactionBody: 'Так держать.',
+  },
+  uk: {
+    friendTitle: 'Новий запит у друзі',
+    friendBody: '{0} хоче приєднатися до твого скваду.',
+    reactionTitle: '{1} Нова реакція від {0}',
+    reactionBody: 'Так тримати.',
+  },
+  sv: {
+    friendTitle: 'Ny vänförfrågan',
+    friendBody: '{0} vill gå med i din squad.',
+    reactionTitle: '{1} {0} reagerade på ditt pass',
+    reactionBody: 'Fortsätt så.',
+  },
+  hu: {
+    friendTitle: 'Új barátkérés',
+    friendBody: '{0} csatlakozni szeretne a squadodhoz.',
+    reactionTitle: '{1} {0} reagált az edzésedre',
+    reactionBody: 'Csak így tovább.',
+  },
+  tr: {
+    friendTitle: 'Yeni arkadaşlık isteği',
+    friendBody: '{0} squadına katılmak istiyor.',
+    reactionTitle: '{1} {0} antrenmanına tepki verdi',
+    reactionBody: 'Böyle devam.',
+  },
+  ar: {
+    friendTitle: 'طلب صداقة جديد',
+    friendBody: '{0} يريد الانضمام إلى فريقك.',
+    reactionTitle: '{1} {0} تفاعل مع تمرينك',
+    reactionBody: 'واصل التقدم.',
+  },
+  hi: {
+    friendTitle: 'नया मित्र अनुरोध',
+    friendBody: '{0} आपके स्क्वाड में शामिल होना चाहता है।',
+    reactionTitle: '{1} {0} ने आपके वर्कआउट पर प्रतिक्रिया दी',
+    reactionBody: 'ऐसे ही आगे बढ़ें।',
+  },
+  bn: {
+    friendTitle: 'নতুন বন্ধুর অনুরোধ',
+    friendBody: '{0} আপনার স্কোয়াডে যোগ দিতে চায়।',
+    reactionTitle: '{1} {0} আপনার ওয়ার্কআউটে প্রতিক্রিয়া দিয়েছে',
+    reactionBody: 'এভাবেই এগিয়ে যান।',
+  },
+  ko: {
+    friendTitle: '새 친구 요청',
+    friendBody: '{0} 님이 스쿼드에 참여하고 싶어 해요.',
+    reactionTitle: '{1} {0} 님이 내 운동에 반응했어요',
+    reactionBody: '계속 힘내세요.',
+  },
+  zh: {
+    friendTitle: '新好友请求',
+    friendBody: '{0} 想加入你的小队。',
+    reactionTitle: '{1} {0} 回应了你的训练',
+    reactionBody: '继续保持。',
+  },
+  'zh-TW': {
+    friendTitle: '新好友要求',
+    friendBody: '{0} 想加入你的小隊。',
+    reactionTitle: '{1} {0} 回應了你的訓練',
+    reactionBody: '繼續保持。',
+  },
+  th: {
+    friendTitle: 'คำขอเป็นเพื่อนใหม่',
+    friendBody: '{0} อยากเข้าร่วม squad ของคุณ',
+    reactionTitle: '{1} {0} ตอบรับการฝึกของคุณ',
+    reactionBody: 'สู้ต่อไป',
+  },
+};
+
+// A shared plan is one more thing waiting in the squad, so its copy lives beside the friend and
+// reaction pushes. The plan's own name is not printed: it can be long and is already on the
+// card the notification opens.
+const PLAN_SHARE_COPY = {
+  en: { title: 'New plan from {0}', body: 'Ready in your squad. Open openGym to add it.' },
+  de: { title: 'Neuer Plan von {0}', body: 'Bereit in deinem Squad. Öffne openGym, um ihn zu übernehmen.' },
+  pt: { title: 'Novo plano de {0}', body: 'Pronto no teu squad. Abre o openGym para o adicionar.' },
+  'pt-BR': { title: 'Novo plano de {0}', body: 'Pronto no seu squad. Abra o openGym para adicioná-lo.' },
+  es: { title: 'Nuevo plan de {0}', body: 'Listo en tu squad. Abre openGym para añadirlo.' },
+  fr: { title: 'Nouveau plan de {0}', body: 'Prêt dans ton squad. Ouvre openGym pour l’ajouter.' },
+  it: { title: 'Nuovo piano da {0}', body: 'Pronto nel tuo squad. Apri openGym per aggiungerlo.' },
+  pl: { title: 'Nowy plan od {0}', body: 'Gotowy w twojej ekipie. Otwórz openGym, aby go dodać.' },
+  ru: { title: 'Новый план от {0}', body: 'Готов в твоём скваде. Открой openGym, чтобы добавить его.' },
+  uk: { title: 'Новий план від {0}', body: 'Готовий у твоєму скваді. Відкрий openGym, щоб додати його.' },
+  sv: { title: 'Ny plan från {0}', body: 'Redo i din squad. Öppna openGym för att lägga till den.' },
+  hu: { title: 'Új terv tőle: {0}', body: 'Kész a squadodban. Nyisd meg az openGymet a hozzáadásához.' },
+  tr: { title: '{0} kişisinden yeni plan', body: 'Squadında hazır. Eklemek için openGym’i aç.' },
+  ar: { title: 'خطة جديدة من {0}', body: 'جاهزة في فريقك. افتح openGym لإضافتها.' },
+  hi: { title: '{0} की नई योजना', body: 'आपके स्क्वाड में तैयार। इसे जोड़ने के लिए openGym खोलें।' },
+  bn: { title: '{0} থেকে নতুন প্ল্যান', body: 'আপনার স্কোয়াডে প্রস্তুত। যোগ করতে openGym খুলুন।' },
+  ko: { title: '{0} 님의 새 플랜', body: '스쿼드에 준비됐어요. 추가하려면 openGym을 여세요.' },
+  zh: { title: '来自 {0} 的新计划', body: '已在你的小队中。打开 openGym 添加。' },
+  'zh-TW': { title: '來自 {0} 的新計畫', body: '已在小隊中。開啟 openGym 加入。' },
+  th: { title: 'แผนใหม่จาก {0}', body: 'พร้อมใน squad ของคุณ เปิด openGym เพื่อเพิ่ม' },
+};
+
+const socialCopyFor = lang => {
+  if (lang === 'de-CH') {
+    const ch = s => s.replace(/ß/g, 'ss');
+    return Object.fromEntries(Object.entries(SOCIAL_COPY.de).map(([k, v]) => [k, ch(v)]));
+  }
+  return SOCIAL_COPY[lang] || SOCIAL_COPY.en;
+};
+
+const planShareCopyFor = lang => {
+  if (lang === 'de-CH') {
+    const ch = s => s.replace(/ß/g, 'ss');
+    return Object.fromEntries(Object.entries(PLAN_SHARE_COPY.de).map(([k, v]) => [k, ch(v)]));
+  }
+  return PLAN_SHARE_COPY[lang] || PLAN_SHARE_COPY.en;
+};
+
+const fill = (text, values) => text.replace(/\{(\d+)\}/g, (_, i) => values[+i] ?? '');
+
+export function friendRequestPush(lang, name) {
+  const copy = socialCopyFor(lang);
+  return {
+    title: copy.friendTitle,
+    body: fill(copy.friendBody, [name || 'openGym']),
+    tag: 'friend-request',
+    url: '#/social',
+  };
+}
+
+export function reactionPush(lang, name, emoji) {
+  const copy = socialCopyFor(lang);
+  return {
+    title: fill(copy.reactionTitle, [name || 'openGym', emoji || '🔥']),
+    body: copy.reactionBody,
+    tag: 'social-reaction',
+    url: '#/social',
+  };
+}
+
+export function planSharePush(lang, name) {
+  const copy = planShareCopyFor(lang);
+  return {
+    title: fill(copy.title, [name || 'openGym']),
+    body: copy.body,
+    tag: 'social-plan',
+    url: '#/social',
+  };
+}
+
 // The missed-workout nudge (nudge.js). Its copy is translated in the frontend packs and generated
 // into nudge-copy.js, so every language the app speaks has it — unlike the strings above, which
 // predate that and fall back to English. de-CH is de with ß written ss, as in the frontend
