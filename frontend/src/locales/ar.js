@@ -2716,4 +2716,9 @@ export default {
   'This plan is too big to share.': 'هذه الخطة كبيرة جدًا للمشاركة.',
   'Your friends choose whether to add it to their own plan.': 'أصدقاؤك يقررون إن كانوا سيضيفونها إلى خطتهم.',
   '{0} day': '{0} يوم',
+  'Profile picture': 'صورة الملف الشخصي',
+  'Your friends see this picture.': 'يرى أصدقاؤك هذه الصورة.',
+  'Profile picture updated': 'تم تحديث صورة الملف الشخصي',
+  'Profile picture removed': 'تمت إزالة صورة الملف الشخصي',
+  'That picture is too big. Choose a smaller one.': 'هذه الصورة كبيرة جدًا. اختر صورة أصغر.',
 }

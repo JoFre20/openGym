@@ -134,10 +134,12 @@ copies `api/coach/core/` into its build stage.
 `DATA_DIR`: `db.json` for users, passkeys, invites and push subscriptions,
 and one `state-<uid>.json` per profile. Friend codes, friendships, reactions and shared plan
 snapshots live beside them in `social.json`, deliberately outside the synced document so social
-changes never cause a state conflict. A shared plan is a copy of the sender's plan bundle with a
-per-recipient cap; importing it merges new routines on the recipient's device, and neither side's
-state file is written by the social routes. Every write goes to a temp file first and is renamed
-over the old one (`durable.js`), so a crash never leaves half a file.
+changes never cause a state conflict. Profile pictures are small data URLs in the same social
+profile (re-encoded on the device, capped at 128 KiB on the server); they travel with the name to
+friends and admins and never enter the sync document. A shared plan is a copy of the sender's plan
+bundle with a per-recipient cap; importing it merges new routines on the recipient's device, and
+neither side's state file is written by the social routes. Every write goes to a temp file first
+and is renamed over the old one (`durable.js`), so a crash never leaves half a file.
 
 Sign-in is a passkey (`@simplewebauthn/server`), optionally a password, plus a signed session
 cookie. Phones get the same signed session as a bearer token, made by pairing with a one-time code

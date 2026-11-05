@@ -2284,10 +2284,25 @@ button.wl-summary{width:100%;padding:0 0 10px;text-align:start;border-radius:var
 .sp-search{margin-bottom:18px}
 /* the account card on top of the root: a big round avatar, the name, one line under it */
 .lrow.sp-acct{padding-block:12px;gap:14px}
-.sp-avatar{width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:30px;
+/* A round identity mark shared by the account card, the Friends screen, shared plans and the
+   admin sheet. The picture is a small data URL already re-encoded on the device; object-fit
+   makes every source a circle without another crop step. */
+.avatar{display:grid;place-items:center;border-radius:50%;overflow:hidden;flex:none;
+  background:var(--acc-soft);color:var(--acc);font-weight:700;letter-spacing:.02em}
+.avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-sm{width:34px;height:34px;font-size:12px}
+.avatar-md{width:44px;height:44px;font-size:15px}
+.avatar-lg{width:56px;height:56px;font-size:24px}
+.avatar-xl{width:72px;height:72px;font-size:28px}
+.sp-avatar{width:56px;height:56px;border-radius:50%;flex:none;display:grid;place-items:center;font-size:30px;overflow:hidden;
   background:linear-gradient(160deg,var(--surface-3),var(--surface-2));color:var(--label-2)}
+.sp-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .sp-acct .lrow-t{font-size:19px;font-weight:600}
 .sp-avatar.on{background:var(--acc-soft);color:var(--acc);font-size:24px;font-weight:700}
+/* Settings → Account: the avatar row is the picker. A little more room than a text row keeps the
+   56 px circle from crowding the label on a 320 px phone. */
+.pp-row{padding-block:12px;gap:14px}
+.pp-row:disabled{opacity:.55}
 .sp-version{text-align:center;margin-top:4px;line-height:1.6}
 /* The root rows' previews ("2:00 de descanso · Tarjetas", "Som · Vibração") are two or three facts, and a
    one-line ellipsis cut all but the first. They wrap instead, up to three lines, and never below

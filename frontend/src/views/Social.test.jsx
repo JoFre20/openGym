@@ -36,11 +36,13 @@ import Social, { SOCIAL_REFRESH_MS } from './Social.jsx'
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const clone = v => JSON.parse(JSON.stringify(v))
 
+const AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+
 const ME = {
   friendCode: 'A7X-92B',
   settings: { shareWorkouts: true, shareWeight: 'delta' },
   friends: [
-    { friendshipId: 'f1', id: 'u2', name: 'Ben', since: 1 },
+    { friendshipId: 'f1', id: 'u2', name: 'Ben', avatar: AVATAR, since: 1 },
     { friendshipId: 'f2', id: 'u3', name: 'Cara', since: 1 },
   ],
   pending: [{ id: 'r1', direction: 'incoming', userId: 'u3', name: 'Cara', createdAt: 2 }],
@@ -49,7 +51,7 @@ const ME = {
 const FEED = {
   weekStart: '2026-11-02',
   squadStats: [
-    { id: 'u2', name: 'Ben', workoutsThisWeek: 3, weight: { mode: 'absolute', unit: 'kg', current: 80, delta: -1.5, since: '2026-10-01', trend: 'down' } },
+    { id: 'u2', name: 'Ben', avatar: AVATAR, workoutsThisWeek: 3, weight: { mode: 'absolute', unit: 'kg', current: 80, delta: -1.5, since: '2026-10-01', trend: 'down' } },
     { id: 'u3', name: 'Cara', workoutsThisWeek: null, weight: null },
   ],
   feed: [{
@@ -168,6 +170,15 @@ describe('Friends & squad', () => {
     expect(ben.querySelector('.social-ring-num').textContent).toBe('3')
     expect(ben.querySelector('.social-ring-wrap').getAttribute('aria-label')).toBe('3 workouts')
     expect(ben.querySelector('.social-friend-meta').textContent).toBe('3 workouts')
+  })
+
+  it('shows uploaded profile pictures on the squad and activity cards', async () => {
+    const host = render(<Social />)
+    await flush()
+
+    const ben = [...host.querySelectorAll('.social-friend')].find(card => card.textContent.includes('Ben'))
+    expect(ben.querySelector('img').getAttribute('src')).toBe(AVATAR)
+    expect(host.querySelector('.social-feed-card img').getAttribute('src')).toBe(AVATAR)
   })
 
   it('shows the active seasonal element next to the Friends title', async () => {
@@ -333,7 +344,7 @@ describe('Friends & squad', () => {
     mocks.socialMe.mockResolvedValue({ ...ME, planShares: 1 })
     mocks.socialPlans.mockResolvedValue({
       received: [{
-        id: 'p1', from: { id: 'u2', name: 'Ben' }, name: 'Ben’s plan', unit: 'kg',
+        id: 'p1', from: { id: 'u2', name: 'Ben', avatar: AVATAR }, name: 'Ben’s plan', unit: 'kg',
         routineCount: 1, exerciseCount: 1, scheduledDays: 1, createdAt: Date.now(),
       }],
       sent: [],
@@ -345,6 +356,7 @@ describe('Friends & squad', () => {
     await flush()
     expect(host.textContent).toContain('Shared with you')
     expect(host.textContent).toContain('Ben’s plan')
+    expect(host.querySelector('.social-plan-card img').getAttribute('src')).toBe(AVATAR)
 
     click(host, 'Open')
     await flush()

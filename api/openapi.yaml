@@ -1125,6 +1125,69 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/Busy' }
 
+  /api/account/avatar:
+    put:
+      tags: [social]
+      operationId: setAccountAvatar
+      summary: Set or replace your profile picture
+      description: |
+        The picture is a small data URL, re-encoded on the device that picked it: at most
+        192 px on the long edge, WebP when the browser can write it and JPEG otherwise,
+        with EXIF/GPS data gone by construction. The server accepts only JPEG, PNG and
+        WebP, checks the magic bytes and caps the decoded picture at 128 KiB; a larger or
+        malformed value is refused. Stored on the social profile, so friends and admins see
+        it in the same answers as the name. Visible to the caller, accepted friends and
+        admins. Audited as `account.avatar.set`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [avatar]
+              properties:
+                avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
+      responses:
+        '200':
+          description: Stored.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
+        '400':
+          description: Not an acceptable image data URL.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that is not a usable profile picture", code: "avatar-invalid" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413':
+          description: The decoded picture is larger than 128 KiB.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "that profile picture is too large", code: "avatar-too-large" }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      tags: [social]
+      operationId: removeAccountAvatar
+      summary: Remove your profile picture
+      description: Idempotent. Audited as `account.avatar.remove` when a picture was there.
+      responses:
+        '200':
+          description: Removed (or there was none).
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  avatar: { type: 'null' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /api/admin/user/recovery:
     post:
       tags: [admin, passkeys]
@@ -2881,6 +2944,45 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: "no such user" }
 
+  /api/admin/user/avatar/delete:
+    post:
+      tags: [admin]
+      operationId: adminUserAvatarDelete
+      summary: 'Admin: remove another profile picture'
+      description: |
+        Moderation only: the account, its training data and its other settings stay, and the
+        person can upload another picture. Any admin may remove another profile's picture;
+        a person removes their own in Settings. Idempotent; audited as
+        `admin.user.avatar.delete` when a picture was there.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string, description: The user id. }
+      responses:
+        '200':
+          description: Removed, or there was nothing to remove.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  id: { type: string }
+                  removed: { type: boolean, description: True when a picture was actually removed. }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404':
+          description: No user with that id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such user" }
+
   /api/admin/user/delete:
     post:
       tags: [admin]
@@ -3966,6 +4068,17 @@ components:
         credential: { $ref: '#/components/schemas/WebAuthnAuthenticationCredential' }
         current: { type: string }
 
+    AvatarDataUrl:
+      type: string
+      maxLength: 184320
+      pattern: '^data:image/(webp|jpeg|png);base64,'
+      description: >-
+        A profile picture: a small data URL produced on the device (at most 192 px on the
+        long edge, EXIF/GPS removed). The server accepts JPEG, PNG and WebP and caps the
+        decoded picture at 128 KiB. Optional fields using this schema are absent when the
+        profile has no picture.
+      example: "data:image/webp;base64,UklGRiIAAABXRUJQVlA4IBYAAAAwAQCdASoBAAEAAUAmJQBOgCHwAP7+4AAAAA=="
+
     SessionUser:
       type: object
       description: The caller's identity, as returned by /api/me and the sign-in routes.
@@ -3974,6 +4087,7 @@ components:
         name: { type: string }
         owner: { type: boolean, description: Present (true) only for the instance owner. }
         admin: { type: boolean }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
       example: { id: "Zk3q9XyPbA2LmN0v", name: "Ada", admin: false }
 
     # ------------------------------------------------------------------ WebAuthn
@@ -4085,6 +4199,7 @@ components:
         friendshipId: { type: string, description: Send this as `requestId` to remove the friendship. }
         id: { type: string, description: The friend's user id. }
         name: { type: string }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
         since: { type: number, description: When the friendship was accepted, ms since epoch. }
 
     SocialPending:
@@ -4094,6 +4209,7 @@ components:
         direction: { type: string, enum: [incoming, outgoing] }
         userId: { type: string, description: The other profile's user id. }
         name: { type: string }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
         createdAt: { type: number, description: When the request was made, ms since epoch. }
 
     SocialMe:
@@ -4101,6 +4217,7 @@ components:
       properties:
         friendCode: { type: string, pattern: '^[A-Z0-9]{3}-[A-Z0-9]{3}$', example: "A7X-92B" }
         settings: { $ref: '#/components/schemas/SocialSettings' }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
         friends:
           type: array
           items: { $ref: '#/components/schemas/SocialFriend' }
@@ -4117,6 +4234,7 @@ components:
       properties:
         id: { type: string, description: The other profile's user id. }
         name: { type: string }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
 
     SocialPlanShare:
       type: object
@@ -4166,6 +4284,7 @@ components:
       properties:
         id: { type: string }
         name: { type: string }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
         workoutsThisWeek:
           oneOf: [{ type: integer }, { type: 'null' }]
           description: >-
@@ -4582,6 +4701,7 @@ components:
             owner: { type: boolean, description: The one admin who manages the others. }
             admin: { type: boolean }
             invitedBy: { oneOf: [{ type: string }, { type: 'null' }] }
+            avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
             password: { type: boolean, description: PASSWORD_LOGIN instances only. }
             email:
               oneOf: [{ type: string }, { type: 'null' }]

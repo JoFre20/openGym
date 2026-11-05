@@ -7,6 +7,7 @@ import { fmtDate, fmtNum, fmtVol, fmtDur } from '../lib/format.js'
 import { auditCat, auditLine, fmtWhen } from '../lib/audit.js'
 import { workoutVolume, setsDone } from '../lib/history.js'
 import { confirmSheet } from '../sheets.jsx'
+import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
@@ -90,6 +91,20 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
       .then(() => { toast(disabled ? 'User disabled' : 'User enabled'); onChanged(); close() })
       .catch(e => toast(e.message))
   }
+  // Moderation only: their account and training data stay. A person removes their own picture
+  // in Settings; this is for someone else's profile.
+  const removeAvatar = () => confirmSheet({
+    title: 'Remove ' + u.name + '’s profile picture?',
+    message: 'It disappears from their profile and from the Friends page on every device. They can upload a new one.',
+    confirmText: 'Remove picture', danger: true,
+    onConfirm: () => api('/api/admin/user/avatar/delete', { method: 'POST', body: JSON.stringify({ id: u.id }) })
+      .then(() => {
+        setD(current => current ? { ...current, user: { ...current.user, avatar: undefined } } : current)
+        toast('Profile picture removed')
+        onChanged()
+      })
+      .catch(e => toast(e.message)),
+  })
   // One owner, any number of admins: only the owner appoints, removes or hands the role on.
   const setRole = admin => api('/api/admin/user/role', { method: 'POST', body: JSON.stringify({ id: u.id, admin }) })
     .then(() => { toast(admin ? u.name + ' is an admin now' : u.name + ' is no longer an admin'); onChanged(); close() })
@@ -127,7 +142,13 @@ function UserDetail({ id, viewerOwner, onChanged, close }) {
       .catch(e => toast(e.message)),
   })
   return <>
-    <h3 className="capitalize">{u.name}</h3>
+    <div className="row" style={{ gap: 12, alignItems: 'center' }}>
+      <Avatar name={u.name} avatar={u.avatar} size="lg" />
+      <h3 className="capitalize" style={{ margin: 0 }}>{u.name}</h3>
+    </div>
+    {u.avatar && u.id !== me?.id && <Button size="sm" variant="ghost" className="dim" style={{ marginTop: 8 }} onClick={removeAvatar}>
+      Remove profile picture
+    </Button>}
     <div className="row" style={{ gap: 6, flexWrap: 'wrap', margin: '8px 0 12px' }}>
       {u.owner ? <span className="adm-pill acc">owner</span> : u.admin && <span className="adm-pill acc">admin</span>}
       {u.disabled && <span className="adm-pill bad">disabled</span>}

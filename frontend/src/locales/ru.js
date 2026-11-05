@@ -2665,4 +2665,9 @@ export default {
   'This plan is too big to share.': 'Этот план слишком большой для отправки.',
   'Your friends choose whether to add it to their own plan.': 'Друзья сами решат, добавлять ли его в свой план.',
   '{0} day': '{0} день',
+  'Profile picture': 'Фото профиля',
+  'Your friends see this picture.': 'Друзья видят это фото.',
+  'Profile picture updated': 'Фото профиля обновлено',
+  'Profile picture removed': 'Фото профиля удалено',
+  'That picture is too big. Choose a smaller one.': 'Это фото слишком большое. Выберите фото поменьше.',
 }

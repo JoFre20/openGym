@@ -2661,4 +2661,9 @@ export default {
   'This plan is too big to share.': '这个计划太大，无法分享。',
   'Your friends choose whether to add it to their own plan.': '好友会决定是否添加到自己的计划。',
   '{0} day': '{0} 天',
+  'Profile picture': '头像',
+  'Your friends see this picture.': '你的好友可以看到这张照片。',
+  'Profile picture updated': '头像已更新',
+  'Profile picture removed': '头像已移除',
+  'That picture is too big. Choose a smaller one.': '这张照片太大，请选择较小的照片。',
 }

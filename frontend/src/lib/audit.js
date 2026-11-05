@@ -42,6 +42,8 @@ const LABELS = {
   'auth.email.change': 'Changed their sign-in e-mail',
   'auth.email.remove': 'Removed their sign-in e-mail',
   'auth.email.fail': 'Changing the sign-in e-mail failed',
+  'account.avatar.set': 'Changed their profile picture',
+  'account.avatar.remove': 'Removed their profile picture',
   // More than one passkey, and one-time codes for another device (#95). `msg` on an addition or a
   // code is the proof it was made with (passkey, password); on a removal or a redemption, the
   // passkey's name.
@@ -62,6 +64,7 @@ const LABELS = {
   'admin.user.disable': 'Disabled an account',
   'admin.user.enable': 'Re-enabled an account',
   'admin.user.delete': 'Deleted an account',
+  'admin.user.avatar.delete': 'Removed a profile picture',
   'admin.password.reset': 'Issued a password reset code',
   'admin.role.grant': 'Made someone an admin',
   'admin.role.revoke': 'Removed someone as admin',

@@ -2740,4 +2740,9 @@ export default {
   'This plan is too big to share.': 'এই প্ল্যানটি শেয়ার করার জন্য খুব বড়।',
   'Your friends choose whether to add it to their own plan.': 'আপনার বন্ধুরা ঠিক করবে তারা এটি নিজেদের প্ল্যানে যোগ করবে কি না।',
   '{0} day': '{0} দিন',
+  'Profile picture': 'প্রোফাইল ছবি',
+  'Your friends see this picture.': 'আপনার বন্ধুরা এই ছবিটি দেখতে পাবে।',
+  'Profile picture updated': 'প্রোফাইল ছবি আপডেট হয়েছে',
+  'Profile picture removed': 'প্রোফাইল ছবি সরানো হয়েছে',
+  'That picture is too big. Choose a smaller one.': 'এই ছবিটি খুব বড়। ছোট একটি ছবি বেছে নিন।',
 }

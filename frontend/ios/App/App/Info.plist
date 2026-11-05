@@ -2,6 +2,16 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BAAppGroupID</key>
+	<string>group.ch.opengym.app</string>
+	<key>BAHasManagedAssetPacks</key>
+	<true/>
+	<key>BAUsesAppleHosting</key>
+	<true/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>ch.opengym.app.nudge-check</string>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
@@ -20,10 +30,33 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UILaunchStoryboardName</key>
-	<string>LaunchScreen</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>Used to scan your gym membership QR code, and to take a photo or video of an exercise you add yourself.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Used to make sure it’s really you before your account is deleted.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Used to show your heart rate on your Apple Watch while you train, and, when you switch it on, to add the heart rate your watch saved and weigh-ins from other apps to your log.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Used to save your finished workouts and weigh-ins to Apple Health, when you switch it on.</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Used to reach your own openGym server or AI model on your home network, when you connect one.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Lets the gym reminder notice when you arrive at a gym you added, even with openGym closed. iOS only watches those places, and your location never leaves this iPhone.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Used to put a gym on the map where you are standing, for the gym reminder. Your location stays on this iPhone.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Used to record the sound of a video you take of an exercise you add yourself.</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>
@@ -43,6 +76,12 @@
 			</array>
 		</dict>
 	</dict>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
@@ -62,49 +101,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<key>ITSAppUsesNonExemptEncryption</key>
-	<false/>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<!-- "Connect to my server" and the Coach's own endpoint may be plain http:// on the
-		     home network (#428), like on Android. Local addresses only; everything on the
-		     internet stays HTTPS. -->
-		<key>NSAllowsLocalNetworking</key>
-		<true/>
-	</dict>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Used to reach your own openGym server or AI model on your home network, when you connect one.</string>
-	<key>NSCameraUsageDescription</key>
-	<string>Used to scan your gym membership QR code, and to take a photo or video of an exercise you add yourself.</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>Used to record the sound of a video you take of an exercise you add yourself.</string>
-	<key>BAAppGroupID</key>
-	<string>group.ch.opengym.app</string>
-	<key>BAHasManagedAssetPacks</key>
-	<true/>
-	<key>BAUsesAppleHosting</key>
-	<true/>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>ch.opengym.app.nudge-check</string>
-	</array>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-	</array>
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Used to show your heart rate on your Apple Watch while you train, and, when you switch it on, to add the heart rate your watch saved and weigh-ins from other apps to your log.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Used to save your finished workouts and weigh-ins to Apple Health, when you switch it on.</string>
-	<!-- Gym reminder (#614): off until switched on in Settings. Region monitoring needs Always,
-	     but no background location mode (UIBackgroundModes stays without "location"). -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Used to put a gym on the map where you are standing, for the gym reminder. Your location stays on this iPhone.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Lets the gym reminder notice when you arrive at a gym you added, even with openGym closed. iOS only watches those places, and your location never leaves this iPhone.</string>
-	<key>NSFaceIDUsageDescription</key>
-	<string>Used to make sure it’s really you before your account is deleted.</string>
 </dict>
 </plist>

@@ -1677,6 +1677,18 @@ export const useStore = create((set, get) => {
       setSync({ held: adoptHold })
     },
 
+    // Change one field of the signed-in identity without re-running sign-in/adoption logic. The
+    // profile picture is the first such field: Settings updates it after the server has stored
+    // it, so the account card shows the new picture at once.
+    patchUser(patch) {
+      const user = get().user
+      if (!user) return null
+      const next = { ...user, ...patch }
+      set({ user: next })
+      try { localStorage.setItem('gym_user', JSON.stringify(next)) } catch { /* storage refused */ }
+      return next
+    },
+
     // One PUT at a time: a push asked for while one is in flight runs after it (once, however
     // many asked), and the promise returned covers that follow-up too, so a caller that awaits
     // before signing out knows the last change is on the server.

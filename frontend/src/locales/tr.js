@@ -2661,4 +2661,9 @@ export default {
   'This plan is too big to share.': 'Bu plan paylaşmak için çok büyük.',
   'Your friends choose whether to add it to their own plan.': 'Arkadaşların kendi planlarına ekleyip eklemeyeceğine kendileri karar verir.',
   '{0} day': '{0} gün',
+  'Profile picture': 'Profil fotoğrafı',
+  'Your friends see this picture.': 'Arkadaşların bu fotoğrafı görür.',
+  'Profile picture updated': 'Profil fotoğrafı güncellendi',
+  'Profile picture removed': 'Profil fotoğrafı kaldırıldı',
+  'That picture is too big. Choose a smaller one.': 'Bu fotoğraf çok büyük. Daha küçük bir tane seç.',
 }

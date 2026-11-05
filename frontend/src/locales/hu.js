@@ -2664,4 +2664,9 @@ export default {
   'This plan is too big to share.': 'Ez a terv túl nagy a megosztáshoz.',
   'Your friends choose whether to add it to their own plan.': 'A barátaid döntik el, hozzáadják-e a saját tervükhöz.',
   '{0} day': '{0} nap',
+  'Profile picture': 'Profilkép',
+  'Your friends see this picture.': 'A barátaid látják ezt a képet.',
+  'Profile picture updated': 'Profilkép frissítve',
+  'Profile picture removed': 'Profilkép eltávolítva',
+  'That picture is too big. Choose a smaller one.': 'Ez a kép túl nagy. Válassz egy kisebbet.',
 }

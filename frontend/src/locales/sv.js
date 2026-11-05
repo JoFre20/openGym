@@ -2708,4 +2708,9 @@ export default {
   'This plan is too big to share.': 'Planen är för stor för att delas.',
   'Your friends choose whether to add it to their own plan.': 'Dina vänner väljer själva om de lägger till den i sin plan.',
   '{0} day': '{0} dag',
+  'Profile picture': 'Profilbild',
+  'Your friends see this picture.': 'Dina vänner ser den här bilden.',
+  'Profile picture updated': 'Profilbilden uppdaterad',
+  'Profile picture removed': 'Profilbilden borttagen',
+  'That picture is too big. Choose a smaller one.': 'Den bilden är för stor. Välj en mindre.',
 }

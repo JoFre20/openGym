@@ -1741,6 +1741,11 @@ export const PT_BR_OVERRIDES = {
   'They can no longer open it. Routines they already added stay in their plan.': 'A pessoa não pode mais abri-lo. As rotinas já adicionadas ficam no plano dela.',
   'This plan is too big to share.': 'Este plano é grande demais para compartilhar.',
   'Your friends choose whether to add it to their own plan.': 'Seus amigos decidem se adicionam ao próprio plano.',
+  'Profile picture': 'Foto de perfil',
+  'Your friends see this picture.': 'Seus amigos veem esta foto.',
+  'Profile picture updated': 'Foto de perfil atualizada',
+  'Profile picture removed': 'Foto de perfil removida',
+  'That picture is too big. Choose a smaller one.': 'Essa foto é grande demais. Escolha uma menor.',
   '{0} day': '{0} dia',
 }
 

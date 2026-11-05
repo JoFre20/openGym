@@ -2661,4 +2661,9 @@ export default {
   'This plan is too big to share.': '이 플랜은 공유하기에 너무 커요.',
   'Your friends choose whether to add it to their own plan.': '친구가 자기 플랜에 추가할지 직접 결정해요.',
   '{0} day': '{0}일',
+  'Profile picture': '프로필 사진',
+  'Your friends see this picture.': '친구들이 이 사진을 볼 수 있어요.',
+  'Profile picture updated': '프로필 사진이 업데이트되었어요',
+  'Profile picture removed': '프로필 사진이 삭제되었어요',
+  'That picture is too big. Choose a smaller one.': '사진이 너무 커요. 더 작은 사진을 선택해 주세요.',
 }

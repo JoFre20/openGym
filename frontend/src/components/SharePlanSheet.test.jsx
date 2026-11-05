@@ -27,11 +27,13 @@ globalThis.IS_REACT_ACT_ENVIRONMENT = true
 const clone = value => JSON.parse(JSON.stringify(value))
 let host, root, close
 
+const AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
+
 const ME = {
   friendCode: 'A7X-92B',
   settings: { shareWorkouts: true, shareWeight: 'none' },
   friends: [
-    { friendshipId: 'f1', id: 'u2', name: 'Ben', since: 1 },
+    { friendshipId: 'f1', id: 'u2', name: 'Ben', avatar: AVATAR, since: 1 },
     { friendshipId: 'f2', id: 'u3', name: 'Cara', since: 2 },
   ],
   pending: [],
@@ -79,6 +81,7 @@ describe('SharePlanSheet', () => {
     expect(host.textContent).toContain('Ada’s plan')
     expect(host.textContent).toContain('1 routine')
     expect(host.textContent).toContain('1 exercise')
+    expect(host.querySelector('.share-plan-friend img').getAttribute('src')).toBe(AVATAR)
     expect(mocks.socialMe).toHaveBeenCalledTimes(1)
     expect(mocks.socialPlans).toHaveBeenCalledTimes(1)
 

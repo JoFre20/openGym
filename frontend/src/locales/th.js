@@ -2672,4 +2672,9 @@ export default {
   'This plan is too big to share.': 'แผนนี้ใหญ่เกินไปที่จะแชร์',
   'Your friends choose whether to add it to their own plan.': 'เพื่อนจะเลือกเองว่าจะเพิ่มในแผนของตนหรือไม่',
   '{0} day': '{0} วัน',
+  'Profile picture': 'รูปโปรไฟล์',
+  'Your friends see this picture.': 'เพื่อนของคุณเห็นรูปนี้',
+  'Profile picture updated': 'อัปเดตรูปโปรไฟล์แล้ว',
+  'Profile picture removed': 'ลบรูปโปรไฟล์แล้ว',
+  'That picture is too big. Choose a smaller one.': 'รูปนี้ใหญ่เกินไป เลือกรูปที่เล็กกว่านี้',
 }

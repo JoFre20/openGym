@@ -2658,4 +2658,9 @@ export default {
   'This plan is too big to share.': 'Цей план завеликий для надсилання.',
   'Your friends choose whether to add it to their own plan.': 'Друзі самі вирішать, чи додавати його до свого плану.',
   '{0} day': '{0} день',
+  'Profile picture': 'Фото профілю',
+  'Your friends see this picture.': 'Друзі бачать це фото.',
+  'Profile picture updated': 'Фото профілю оновлено',
+  'Profile picture removed': 'Фото профілю видалено',
+  'That picture is too big. Choose a smaller one.': 'Це фото завелике. Виберіть менше.',
 }

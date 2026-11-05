@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AddFriendSheet from '../components/AddFriendSheet.jsx'
+import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button, Row, Section, Segmented, Switch } from '../components/ui.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
@@ -13,7 +14,7 @@ import {
 } from '../lib/api.js'
 import { parsePlan } from '../lib/plan-share.js'
 import { activeSeason } from '../lib/seasonal.js'
-import { formatFriendCodeInput, friendCodeComplete, initialsOf, ringProgress, socialWeightView } from '../lib/social-view.js'
+import { formatFriendCodeInput, friendCodeComplete, ringProgress, socialWeightView } from '../lib/social-view.js'
 import { noteSocialPending } from '../lib/social-badge.js'
 import { confirmSheet, menuSheet, planImportSheet } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
@@ -123,7 +124,7 @@ function SquadCard({ stat, friendship, unit, onMenu }) {
     ? t('Workouts') + ' · ' + t('Private')
     : tn('{0} workout', '{0} workouts', count)
   return <div className="social-friend" role="listitem">
-    <span className="social-avatar">{initialsOf(stat.name)}</span>
+    <Avatar name={stat.name} avatar={stat.avatar} size="md" />
     <div className="social-friend-main">
       <div className="social-friend-name">{stat.name}</div>
       {count != null && <div className="social-friend-meta">
@@ -171,12 +172,12 @@ function topSetName(set) {
   return known ? exerciseNameText(known) : (set.name || t('Exercise'))
 }
 
-function FeedCard({ item, busy, onReact }) {
+function FeedCard({ item, busy, onReact, avatar }) {
   const duration = item.durationSec >= 60 ? fmtDur(item.durationSec * 1000) : null
   const title = item.name || t('Workout')
   return <div className="card social-feed-card">
     <div className="social-feed-head">
-      <span className="social-avatar small">{initialsOf(item.friend.name)}</span>
+      <Avatar name={item.friend.name} avatar={avatar} size="sm" />
       <div className="social-feed-who">
         <b>{item.friend.name}</b>
         {item.date && <span className="dim small">{fmtDate(item.date, true, true)}</span>}
@@ -209,12 +210,12 @@ function FeedCard({ item, busy, onReact }) {
   </div>
 }
 
-function FeedSection({ feed, busyId, onReact }) {
+function FeedSection({ feed, busyId, onReact, avatarById }) {
   return <section className="social-feed-section">
     <h4 className="sec">{t('Activity')}</h4>
     {feed.length
       ? <div className="social-feed">{feed.map(item => <FeedCard key={item.workoutId} item={item}
-        busy={busyId === item.workoutId} onReact={onReact} />)}</div>
+        avatar={avatarById.get(item.friend.id)} busy={busyId === item.workoutId} onReact={onReact} />)}</div>
       : <div className="card social-empty social-feed-empty">
         <div className="social-empty-ico"><Icon name="flame" /></div>
         <div className="muted small">{t('When your friends train, their workouts show up here.')}</div>
@@ -226,7 +227,7 @@ function SharedPlanCard({ item, busy, onOpen, onMenu }) {
   const when = item.createdAt ? isoOf(new Date(item.createdAt)) : ''
   return <div className="card social-plan-card">
     <div className="social-feed-head">
-      <span className="social-avatar small">{initialsOf(item.from.name)}</span>
+      <Avatar name={item.from.name} avatar={item.from.avatar} size="sm" />
       <div className="social-feed-who">
         <b>{item.from.name}</b>
         {when && <span className="dim small">{fmtDate(when, true, true)}</span>}
@@ -497,6 +498,9 @@ export default function Social() {
 
   const squadStats = data?.squadStats || []
   const feed = data?.feed || []
+  // A feed carries the same friend on every workout, so the picture travels once in squadStats
+  // and the cards look it up by id instead of repeating the data URL up to thirty times.
+  const avatarById = new Map(squadStats.filter(row => row.avatar).map(row => [row.id, row.avatar]))
   const pending = (me?.pending || []).filter(row => row.direction === 'incoming').length
   const ready = !!me && !!data
 
@@ -521,7 +525,8 @@ export default function Social() {
               onMenu={openFriendMenu} onAdd={() => openAdd()} />
             <SharedPlansSection plans={plans.received} busyId={planBusy}
               onOpen={openSharedPlan} onMenu={openSharedPlanMenu} />
-            {squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react} />}
+            {squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react}
+              avatarById={avatarById} />}
           </>}
   </div>
 }

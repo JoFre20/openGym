@@ -103,7 +103,7 @@ if you want to try it before installing anything.
 - Import from FitNotes, Strong, Hevy (CSV or API key) and Apple Health weight exports. Export
   everything as one JSON file, or your workouts and body data as a spreadsheet (CSV).
 - Share a plan as a small file, print it as a PDF, or send it to a friend from the squad screen.
-- A friends and squad screen: friend codes, privacy controls, a weekly squad board, one-tap reactions and plans shared between friends.
+- A friends and squad screen: friend codes, profile pictures, privacy controls, a weekly squad board, one-tap reactions and plans shared between friends.
 - Optional admin dashboard with invite-only signup and an activity log.
 - 20 languages, including right-to-left Arabic and Traditional Chinese. Exercise names and
   instructions are translated for most of them.

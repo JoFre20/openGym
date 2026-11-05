@@ -6,6 +6,7 @@ import React, { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import Admin from './Admin.jsx'
+import { confirmSheet } from '../sheets.jsx'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
 
@@ -44,6 +45,7 @@ function render(el) {
 const settle = () => act(() => new Promise(r => setTimeout(r, 0)))
 
 const good = { id: 'w1', name: 'Push day', d: '2026-09-10', start: 1000, end: 61000, entries: [{ sets: [{ done: true }, { done: false }] }] }
+const AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 
 beforeEach(() => {
   document.body.innerHTML = ''
@@ -80,6 +82,28 @@ describe('Admin user drill-down', () => {
     expect(rows.length).toBe(1)
     expect(rows[0].textContent).toContain('Push day')
     expect(rows[0].textContent).toContain('1 sets')
+  })
+
+  it('shows another profile picture and lets an admin remove it', async () => {
+    mocks.answers['/api/admin/user'].user.avatar = AVATAR
+    mocks.answers['/api/admin/user/avatar/delete'] = { ok: true, id: 'u1', removed: true }
+    const page = render(<Admin />)
+    await settle()
+    const row = [...page.querySelectorAll('.item')].find(el => el.textContent.includes('Mallory'))
+    act(() => row.click())
+    const sheet = render(mocks.sheets[0](() => {}))
+    await settle()
+    expect(sheet.querySelector('img').getAttribute('src')).toBe(AVATAR)
+
+    const remove = [...sheet.querySelectorAll('button')].find(b => b.textContent === 'Remove profile picture')
+    expect(remove).toBeTruthy()
+    confirmSheet.mockClear()
+    act(() => remove.click())
+    const ask = confirmSheet.mock.calls.at(-1)[0]
+    expect(ask.title).toContain('Mallory')
+    await act(async () => { await ask.onConfirm() })
+    await settle()
+    expect([...sheet.querySelectorAll('button')].some(b => b.textContent === 'Remove profile picture')).toBe(false)
   })
 })
 

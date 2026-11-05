@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { initialsOf } from '../lib/social-view.js'
 import { socialError, socialMe, socialPlans, sharePlanWithFriends, removeSharedPlan } from '../lib/api.js'
 import { buildPlanBundle } from '../lib/plan-share.js'
 import { exCount, fmtDate, isoOf, routineCount } from '../lib/format.js'
@@ -8,6 +7,7 @@ import { nav } from '../lib/nav.js'
 import { useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { confirmSheet } from '../sheets.jsx'
+import Avatar from './Avatar.jsx'
 import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 // The sheet borrows the avatar, empty-card and request-row styles the Friends screen uses.
@@ -127,7 +127,7 @@ export default function SharePlanSheet({ close }) {
             const on = selected.includes(friend.id)
             return <button type="button" key={friend.id} className={'lrow tap share-plan-friend' + (on ? ' on' : '')}
               aria-pressed={on} disabled={busy} onClick={() => toggle(friend.id)}>
-              <span className="social-avatar small">{initialsOf(friend.name)}</span>
+              <Avatar name={friend.name} avatar={friend.avatar} size="sm" />
               <span className="lrow-m"><span className="lrow-t">{friend.name}</span></span>
               <span className={'menu-on' + (on ? ' is-on' : '')}><Icon name="check" /></span>
             </button>

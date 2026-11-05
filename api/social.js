@@ -386,6 +386,7 @@ export function squadStats(social, friendIds, userById, stateById, { today = nul
     return {
       id,
       name: userById(id)?.name || '',
+      ...(profile.avatar ? { avatar: profile.avatar } : {}),
       workoutsThisWeek,
       weight: weightProgressOf(state, profile.shareWeight || 'none', { today })
     };

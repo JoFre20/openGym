@@ -2661,4 +2661,9 @@ export default {
   'This plan is too big to share.': 'Ce plan est trop volumineux pour être partagé.',
   'Your friends choose whether to add it to their own plan.': 'Tes amis décident s’ils l’ajoutent à leur propre plan.',
   '{0} day': '{0} jour',
+  'Profile picture': 'Photo de profil',
+  'Your friends see this picture.': 'Tes amis voient cette photo.',
+  'Profile picture updated': 'Photo de profil mise à jour',
+  'Profile picture removed': 'Photo de profil supprimée',
+  'That picture is too big. Choose a smaller one.': 'Cette photo est trop lourde. Choisis-en une plus petite.',
 }

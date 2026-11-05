@@ -33,6 +33,7 @@ import {
 import { createDeviceLink, findDeviceLink, burnDeviceLink, dropDeviceLinks, recoveryLinkOf, RECOVERY_TTL_MS } from './device-link.js';
 import { startAdminSocket } from './admin-socket.js';
 import { createMediaStore, mediaLimits, mediaConfig, MediaError, HASH_RE } from './media.js';
+import { avatarProblem } from './avatar.js';
 import { effectiveRoutineId } from './queue.js';
 import { stampPut } from './sync-stamps.js';
 import { atomicWrite as durableWrite } from './durable.js';
@@ -226,15 +227,21 @@ function removeSocialUser(uid) {
 try { ensureSocialProfiles(); } catch (e) { console.error('social: could not prepare profiles at boot:', e.message); }
 
 const socialUserById = uid => db.users.find(u => u.id === uid && !u.disabled) || null;
+const socialAvatarOf = uid => {
+  const avatar = social?.profiles?.[uid]?.avatar;
+  return typeof avatar === 'string' && avatar ? avatar : null;
+};
 const socialSettings = profile => ({ shareWorkouts: profile.shareWorkouts, shareWeight: profile.shareWeight });
 function socialFriendRow(friendship, viewerId) {
   const otherId = friendship.from === viewerId ? friendship.to : friendship.from;
   const other = socialUserById(otherId);
   if (!other) return null;
+  const avatar = socialAvatarOf(other.id);
   return {
     friendshipId: friendship.id,
     id: other.id,
     name: other.name,
+    ...(avatar ? { avatar } : {}),
     since: Number(friendship.acceptedAt || friendship.createdAt) || 0
   };
 }
@@ -242,11 +249,13 @@ function socialPendingRow(friendship, viewerId) {
   const incoming = friendship.to === viewerId;
   const other = socialUserById(incoming ? friendship.from : friendship.to);
   if (!other) return null;
+  const avatar = socialAvatarOf(other.id);
   return {
     id: friendship.id,
     direction: incoming ? 'incoming' : 'outgoing',
     userId: other.id,
     name: other.name,
+    ...(avatar ? { avatar } : {}),
     createdAt: Number(friendship.createdAt) || 0
   };
 }
@@ -262,11 +271,11 @@ function socialPlanRow(share, viewerId) {
   const incoming = share.to === viewerId;
   const other = socialUserById(incoming ? share.from : share.to);
   if (!other) return null;
+  const avatar = socialAvatarOf(other.id);
+  const peer = { id: other.id, name: other.name, ...(avatar ? { avatar } : {}) };
   return {
     id: share.id,
-    ...(incoming
-      ? { from: { id: other.id, name: other.name } }
-      : { to: { id: other.id, name: other.name } }),
+    ...(incoming ? { from: peer } : { to: peer }),
     ...planShareSummary(share.plan),
     createdAt: Number(share.createdAt) || 0
   };
@@ -1343,7 +1352,10 @@ function loginTarget(body) {
 }
 const acctKey = u => 'acct:' + u.id;
 const passkeyCount = u => db.creds.filter(c => c.userId === u.id).length;
-const publicUser = u => ({ id: u.id, name: u.name, admin: isAdmin(u), ...(isOwner(u) ? { owner: true } : {}) });
+const publicUser = u => {
+  const avatar = socialAvatarOf(u.id);
+  return { id: u.id, name: u.name, admin: isAdmin(u), ...(isOwner(u) ? { owner: true } : {}), ...(avatar ? { avatar } : {}) };
+};
 const POLICY_ERRORS = {
   'too-short': `the password needs at least ${MIN_LENGTH} characters`,
   'too-long': `the password can have at most ${MAX_LENGTH} characters`,
@@ -2090,9 +2102,12 @@ const REST_TIMER_SETS = createWindow({ max: 60, windowMs: 60000 });
 const SOCIAL_REQUESTS = createWindow({ max: 20, windowMs: 3600000 });
 const SOCIAL_REACTIONS = createWindow({ max: 120, windowMs: 3600000 });
 const SOCIAL_PLAN_SHARES = createWindow({ max: 20, windowMs: 3600000 });
+// A picture is small but lands in social.json on every change; a handful an hour is plenty for
+// a person trying a few shots, and a loop cannot grow the file without bound.
+const SOCIAL_AVATARS = createWindow({ max: 20, windowMs: 3600000 });
 setInterval(() => {
   PUSH_TESTS.sweep(); REST_TIMER_SETS.sweep(); SOCIAL_REQUESTS.sweep();
-  SOCIAL_REACTIONS.sweep(); SOCIAL_PLAN_SHARES.sweep();
+  SOCIAL_REACTIONS.sweep(); SOCIAL_PLAN_SHARES.sweep(); SOCIAL_AVATARS.sweep();
 }, 600000).unref();
 function pushThrottled(res, win, user) {
   const wait = win.take(user.id);
@@ -2796,6 +2811,45 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  // The picture is a small, self-contained data URL in the social profile (api/avatar.js), not
+  // an upload into the media store: it must be visible to friends and admins in the same answer
+  // as the name, and a paired phone has no cookie to put on an <img> request. The route is just
+  // JSON, so it works the same in a browser and in the app. These are outside the password-only
+  // route block: a profile picture belongs to every instance, not to PASSWORD_LOGIN.
+  'PUT /api/account/avatar': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    if (pushThrottled(res, SOCIAL_AVATARS, user)) return;
+    const body = await readBody(req);
+    const problem = avatarProblem(body.avatar);
+    if (problem) {
+      return json(res, problem === 'avatar-too-large' ? 413 : 400, {
+        error: problem === 'avatar-too-large' ? 'that profile picture is too large' : 'that is not a usable profile picture',
+        code: problem
+      });
+    }
+    const profile = ensureSocialProfile(user.id);
+    if (profile.avatar !== body.avatar) {
+      profile.avatar = body.avatar;
+      profile.updatedAt = Date.now();
+      saveSocial();
+      audit(req, 'account.avatar.set', { user });
+    }
+    json(res, 200, { ok: true, avatar: body.avatar });
+  },
+  'DELETE /api/account/avatar': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const profile = ensureSocialProfile(user.id);
+    if (profile.avatar) {
+      delete profile.avatar;
+      profile.updatedAt = Date.now();
+      saveSocial();
+      audit(req, 'account.avatar.remove', { user });
+    }
+    json(res, 200, { ok: true, avatar: null });
+  },
+
   'GET /api/social/me': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
@@ -2803,6 +2857,7 @@ const routes = {
     json(res, 200, {
       friendCode: profile.friendCode,
       settings: socialSettings(profile),
+      ...(profile.avatar ? { avatar: profile.avatar } : {}),
       friends: socialFriends(user.id),
       pending: pendingFriendships(social, user.id).map(f => socialPendingRow(f, user.id)).filter(Boolean),
       planShares: socialPlanCount(user.id)
@@ -3112,6 +3167,7 @@ const routes = {
     json(res, 200, {
       user: {
         id: u.id, name: u.name, created: u.created || null, disabled: !!u.disabled, admin: isAdmin(u), owner: isOwner(u), invitedBy: u.invitedBy || null,
+        ...(socialAvatarOf(u.id) ? { avatar: socialAvatarOf(u.id) } : {}),
         // Only on an instance with password sign-in: whether they have one, and until when an
         // unused reset code is good.
         ...(PASSWORD_LOGIN ? { password: hasPassword(u), email: u.email || null, resetUntil: u.pwReset?.exp > Date.now() ? u.pwReset.exp : null } : {}),
@@ -3160,6 +3216,24 @@ const routes = {
     saveDb();
     audit(req, u.disabled ? 'admin.user.disable' : 'admin.user.enable', { user: admin, target: u });
     json(res, 200, { ok: true, id: u.id, disabled: u.disabled });
+  },
+
+  // Moderation only: the account and its data stay, and the person can upload another picture.
+  // Any admin may remove any other profile's picture; one's own is removed in Settings.
+  'POST /api/admin/user/avatar/delete': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = await readBody(req);
+    const u = db.users.find(x => x.id === body.id);
+    if (!u) return json(res, 404, { error: 'no such user' });
+    const profile = social.profiles[u.id];
+    const removed = !!(profile && profile.avatar);
+    if (removed) {
+      delete profile.avatar;
+      profile.updatedAt = Date.now();
+      saveSocial();
+      audit(req, 'admin.user.avatar.delete', { user: admin, target: u });
+    }
+    json(res, 200, { ok: true, id: u.id, removed });
   },
 
   // Disable locks an account out; this removes it. The one destructive action in the app, so the

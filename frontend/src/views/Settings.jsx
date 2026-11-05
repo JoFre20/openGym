@@ -41,6 +41,9 @@ import { coachAvailable } from '../lib/coach.js'
 import { REST_MAX, REST_PAUSE_MIN, REST_PAUSE_MAX, fmtRest, fmtDuration } from '../lib/duration.js'
 import { starterPlanSheet, confirmSheet, importFromApp, importFromHevy, equipmentProfileSheet, plateInventorySheet, dumbbellInventorySheet, barDefaultsSheet, menuSheet } from '../sheets.jsx'
 import Icon from '../components/Icon.jsx'
+import Avatar from '../components/Avatar.jsx'
+import ProfilePicture from '../components/ProfilePicture.jsx'
+import { avatarSrc } from '../lib/avatar.js'
 import { durationSheet } from '../components/DurationWheel.jsx'
 import { showsConnection, showsLocalLine } from '../components/SyncBanner.jsx'
 import BackupFolderRow, { useBackupFolder, autoBackupSubtitle } from '../components/BackupFolderRow.jsx'
@@ -1000,6 +1003,8 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     </>,
 
     account: () => <>
+      {/* A picture is part of the account, and a phone user has no other place to change it. */}
+      {user && !DEMO && <ProfilePicture />}
       {/* The server: which one, which account, how that stands, "Sync now". A paired phone's
           Admin and Disconnect sit in the same block; a browser's account rows follow in their own. */}
       {user && !DEMO && <ServerSyncSection>
@@ -1108,6 +1113,7 @@ function SettingsRoot({ ctx, preview, open, user, sync, home, go, entryKey }) {
     : MOBILE ? { title: t('This phone'), sub: t('All data stays on this phone') }
     : { title: t('Guest'), sub: t('Your data lives on this device. Sign in to sync.') }
   const initial = user && !DEMO ? String(user.name || '?').trim().charAt(0).toUpperCase() : null
+  const hasPicture = !!(user && !DEMO && avatarSrc(user.avatar))
   const nav = useNavigate()
   // Only while the server offers the Coach (the flag every Coach screen reads): on a box without
   // it the admin dashboard has no Coach card to land on.
@@ -1129,7 +1135,9 @@ function SettingsRoot({ ctx, preview, open, user, sync, home, go, entryKey }) {
     </Section> : <div className="sp-empty">{t('No setting matches “{0}”.', q.trim())}</div>) : <>
       <Section>
         <button className="lrow tap sp-acct" onClick={() => open('account')}>
-          <span className={'sp-avatar' + (initial ? ' on' : '')} aria-hidden="true">{initial || <Icon name="personCircle" />}</span>
+          {user && !DEMO
+            ? <Avatar name={user.name} avatar={user.avatar} size="lg" className={'sp-avatar' + (hasPicture ? '' : ' on')} />
+            : <span className={'sp-avatar' + (initial ? ' on' : '')} aria-hidden="true">{initial || <Icon name="personCircle" />}</span>}
           <span className="lrow-m"><span className="lrow-t">{acct.title}</span><span className="lrow-s">{acct.sub}</span></span>
           <Icon name="chevronRight" className="lrow-c" />
         </button>
