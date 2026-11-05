@@ -1,4 +1,8 @@
 .social-hdr .hdr-actions{gap:7px}
+/* The shared .lrow rule keeps a 150px floor for the title so long settings labels move the
+   segmented control to its own line. "Gewicht" is short and this page has the room; without
+   this override Aus/Delta/kg wrapped below the label even at 390px. */
+.social-page .lrow:has(.seg-inline) .lrow-m{min-width:auto}
 .social-season{
   display:inline-flex;width:22px;height:22px;margin-inline-start:6px;
   vertical-align:-4px;pointer-events:none;
@@ -78,45 +82,51 @@
 
 .social-section-head{margin:20px 2px 9px;align-items:baseline}
 .social-section-head .sec{margin:0}
-.social-strip{
-  display:flex;gap:10px;overflow-x:auto;overscroll-behavior-x:contain;touch-action:pan-x;
-  margin-inline:calc(-1 * var(--pad));padding-inline:var(--pad);padding-bottom:5px;
-  scroll-padding-inline:var(--pad);scroll-snap-type:x proximity;
-  scrollbar-width:none;-webkit-overflow-scrolling:touch;
-}
-.social-strip::-webkit-scrollbar{display:none}
+/* One friend is a full-width row: the old 152px carousel tiles left most of a phone screen
+   empty beside a single friend, and the count, the workout-privacy word and the weight-privacy
+   word read as three unrelated lines. The row keeps avatar, name and both states together,
+   with the weekly ring as the only number on the right. */
+.social-strip{display:flex;flex-direction:column;gap:10px}
 .social-friend{
-  flex:0 0 152px;min-width:0;scroll-snap-align:start;
-  background:var(--surface);border-radius:var(--r-card);padding:12px;
-  display:flex;flex-direction:column;align-items:center;text-align:center;
+  min-width:0;display:grid;grid-template-columns:44px minmax(0,1fr) 52px;
+  grid-template-areas:'avatar main side';align-items:center;column-gap:10px;
+  background:var(--surface);border-radius:var(--r-card);padding:10px 12px;
 }
-.social-friend-top{width:100%;min-height:32px;display:flex;align-items:center;justify-content:space-between}
 .social-avatar{
-  width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  grid-area:avatar;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
   background:var(--acc-soft);color:var(--acc);font-size:15px;font-weight:700;letter-spacing:.02em;
 }
 .social-avatar.small{width:34px;height:34px;font-size:12px;flex:none}
-.social-more{width:28px;height:28px;font-size:14px;color:var(--label-3);margin-inline-end:-5px}
+.social-friend-main{grid-area:main;min-width:0;display:flex;flex-direction:column;gap:1px;text-align:start}
 .social-friend-name{
-  width:100%;margin-top:2px;font-size:15px;font-weight:600;line-height:1.2;
+  font-size:16px;font-weight:600;line-height:1.2;
   overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
 }
-.social-ring-wrap{position:relative;width:64px;height:64px;margin:8px 0 2px;flex:none}
+.social-friend-meta{font-size:12px;color:var(--label-2)}
+.social-friend-side{
+  grid-area:side;align-self:stretch;display:flex;flex-direction:column;
+  align-items:center;justify-content:space-between;gap:2px;
+}
+.social-more{width:36px;height:36px;font-size:14px;color:var(--label-3);margin:0}
+.social-ring-wrap{position:relative;width:48px;height:48px;flex:none}
 .social-ring{width:100%;height:100%;display:block}
 .social-ring-bg{fill:none;stroke:var(--surface-3);stroke-width:5}
 .social-ring-fg{
   fill:none;stroke:var(--acc);stroke-width:5;stroke-linecap:round;
   transition:stroke-dashoffset .45s var(--ease);
 }
-.social-ring-num{position:absolute;inset:0;display:grid;place-items:center;font-size:20px;font-weight:700;letter-spacing:-.02em}
-.social-friend-meta{font-size:12px;color:var(--label-2);min-height:17px}
-.social-weight{margin-top:6px;min-height:34px;display:flex;flex-direction:column;align-items:center;gap:2px;justify-content:center}
+.social-ring-num{position:absolute;inset:0;display:grid;place-items:center;font-size:16px;font-weight:700;letter-spacing:-.02em}
+.social-ring-num .icn{font-size:17px;color:var(--label-2)}
+.social-weight{margin-top:1px;min-height:0;display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 6px}
 .social-weight-private{flex-direction:row;gap:4px;color:var(--label-3);font-size:12px}
 .social-weight-private .icn{font-size:12px}
-.social-weight-now{font-size:14px;font-weight:600;line-height:1.15}
+.social-weight-now{font-size:13px;font-weight:600;line-height:1.15}
 .social-weight-now span{font-size:11px;font-weight:400;color:var(--label-2)}
 .social-weight-delta{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--label-2)}
 .social-weight-delta .icn{font-size:11px;--icon-stroke:2.2}
+@media (min-width:600px){
+  .social-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:10px}
+}
 .social-feed-section{margin-top:22px}
 .social-feed{display:flex;flex-direction:column;gap:12px}
 .social-feed-card{margin:0;padding:15px}

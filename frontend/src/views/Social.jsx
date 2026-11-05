@@ -102,7 +102,9 @@ function EmptySquad({ onAdd }) {
 
 function WeightLine({ weight, unit }) {
   const view = socialWeightView(weight, unit)
-  if (!view) return <div className="social-weight social-weight-private"><Icon name="lock" />{t('Private')}</div>
+  if (!view) return <div className="social-weight social-weight-private">
+    <Icon name="lock" /><span>{t('Weight')} · {t('Private')}</span>
+  </div>
   const delta = view.delta
   const icon = delta == null ? null : delta > 0 ? 'arrowUp' : delta < 0 ? 'arrowDown' : 'dot'
   return <div className="social-weight">
@@ -117,25 +119,30 @@ function WeightLine({ weight, unit }) {
 function SquadCard({ stat, friendship, unit, onMenu }) {
   const count = stat.workoutsThisWeek
   const progress = ringProgress(count)
+  const ringLabel = count == null
+    ? t('Workouts') + ' · ' + t('Private')
+    : tn('{0} workout', '{0} workouts', count)
   return <div className="social-friend" role="listitem">
-    <div className="social-friend-top">
-      <span className="social-avatar">{initialsOf(stat.name)}</span>
+    <span className="social-avatar">{initialsOf(stat.name)}</span>
+    <div className="social-friend-main">
+      <div className="social-friend-name">{stat.name}</div>
+      {count != null && <div className="social-friend-meta">
+        {tn('{0} workout', '{0} workouts', count)}
+      </div>}
+      <WeightLine weight={stat.weight} unit={unit} />
+    </div>
+    <div className="social-friend-side">
       {friendship && <button className="iconbtn social-more" aria-label={t('More') + ' ' + stat.name}
         onClick={() => onMenu(stat, friendship)}><Icon name="more" /></button>}
+      <div className="social-ring-wrap" role="img" aria-label={ringLabel}>
+        <svg className="social-ring" viewBox="0 0 56 56" aria-hidden="true">
+          <circle className="social-ring-bg" cx="28" cy="28" r={RING_R} />
+          <circle className="social-ring-fg" cx="28" cy="28" r={RING_R}
+            strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - progress)} transform="rotate(-90 28 28)" />
+        </svg>
+        <span className="social-ring-num">{count == null ? <Icon name="lock" /> : count}</span>
+      </div>
     </div>
-    <div className="social-friend-name">{stat.name}</div>
-    <div className="social-ring-wrap">
-      <svg className="social-ring" viewBox="0 0 56 56" aria-hidden="true">
-        <circle className="social-ring-bg" cx="28" cy="28" r={RING_R} />
-        <circle className="social-ring-fg" cx="28" cy="28" r={RING_R}
-          strokeDasharray={RING_C} strokeDashoffset={RING_C * (1 - progress)} transform="rotate(-90 28 28)" />
-      </svg>
-      <span className="social-ring-num">{count == null ? '–' : count}</span>
-    </div>
-    <div className="social-friend-meta">
-      {count == null ? t('Private') : tn('{0} workout', '{0} workouts', count)}
-    </div>
-    <WeightLine weight={stat.weight} unit={unit} />
   </div>
 }
 

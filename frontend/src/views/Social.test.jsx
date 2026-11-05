@@ -152,6 +152,24 @@ describe('Friends & squad', () => {
     expect(buttonByLabel(host, 'React with 🔥').textContent).toContain('2')
   })
 
+  it('shows a lock ring and one clear private label for a private friend', async () => {
+    const host = render(<Social />)
+    await flush()
+
+    const cards = [...host.querySelectorAll('.social-friend')]
+    const cara = cards.find(card => card.textContent.includes('Cara'))
+    expect(cara.querySelector('.social-ring-num .icn')).not.toBeNull()
+    expect(cara.querySelector('.social-ring-wrap').getAttribute('aria-label')).toBe('Workouts · Private')
+    expect(cara.querySelector('.social-friend-meta')).toBeNull()
+    expect(cara.querySelector('.social-weight-private').textContent).toBe('Weight · Private')
+    expect(cara.textContent.match(/Private/g)).toHaveLength(1)
+
+    const ben = cards.find(card => card.textContent.includes('Ben'))
+    expect(ben.querySelector('.social-ring-num').textContent).toBe('3')
+    expect(ben.querySelector('.social-ring-wrap').getAttribute('aria-label')).toBe('3 workouts')
+    expect(ben.querySelector('.social-friend-meta').textContent).toBe('3 workouts')
+  })
+
   it('shows the active seasonal element next to the Friends title', async () => {
     useStore.setState({ S: { ...useStore.getState().S, seasonal: { halloween: 'on' } } })
     const host = render(<Social />)
