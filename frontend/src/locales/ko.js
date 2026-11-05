@@ -3730,4 +3730,7 @@ export default {
   'Profile picture updated': '프로필 사진이 업데이트되었어요',
   'Profile picture removed': '프로필 사진이 삭제되었어요',
   'That picture is too big. Choose a smaller one.': '사진이 너무 커요. 더 작은 사진을 선택해 주세요.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "달걀은 내일까지 쉬고 있다. 토끼가 나머지를 숨기고 있다.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "색종이는 내일까지 쉬고 있다. 파티 폭죽도 휴식이 필요하다.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "빨간 봉투는 내일까지 쉬고 있다. 등불은 아직 켜져 있다.",
 }

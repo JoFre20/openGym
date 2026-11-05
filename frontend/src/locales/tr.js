@@ -3730,4 +3730,7 @@ export default {
   'Profile picture updated': 'Profil fotoğrafı güncellendi',
   'Profile picture removed': 'Profil fotoğrafı kaldırıldı',
   'That picture is too big. Choose a smaller one.': 'Bu fotoğraf çok büyük. Daha küçük bir tane seç.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "Yumurta yarına kadar dinleniyor. Tavşan geri kalanını saklıyor.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "Konfeti yarına kadar dinleniyor. Parti patlatıcılarının bile molaya ihtiyacı var.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "Kırmızı zarf yarına kadar dinleniyor. Fenerler hâlâ yanıyor.",
 }

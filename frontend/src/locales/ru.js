@@ -3734,4 +3734,7 @@ export default {
   'Profile picture updated': 'Фото профиля обновлено',
   'Profile picture removed': 'Фото профиля удалено',
   'That picture is too big. Choose a smaller one.': 'Это фото слишком большое. Выберите фото поменьше.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "Яйцо отдыхает до завтра. Кролик прячет остальные.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "Конфетти отдыхает до завтра. Даже хлопушкам нужен перерыв.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "Красный конверт отдыхает до завтра. Фонарики ещё горят.",
 }

@@ -3809,4 +3809,7 @@ export default {
   'Profile picture updated': 'প্রোফাইল ছবি আপডেট হয়েছে',
   'Profile picture removed': 'প্রোফাইল ছবি সরানো হয়েছে',
   'That picture is too big. Choose a smaller one.': 'এই ছবিটি খুব বড়। ছোট একটি ছবি বেছে নিন।',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "ডিমটি আগামীকাল পর্যন্ত বিশ্রাম নিচ্ছে। খরগোশ বাকিগুলো লুকাচ্ছে।",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "কনফেটি আগামীকাল পর্যন্ত বিশ্রাম নিচ্ছে। পার্টি পপারেরও বিরতি দরকার।",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "লাল খামটি আগামীকাল পর্যন্ত বিশ্রাম নিচ্ছে। লণ্ঠনগুলো এখনও জ্বলছে।",
 }

@@ -3733,4 +3733,7 @@ export default {
   'Profile picture updated': 'Profilkép frissítve',
   'Profile picture removed': 'Profilkép eltávolítva',
   'That picture is too big. Choose a smaller one.': 'Ez a kép túl nagy. Válassz egy kisebbet.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "A tojás holnapig pihen. A nyuszi a többit rejti.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "A konfetti holnapig pihen. Még a petárdáknak is kell egy szünet.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "A piros boríték holnapig pihen. A lámpások még égnek.",
 }

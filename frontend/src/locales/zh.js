@@ -3730,4 +3730,7 @@ export default {
   'Profile picture updated': '头像已更新',
   'Profile picture removed': '头像已移除',
   'That picture is too big. Choose a smaller one.': '这张照片太大，请选择较小的照片。',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "蛋休息到明天。兔子正在藏剩下的。",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "彩纸休息到明天。连派对拉炮也需要休息。",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "红包休息到明天。灯笼还亮着。",
 }

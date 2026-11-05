@@ -3727,4 +3727,7 @@ export default {
   'Profile picture updated': 'Фото профілю оновлено',
   'Profile picture removed': 'Фото профілю видалено',
   'That picture is too big. Choose a smaller one.': 'Це фото завелике. Виберіть менше.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "Яйце відпочиває до завтра. Заєць ховає решту.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "Конфеті відпочиває до завтра. Навіть хлопавкам потрібна перерва.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "Червоний конверт відпочиває до завтра. Ліхтарики ще горять.",
 }

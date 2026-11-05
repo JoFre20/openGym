@@ -3741,4 +3741,7 @@ export default {
   'Profile picture updated': 'อัปเดตรูปโปรไฟล์แล้ว',
   'Profile picture removed': 'ลบรูปโปรไฟล์แล้ว',
   'That picture is too big. Choose a smaller one.': 'รูปนี้ใหญ่เกินไป เลือกรูปที่เล็กกว่านี้',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "ไข่กำลังพักถึงพรุ่งนี้ กระต่ายกำลังซ่อนที่เหลือ",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "เศษกระดาษกำลังพักถึงพรุ่งนี้ แม้แต่ปืนฉีดกระดาษก็ต้องการพัก",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "ซองแดงกำลังพักถึงพรุ่งนี้ โคมไฟยังติดอยู่",
 }

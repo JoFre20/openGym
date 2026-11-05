@@ -3730,4 +3730,7 @@ export default {
   'Profile picture updated': 'Foto de perfil actualizada',
   'Profile picture removed': 'Foto de perfil eliminada',
   'That picture is too big. Choose a smaller one.': 'Esa foto es demasiado grande. Elige una más pequeña.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "El huevo descansa hasta mañana. El conejo está escondiendo el resto.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "El confeti descansa hasta mañana. Hasta los cañones de confeti necesitan un descanso.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "El sobre rojo descansa hasta mañana. Los faroles siguen encendidos.",
 }

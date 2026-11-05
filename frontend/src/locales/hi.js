@@ -3730,4 +3730,7 @@ export default {
   'Profile picture updated': 'प्रोफ़ाइल फ़ोटो अपडेट हुई',
   'Profile picture removed': 'प्रोफ़ाइल फ़ोटो हटाई गई',
   'That picture is too big. Choose a smaller one.': 'यह फ़ोटो बहुत बड़ी है। छोटी फ़ोटो चुनें।',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "अंडा कल तक आराम कर रहा है। खरगोश बाकी छिपा रहा है।",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "कॉन्फ़ेटी कल तक आराम कर रही है। पार्टी पॉपर को भी ब्रेक चाहिए।",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "लाल लिफ़ाफ़ा कल तक आराम कर रहा है। लालटेन अभी भी जल रही हैं।",
 }

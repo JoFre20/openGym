@@ -3777,4 +3777,7 @@ export default {
   'Profile picture updated': 'Profilbilden uppdaterad',
   'Profile picture removed': 'Profilbilden borttagen',
   'That picture is too big. Choose a smaller one.': 'Den bilden är för stor. Välj en mindre.',
+  "The egg is napping until tomorrow. The bunny is hiding the rest.": "Ägget vilar till imorgon. Haren gömmer resten.",
+  "The confetti is resting until tomorrow. Even party poppers need a break.": "Konfettin vilar till imorgon. Till och med smällare behöver en paus.",
+  "The red envelope is resting until tomorrow. The lanterns are still lit.": "Det röda kuvertet vilar till imorgon. Lyktorna lyser fortfarande.",
 }
