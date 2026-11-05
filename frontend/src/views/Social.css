@@ -18,9 +18,18 @@
   display:grid;place-items:center;background:var(--acc);color:var(--on-acc);
   font-size:11px;line-height:1;font-variant-numeric:tabular-nums;
 }
-@media (max-width:390px){
+/* On a phone the word beside the plus squeezed the page title until "Freunde" broke in the
+   middle ("Freun / de") and the subtitle took three lines. The icon alone is the action; the
+   empty state below still carries the labelled button. */
+@media (max-width:520px){
+  .social-add-btn{
+    position:relative;width:36px;height:36px;padding:0;justify-content:center;border-radius:50%;
+  }
   .social-add-btn>span:not(.social-badge){display:none}
-  .social-add-btn{padding:0 9px}
+  .social-add-btn .social-badge{
+    position:absolute;top:-4px;inset-inline-end:-4px;min-width:16px;height:16px;padding:0 4px;
+    font-size:10px;box-shadow:0 0 0 2px var(--bg);pointer-events:none;
+  }
 }
 
 .social-code{

@@ -212,6 +212,7 @@ function SpiderDrop({ still, onGone }) {
 /** Decoration for one place in a view. Unknown spots draw nothing. */
 export function Deco({ spot }) {
   switch (spot) {
+    case 'friends': return <span className="hw-friends" aria-hidden="true"><Spider /></span>
     case 'header-bats': return <HeaderBats />
     case 'home-hero': return <Web className="hw-web-br" />
     case 'plan-card': return <Web className="hw-web-tr" />
