@@ -11,7 +11,7 @@ public enum HealthReadCore {
     /// A workout of a few hours at one sample a second is well under this.
     public static let maxSamples = 50_000
     /// The bundle ids that are openGym: the iPhone app, its Apple Watch app and widgets.
-    public static let ownPrefix = "ch.duartesantos.opengym"
+    public static let ownPrefix = "hb.jonte.opengym"
 
     public struct HeartSample: Equatable {
         public let ms: Double
