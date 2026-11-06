@@ -85,7 +85,7 @@ or Settings → Account → **"Connect to my server"** later) to finish. Notes:
   starts, friend requests, reactions, shared plans and Coach suggestions. They exist only while
   the phone is paired, the server has the matching credentials ([SELF_HOSTING.md](SELF_HOSTING.md)),
   and the switch is on. The time-based reminders stay local notifications, so nothing arrives
-  twice. A build without `google-services.json` (Android) or without the push entitlement in its
+  twice. The step-by-step iOS setup is in [IOS_PUSH.md](IOS_PUSH.md). A build without `google-services.json` (Android) or without the push entitlement in its
   provisioning profile (iOS) still runs, but registration fails until that build is configured.
   The F-Droid build leaves the plugin out entirely, so its switch never appears: FCM is not free
   software.

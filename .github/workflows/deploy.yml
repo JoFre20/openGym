@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main # Löst das Deployment bei jedem Push in main aus
+  workflow_dispatch:
 
 jobs:
   deploy:
