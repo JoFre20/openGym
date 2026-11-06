@@ -51,6 +51,9 @@ import {
   SOCIAL_START_TONES, splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
 } from './social.js';
 import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
+import {
+  nativeEnvironment, nativePushCapabilities, nativeTokenProblem, readNativePushConfig, sendNativeNotifications,
+} from './push-native.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -165,6 +168,7 @@ let db = loadDb();
 db.users = db.users || [];
 db.creds = db.creds || [];
 db.subs = db.subs || [];
+db.nativeSubs = db.nativeSubs || [];
 db.invites = db.invites || [];
 db.deviceLinks = db.deviceLinks || [];   // unused one-time device links, hashed (device-link.js)
 const isAdmin = user => !!user && (user.admin === true || ADMIN_UIDS.includes(user.id));
@@ -306,10 +310,10 @@ function socialPlanCount(uid) {
 // answer now, and a push service that is slow is not the athlete's problem.
 function notifyFriendsOfStart(sender, { startedAt }) {
   const profile = social.profiles[sender.id] || {};
-  const recipients = friendStartRecipients(social, sender.id, id => db.subs.some(sub => sub.userId === id))
+  const recipients = friendStartRecipients(social, sender.id, id => hasAnyPush(id))
     .filter(id => socialUserById(id));
   for (const id of recipients) {
-    sendPush(id, friendStartPush(readStateCached(id)?.lang, sender.name, {
+    sendBoth(id, friendStartPush(readStateCached(id)?.lang, sender.name, {
       tone: profile.startTone,
       seed: startedAt,
     })).catch(e => console.error('social: friend start push failed', e.message));
@@ -394,6 +398,15 @@ catch { vapid = webpush.generateVAPIDKeys(); fs.writeFileSync(vapidFile, JSON.st
 const VAPID_SUBJECT = process.env.VAPID_SUBJECT || (SECURE ? ORIGIN : 'mailto:admin@localhost');
 webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
 
+// Native push is optional per platform: a server with only an APNs key serves iPhones, one with
+// only a Firebase service account serves Android. Missing credentials disable that transport,
+// never the server. The credentials stay outside DATA_DIR and outside db.json.
+const nativePush = readNativePushConfig();
+const NATIVE_PUSH = nativePushCapabilities(nativePush);
+if (NATIVE_PUSH.ios || NATIVE_PUSH.android) {
+  console.log(`push: native ${NATIVE_PUSH.ios ? 'APNs' : ''}${NATIVE_PUSH.ios && NATIVE_PUSH.android ? ' + ' : ''}${NATIVE_PUSH.android ? 'FCM' : ''} configured`);
+}
+
 /* A push subscription's `endpoint` is a URL this server connects out to, chosen by whoever is
    signed in — so without a check /api/push/* is a request-forgery lever, and the api container
    sits on the same Docker network as the rest of the self-hoster's stack. Three limits below:
@@ -412,6 +425,8 @@ webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
 const PUSH_TIMEOUT_MS = 10000;
 const PUSH_CONCURRENCY = 6;
 const MAX_SUBS_PER_USER = 20;
+// A native token is one per app install; a handful of phones per profile is plenty.
+const MAX_NATIVE_SUBS_PER_USER = 20;
 
 // Same shape as dns.lookup (net-guard.js guardedLookup), so https.Agent can use it directly.
 const PUSH_AGENT = new https.Agent({ lookup: guardedLookup, keepAlive: false });
@@ -490,6 +505,49 @@ async function sendPush(userId, payload, deviceId) {
   // memory, so only the copy on disk lags: the next saveDb() that succeeds, from any route,
   // writes it out, and a restart re-reads the old file and prunes it again on the next send.
   if (dirty) { try { saveDb(); } catch (e) { console.error('push: could not save db.json', e.message); } }
+}
+
+/** Every transport this account has, web or native. A social push should reach both. */
+const hasAnyPush = userId =>
+  db.subs.some(s => s.userId === userId) || db.nativeSubs.some(s => s.userId === userId);
+
+/**
+ * The server's half of native push: one row per device token, pruned when APNs/FCM says it is
+ * dead and re-filed under the account using that device. The sender does the protocol work;
+ * this only selects the rows, stores the working APNs environment and removes the dead.
+ */
+async function sendNativePush(userId, payload, deviceId) {
+  let rows = db.nativeSubs.filter(s => s.userId === userId);
+  if (deviceId) rows = rows.filter(s => !s.deviceId || s.deviceId === deviceId);
+  if (!rows.length) return;
+  const result = await sendNativeNotifications(rows, payload, nativePush);
+  let dirty = false;
+  for (const row of result.results) {
+    if (!row) continue;
+    const stored = db.nativeSubs.find(s => s.userId === userId && s.platform === row.platform && s.token === row.token);
+    if (!stored) continue;
+    if (row.prune) {
+      db.nativeSubs = db.nativeSubs.filter(s => s !== stored);
+      dirty = true;
+      console.error('native push: dropped a dead token', userId, row.platform, row.reason || row.status);
+    } else if (row.ok && row.environment && stored.environment !== row.environment) {
+      stored.environment = row.environment;
+      dirty = true;
+    } else if (!row.ok) {
+      console.error('native push send failed', userId, row.platform, row.status, row.reason || row.error);
+    }
+  }
+  if (dirty) { try { saveDb(); } catch (e) { console.error('push: could not save native tokens', e.message); } }
+}
+
+/** Web Push plus the paired phone's native transport. Used by social, Coach and the test push. */
+async function sendBoth(userId, payload, deviceId) {
+  const [web, native] = await Promise.allSettled([
+    sendPush(userId, payload, deviceId),
+    sendNativePush(userId, payload, deviceId),
+  ]);
+  if (web.status === 'rejected') console.error('push send failed', userId, web.reason?.message || web.reason);
+  if (native.status === 'rejected') console.error('native push send failed', userId, native.reason?.message || native.reason);
 }
 
 // Rest-timer alerts: client schedules on start/extend, cancels on skip or on-screen completion —
@@ -1511,6 +1569,7 @@ function removeAccount(u) {
   db.users = db.users.filter(x => x.id !== u.id);
   db.creds = (db.creds || []).filter(c => c.userId !== u.id);
   db.subs = (db.subs || []).filter(x => x.userId !== u.id);
+  db.nativeSubs = (db.nativeSubs || []).filter(x => x.userId !== u.id);
   dropDeviceLinks(db, u.id);
   dropWatchLinks(db, u.id);
   dropWatchCodes(watchCodes, u.id);
@@ -2295,6 +2354,9 @@ const routes = {
       // Public like the two flags above: the caps are not a secret, and the absence of the
       // block is how the app knows this server does not take photos and videos at all.
       ...(MEDIA_ON ? { media: mediaConfig(MEDIA_LIMITS) } : {}),
+      // Native push is per platform; absent when this server has neither credential. A phone
+      // reads it before offering the Server notifications switch.
+      ...(NATIVE_PUSH.ios || NATIVE_PUSH.android ? { native_push: NATIVE_PUSH } : {}),
       ...(readSession(req) ? { coach: coachConfig.publicConfig() } : {}),
       // Which integrations this server offers (only to a session, like the Coach block). Absent
       // with INTEGRATIONS unset, which is how the app knows to show the server cards as off.
@@ -2475,9 +2537,11 @@ const routes = {
     if (!user) return json(res, 401, { error: 'not signed in' });
     user.sv = sessionVersion(user) + 1;
     // An unredeemed pairing code is a session-in-waiting for this account; it goes too, and so
-    // does an unused device link.
+    // does an unused device link. Paired phones lose their native push rows with the same sign
+    // out; their next boot cannot re-register a token the server no longer accepts.
     for (const [k, v] of pairings) if (v.uid === user.id) pairings.delete(k);
     dropDeviceLinks(db, user.id);
+    db.nativeSubs = (db.nativeSubs || []).filter(s => s.userId !== user.id);
     saveDb();
     audit(req, 'auth.logout.all', { user });
     json(res, 200, { ok: true }, { 'Set-Cookie': clearCookie });
@@ -2884,11 +2948,74 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  // The paired phone's APNs/FCM token. A token is one row per app install; registering it again
+  // keeps its created date, and a row filed under another account moves only when the caller
+  // presents the same device id (the web subscription's keys are its equivalent proof).
+  'POST /api/push/native': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const platform = text(body.platform).trim().toLowerCase();
+    const token = text(body.token).trim();
+    const problem = nativeTokenProblem(platform, token);
+    if (problem === 'platform') {
+      return json(res, 400, { error: 'platform must be ios or android', code: 'invalid-platform' });
+    }
+    if (problem) return json(res, 400, { error: 'invalid device token', code: 'invalid-token' });
+    if (!NATIVE_PUSH[platform]) {
+      return json(res, 409, { error: 'native push is not configured for this platform', code: 'native-push-off' });
+    }
+    const deviceId = deviceIdOf(body.deviceId);
+    // The app is the only caller that can know its own device id; it is not a secret, but it
+    // keeps a caller who merely learned a token from taking over another person's row.
+    const previous = db.nativeSubs.find(s => s.platform === platform && s.token === token);
+    if (previous && previous.userId !== user.id && previous.deviceId && previous.deviceId !== deviceId) {
+      return json(res, 409, { error: 'this device token belongs to another account', code: 'token-busy' });
+    }
+    db.nativeSubs = db.nativeSubs.filter(s => !(s.platform === platform && s.token === token));
+    // One phone registers one token; the cap only stops a client from accumulating rows forever.
+    const mine = db.nativeSubs.filter(s => s.userId === user.id);
+    if (mine.length >= MAX_NATIVE_SUBS_PER_USER) {
+      const drop = new Set(mine.slice(0, mine.length - MAX_NATIVE_SUBS_PER_USER + 1).map(s => `${s.platform}:${s.token}`));
+      db.nativeSubs = db.nativeSubs.filter(s => !drop.has(`${s.platform}:${s.token}`));
+    }
+    db.nativeSubs.push({
+      userId: user.id, platform, token,
+      ...(deviceId ? { deviceId } : {}),
+      // iOS tells us the APNs environment when it builds a debug or release app; older clients
+      // omit it and the sender tries both once.
+      ...(platform === 'ios' && nativeEnvironment(body.environment) ? { environment: nativeEnvironment(body.environment) } : {}),
+      created: previous?.created || new Date().toISOString(),
+    });
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
+  'GET /api/push/native/status': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const token = new URL(req.url, 'http://x').searchParams.get('token') || '';
+    const row = db.nativeSubs.find(s => s.userId === user.id && s.token === token);
+    json(res, 200, row
+      ? { subscribed: true, platform: row.platform, environment: row.environment || null }
+      : { subscribed: false });
+  },
+
+  'POST /api/push/native/unsubscribe': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const token = text(body.token).trim();
+    db.nativeSubs = db.nativeSubs.filter(s => !(s.userId === user.id && s.token === token));
+    saveDb();
+    json(res, 200, { ok: true });
+  },
+
   'POST /api/push/test': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     if (pushThrottled(res, PUSH_TESTS, user)) return;
-    await sendPush(user.id, testPush(readStateCached(user.id)?.lang));
+    await sendBoth(user.id, testPush(readStateCached(user.id)?.lang));
     json(res, 200, { ok: true });
   },
 
@@ -2967,8 +3094,8 @@ const routes = {
       pending: pendingFriendships(social, user.id).map(f => socialPendingRow(f, user.id)).filter(Boolean),
       planShares: socialPlanCount(user.id),
       // The Friends screen can say that an alert switch will not ring yet. Account-wide: any
-      // device of this profile is enough to receive it.
-      hasPush: db.subs.some(s => s.userId === user.id)
+      // device of this profile, web or native, is enough to receive it.
+      hasPush: hasAnyPush(user.id)
     });
   },
 
@@ -3043,7 +3170,7 @@ const routes = {
     };
     social.friendships.push(request);
     saveSocial();
-    sendPush(target.uid, friendRequestPush(readStateCached(target.uid)?.lang, user.name)).catch(e => console.error('social: friend request push failed', e.message));
+    sendBoth(target.uid, friendRequestPush(readStateCached(target.uid)?.lang, user.name)).catch(e => console.error('social: friend request push failed', e.message));
     json(res, 200, { request: socialPendingRow(request, user.id) });
   },
 
@@ -3171,7 +3298,7 @@ const routes = {
     }
     if (changed) {
       saveSocial();
-      sendPush(target.ownerId, reactionPush(readStateCached(target.ownerId)?.lang, user.name, emoji)).catch(e => console.error('social: reaction push failed', e.message));
+      sendBoth(target.ownerId, reactionPush(readStateCached(target.ownerId)?.lang, user.name, emoji)).catch(e => console.error('social: reaction push failed', e.message));
     }
     json(res, 200, { ok: true, reactions: reactionSummary(social, workoutId, user.id) });
   },
@@ -3213,7 +3340,7 @@ const routes = {
     }
     saveSocial();
     for (const friend of recipients) {
-      sendPush(friend.id, planSharePush(readStateCached(friend.id)?.lang, user.name))
+      sendBoth(friend.id, planSharePush(readStateCached(friend.id)?.lang, user.name))
         .catch(e => console.error('social: plan share push failed', e.message));
     }
     json(res, 200, { ok: true, shared: recipients.length });
@@ -3328,7 +3455,7 @@ const routes = {
         workouts: workouts.length,
         lastWorkout: last ? last.d : null,
         lastSync: lastSyncOf(u, S),
-        hasPush: db.subs.some(s => s.userId === u.id),
+        hasPush: hasAnyPush(u.id),
         live: livePresence(u.id),
         // The sign-in e-mail is an admin's to see (to hand out a reset code, to tell two
         // profiles apart), and only while the instance takes passwords at all.
@@ -3572,11 +3699,11 @@ coachJobs.recoverOnBoot();
 coachJobs.setProposalHook((uid, pending) => {
   const n = (pending?.changes || []).length;
   if (!n) return;
-  sendPush(uid, {
+  sendBoth(uid, {
     title: 'Your Coach has been reading',
     body: n === 1 ? '1 suggestion after this week' : `${n} suggestions after this week`,
     tag: 'coach-proposal', url: '#/coach'
-  });
+  }).catch(e => console.error('coach notify failed', e.message));
 });
 integrations.start();
 startCadence({ users: () => db.users.filter(u => !u.disabled), userNow, skip: uid => !stateSummary(uid)?.consent });

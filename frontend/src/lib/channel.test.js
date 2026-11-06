@@ -104,7 +104,11 @@ describe('install channel', () => {
       if (/com\.google\.android\.(gms|play)/.test(line)) expect(line).toMatch(/^\s*(\/\/|sideloadImplementation|playImplementation)/)
     }
     expect(gradle).toContain("exclude module: 'capacitor-mlkit-barcode-scanning'")
-    expect(gradle).not.toContain('google-services')
+    expect(gradle).toContain("exclude module: 'capacitor-push-notifications'")
+    // FCM's Google Services plugin is applied only when the Firebase file exists and this is
+    // not the F-Droid task; the F-Droid build has neither.
+    expect(gradle).toMatch(/if \(!fdroidBuild && file\('google-services\.json'\)\.exists\(\)\)/)
+    expect(gradle).toMatch(/apply plugin: 'com\.google\.gms\.google-services'/)
     // The Wear OS link imports Play services: kept out of src/main.
     const main = new URL('src/main/java/ch/duartesantos/opengym/', app)
     expect(existsSync(new URL('WatchBridgePlugin.java', main))).toBe(false)

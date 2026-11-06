@@ -840,6 +840,43 @@ Push services like a contact address for whoever runs the server, in case they e
 you about your pushes. openGym sends your `ORIGIN` by default; set `VAPID_SUBJECT=mailto:you@example.com`
 in `.env` if you would rather they had an inbox.
 
+### Native push to the phone apps (optional)
+
+The paired Capacitor app can also receive server-side alerts without Web Push: friend starts,
+friend requests, reactions, shared plans and Coach suggestions. The time-based reminders stay
+native local notifications, so enabling this does not duplicate them.
+
+Native push is per phone OS and needs the app developer's credentials. It is off until the
+credentials are mounted:
+
+- **iPhone:** an Apple Developer App ID with Push Notifications, an APNs Auth Key `.p8`, its
+  Key ID, your Team ID and the app's bundle id. Set `APNS_KEY_FILE`, `APNS_KEY_ID`,
+  `APNS_TEAM_ID`, `APNS_BUNDLE_ID`; `APNS_ENV=production` for TestFlight/App Store, `sandbox`
+  for a debug build, or leave it unset to discover the environment per token.
+- **Android:** a Firebase project with the app and Cloud Messaging enabled, and a service-account
+  JSON with the Firebase Messaging permission. Set `FCM_SERVICE_ACCOUNT_FILE` (and usually
+  `FCM_PROJECT_ID` is read from the JSON). The app build also needs the matching
+  `frontend/android/app/google-services.json`; without it the Android build has no native push.
+
+Mount the files read-only into the `api` container, for example:
+
+```yaml
+services:
+  api:
+    volumes:
+      - ./data:/data
+      - ./secrets/apns-key.p8:/run/secrets/apns-key.p8:ro
+      - ./secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
+```
+
+Restart the `api` container after adding or replacing the files. The server reports what it has
+in `GET /api/config` under `native_push`. A phone only shows its Server notifications switch when
+its platform is configured and the app has its push plugin. A small self-hosted instance does not
+need either credential; Web Push keeps working on its own.
+
+The F-Droid build deliberately leaves FCM out. Native Android push is available in the APK and
+Play builds built with `google-services.json`.
+
 ### Push endpoints on private addresses (`ALLOWED_PRIVATE_IPS`)
 
 The api container resolves push service domains to the IPs. Private IPs are banned by default.

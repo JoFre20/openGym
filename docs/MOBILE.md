@@ -29,6 +29,7 @@ openGym ships in two flavors from the same codebase:
 | Accounts | passkey sign-in, one profile per person | none, the phone *is* the account |
 | Data | synced to your server, readable on desktop | stays on the device (file in the app's private storage) |
 | Reminders | Web Push from your server | native local notifications, no server involved |
+| Server notifications | Web Push | native APNs/FCM when paired and the server is configured |
 | Exercise media | served by your server (`exercise-media/`) | packed into the app (`exercise-media/`) |
 
 The mobile flavor never talks to a backend by default: no sign-in screen, no sync, no
@@ -80,6 +81,14 @@ or Settings → Account → **"Connect to my server"** later) to finish. Notes:
   offers **Try again**, **Export backup**, or **Disconnect anyway**, which keeps those
   changes on the phone and adds them back the next time it is paired with the same server
   and account.
+- **Server notifications** (Settings → Reminders) use native APNs/FCM, not Web Push: friend
+  starts, friend requests, reactions, shared plans and Coach suggestions. They exist only while
+  the phone is paired, the server has the matching credentials ([SELF_HOSTING.md](SELF_HOSTING.md)),
+  and the switch is on. The time-based reminders stay local notifications, so nothing arrives
+  twice. A build without `google-services.json` (Android) or without the push entitlement in its
+  provisioning profile (iOS) still runs, but registration fails until that build is configured.
+  The F-Droid build leaves the plugin out entirely, so its switch never appears: FCM is not free
+  software.
 
 ### A server behind Cloudflare Access
 

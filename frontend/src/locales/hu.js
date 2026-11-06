@@ -3752,4 +3752,9 @@ export default {
   'Stop sharing this workout?': 'Leállítod ennek az edzésnek a megosztását?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'A barátaid többé nem látják a haladásodat. A következő edzést újra megosztod.',
   'Start message tone': 'Kezdő üzenet hangneme',
-}
+
+  'Server notifications': 'Szerverértesítések',
+  'Could not turn on server notifications': 'Nem sikerült bekapcsolni a szerverértesítéseket',
+  'Server notifications on': 'Szerverértesítések be',
+  'Server notifications off': 'Szerverértesítések ki',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Barátok edzéskezdése, barátkérések, reakciók, megosztott tervek és Coach-javaslatok. Az emlékeztetők ezen a telefonon maradnak.',}

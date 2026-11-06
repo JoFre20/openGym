@@ -3806,4 +3806,9 @@ export default {
   'Stop sharing this workout?': 'إيقاف مشاركة هذا التدريب؟',
   'Your friends stop seeing your progress. The next workout is shared again.': 'لن يرى أصدقاؤك تقدمك بعد الآن. سيتم مشاركة تدريبك التالي مرة أخرى.',
   'Start message tone': 'نبرة رسالة البداية',
-}
+
+  'Server notifications': 'إشعارات الخادم',
+  'Could not turn on server notifications': 'تعذّر تشغيل إشعارات الخادم',
+  'Server notifications on': 'إشعارات الخادم مفعّلة',
+  'Server notifications off': 'إشعارات الخادم متوقفة',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'بدء الأصدقاء، طلبات الصداقة، التفاعلات، الخطط المشتركة واقتراحات Coach. تبقى التذكيرات على هذا الهاتف.',}

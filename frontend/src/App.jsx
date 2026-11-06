@@ -30,6 +30,7 @@ import { startWidgetLinks } from './lib/widget-links.js'
 import { startVoice, todayRoutineIds } from './lib/voice.js'
 import { startLiveActivitySync } from './lib/live-activity.js'
 import { useLivePresence } from './lib/live-presence.js'
+import { bindNativePushEvents, syncNativePushSubscription } from './lib/native-push.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { installViewportGuard } from './lib/viewport-guard.js'
 import { installChipDrag } from './lib/hchips.js'
@@ -180,6 +181,19 @@ function Shell() {
   // A profile that never picked a language follows the instance default or the browser (#303) —
   // worked out here, on this device, and never written into the synced state (lib/default-lang.js).
   const config = useStore(s => s.config)
+  // Native push (APNs/FCM): bind the tap route even before registration, so a notification that
+  // launched the app lands on its screen, and register again after pairing or a config change.
+  useEffect(() => {
+    if (!MOBILE) return
+    bindNativePushEvents(path => {
+      if (!pushCanNavigate(useStore.getState().S)) return
+      navigate(path)
+    })
+  }, [navigate])
+  useEffect(() => {
+    if (!MOBILE || !user || !ready) return
+    syncNativePushSubscription({ config }).catch(() => {})
+  }, [user?.id, ready, config])
   const lang = effectiveLang(S, config)
   useEffect(() => { setLang(lang, S.enParens?.[baseLang(lang)] ?? true, S.enOnly?.[baseLang(lang)] === true) }, [lang, S.enParens, S.enOnly])
   // Same shape as the language: a module-level display setting, pushed when it changes (#139).

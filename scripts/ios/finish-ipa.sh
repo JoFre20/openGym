@@ -72,6 +72,10 @@ if 'NSHealthShareUsageDescription' not in info:
 # it the app still works, and Settings → Apple Health reports that it could not write.
 if not e.get('com.apple.developer.healthkit'):
     print('WARNING: the app profile has no HealthKit: Apple Health will not work in this build')
+# Native server push (@capacitor/push-notifications) needs the APNs entitlement in the profile.
+# Without it the app still builds and runs; only the Server notifications switch cannot register.
+if not e.get('aps-environment'):
+    print('WARNING: the app profile has no Push Notifications: native iPhone push will not work in this build')
 # NFC stickers (NfcTagsPlugin.swift) need "NFC Tag Reading" on the app id. App Store Connect
 # refuses the old NDEF format in this entitlement, so only TAG is kept.
 NFC = 'com.apple.developer.nfc.readersession.formats'

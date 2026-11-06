@@ -24,8 +24,8 @@ fi
 
 apk=${given:-$(ls app/build/outputs/apk/fdroid/release/*.apk 2>/dev/null | head -1 || true)}
 if [ -n "$apk" ] && [ -f "$apk" ]; then
-  if unzip -p "$apk" assets/capacitor.plugins.json | grep -q mlkit; then
-    echo "$apk: capacitor.plugins.json still lists the ML Kit plugin"; fail=1
+  if unzip -p "$apk" assets/capacitor.plugins.json | grep -qE 'mlkit|push-notifications'; then
+    echo "$apk: capacitor.plugins.json still lists a Google plugin (ML Kit or push notifications)"; fail=1
   fi
   aapt2=$(ls "${ANDROID_HOME:-/opt/android-sdk}"/build-tools/*/aapt2 2>/dev/null | sort -V | tail -1 || true)
   if [ -n "$aapt2" ]; then
@@ -37,6 +37,6 @@ if [ -n "$apk" ] && [ -f "$apk" ]; then
       echo "$apk: asks for REQUEST_INSTALL_PACKAGES (F-Droid updates the app, not the app itself)"; fail=1
     fi
   fi
-  [ "$fail" = 0 ] && echo "$apk: no ML Kit, no Play services in the manifest, no updater"
+  [ "$fail" = 0 ] && echo "$apk: no ML Kit, no push notifications, no Play services in the manifest, no updater"
 fi
 exit "$fail"

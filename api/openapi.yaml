@@ -249,6 +249,10 @@ paths:
         caps are not a secret, and its absence is how the app knows this server does not
         store photos and videos at all.
 
+        `native_push` is there when the instance has an APNs key (`ios`) or a Firebase
+        service account (`android`); a phone reads it before offering its Server
+        notifications switch. It is absent when neither is configured.
+
         A caller with a valid session also gets a `coach` key: the block when the
         instance has the AI Coach switched on **and** a provider connected, and `null`
         when it has not. A caller with no session gets no key at all. The block names
@@ -311,6 +315,16 @@ paths:
                       always wins; a tag the app has no translation for is ignored.
                   media:
                     $ref: '#/components/schemas/MediaConfig'
+                  native_push:
+                    type: object
+                    description: >-
+                      Present when at least one native transport is configured. `ios`
+                      means APNs credentials are present; `android` means a Firebase
+                      service account is present.
+                    required: [ios, android]
+                    properties:
+                      ios: { type: boolean }
+                      android: { type: boolean }
                   integrations:
                     type: object
                     description: >-
@@ -2463,16 +2477,125 @@ paths:
               schema: { $ref: '#/components/schemas/Ok' }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/push/native:
+    post:
+      tags: [push]
+      operationId: pushNativeSubscribe
+      summary: Register a paired phone's APNs or FCM token
+      description: |
+        Stores one native device token for the caller. `platform` is `ios` (APNs) or
+        `android` (FCM); the matching transport must be configured on this instance,
+        otherwise the route answers `native-push-off`. An iOS client may send
+        `environment` (`sandbox` or `production`) from its build; without it the
+        sender tries production and then sandbox once and remembers the one that
+        works. Re-registering the same token keeps its original `created`.
+        A token filed under another account moves only when the caller presents that
+        device's own `deviceId`; otherwise it is a `token-busy` 409.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [platform, token]
+              properties:
+                platform: { type: string, enum: [ios, android] }
+                token:
+                  type: string
+                  description: APNs device token (hex) or FCM registration token.
+                  maxLength: 512
+                deviceId:
+                  type: string
+                  pattern: '^[A-Za-z0-9_-]{8,64}$'
+                  description: The app's own short device id, the same one web push uses.
+                environment:
+                  type: string
+                  enum: [sandbox, production]
+                  description: APNs only. Optional; the sender can discover it.
+            example: { platform: ios, token: "a1b2…", deviceId: "3f9c1d2e7b0a4c6d9e8f1a2b3c4d5e6f", environment: production }
+      responses:
+        '200':
+          description: Stored.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '400':
+          description: An unsupported platform or a malformed token.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                platform: { value: { error: "platform must be ios or android", code: "invalid-platform" } }
+                token: { value: { error: "invalid device token", code: "invalid-token" } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '409':
+          description: Native push is off for this platform, or the token belongs to another device.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                off: { value: { error: "native push is not configured for this platform", code: "native-push-off" } }
+                busy: { value: { error: "this device token belongs to another account", code: "token-busy" } }
+
+  /api/push/native/status:
+    get:
+      tags: [push]
+      operationId: pushNativeStatus
+      summary: Does the server hold this native token?
+      description: The paired phone's answer to the same question `GET /api/push/status` asks for a browser.
+      parameters:
+        - in: query
+          name: token
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: The answer.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [subscribed]
+                properties:
+                  subscribed: { type: boolean }
+                  platform: { type: string, enum: [ios, android] }
+                  environment:
+                    oneOf: [{ type: string, enum: [sandbox, production] }, { type: 'null' }]
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/push/native/unsubscribe:
+    post:
+      tags: [push]
+      operationId: pushNativeUnsubscribe
+      summary: Remove a paired phone's native token
+      description: Removes the caller's row with this token. Idempotent.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              properties:
+                token: { type: string }
+      responses:
+        '200':
+          description: Removed (or was never there).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
   /api/push/test:
     post:
       tags: [push]
       operationId: pushTest
       summary: Send a test notification
       description: >-
-        Sends a test push to all of the caller's subscriptions (localized with the
-        `lang` in their synced state). Returns 200 even if delivery to individual
-        endpoints fails; dead endpoints (404/410, and 403 for a subscription made
-        against a VAPID key the instance no longer has) are pruned as a side effect.
+        Sends a test push to every transport of the caller's account: Web Push
+        subscriptions and paired native devices. Localized with the `lang` in their
+        synced state. Returns 200 even if delivery to individual endpoints fails;
+        dead endpoints and native tokens are pruned as a side effect.
       responses:
         '200':
           description: Sends attempted.
@@ -4924,8 +5047,9 @@ components:
         hasPush:
           type: boolean
           description: >-
-            Whether the account holds at least one Web Push subscription. False means a
-            friend-alert switch can be on but will not ring until push is enabled.
+            Whether the account holds at least one push destination, browser or paired
+            phone. False means a friend-alert switch can be on but will not ring until
+            notifications are enabled on a device.
 
     SocialPlanPeer:
       type: object

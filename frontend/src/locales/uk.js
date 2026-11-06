@@ -3746,4 +3746,9 @@ export default {
   'Stop sharing this workout?': 'Припинити ділитися цим тренуванням?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Друзі більше не бачать твій прогрес. Наступним тренуванням знову поділишся.',
   'Start message tone': 'Тон повідомлення про початок',
-}
+
+  'Server notifications': 'Сповіщення сервера',
+  'Could not turn on server notifications': 'Не вдалося ввімкнути сповіщення сервера',
+  'Server notifications on': 'Сповіщення сервера увімкнено',
+  'Server notifications off': 'Сповіщення сервера вимкнено',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Старти друзів, запити в друзі, реакції, спільні плани та підказки Coach. Нагадування залишаються на цьому телефоні.',}

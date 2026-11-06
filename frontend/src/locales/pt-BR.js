@@ -2534,6 +2534,11 @@ export const PT_BR_OVERRIDES = {
   'Stop sharing this workout?': 'Parar de compartilhar este treino?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Seus amigos deixam de ver seu progresso. O próximo treino será compartilhado novamente.',
   'Start message tone': 'Tom da mensagem de início',
+  'Server notifications': 'Notificações do servidor',
+  'Could not turn on server notifications': 'Não foi possível ativar as notificações do servidor',
+  'Server notifications on': 'Notificações do servidor ativadas',
+  'Server notifications off': 'Notificações do servidor desativadas',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Inícios de amigos, solicitações de amizade, reações, planos compartilhados e sugestões do Coach. Os lembretes ficam neste celular.',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

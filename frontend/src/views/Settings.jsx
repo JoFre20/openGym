@@ -32,6 +32,10 @@ import { t, tn, LANGS, INSTR_LANGS, EXERCISE_NAME_LANGS, baseLang, dateLocale } 
 import { effectiveLang } from '../lib/default-lang.js'
 import { DEMO, REPO } from '../lib/demo.js'
 import { MOBILE, isAndroid, shareExport, shareExportBlob, syncReminder } from '../lib/mobile.js'
+import {
+  disableNativePush, enableNativePush, nativePushEnabled, nativePushSupported,
+  sendNativeTestPush, syncNativePushSubscription,
+} from '../lib/native-push.js'
 import { NUDGE_COPY, NUDGE_TONES, toneOf } from '../lib/nudge.js'
 import { referencedFiles } from '../lib/media-refs.js'
 import { mediaStore } from '../lib/media-store.js'
@@ -468,7 +472,8 @@ export default function Settings({ page = null, find = null, via = null, entryKe
     user, mobile: MOBILE, android, ios: MOBILE && ios, appIcons: MOBILE && !!platformNow(), demo: DEMO, wakeOK, hasMedia, pwOn, webauthn: webauthnOK(),
     sound: !!S.sound, playOnSilent: playOnSilentSupported(), canVibrate, vibrate: S.vibrate !== false,
     profiles: (S.equipProfiles || []).length > 0, nameLang: EXERCISE_NAME_LANGS.includes(baseLang(lang)),
-    pushOK: !MOBILE && pushSupported(), reminderOn: !!S.reminder?.on, nudge: !!S.reminder?.nudge,
+    pushOK: !MOBILE && pushSupported(), nativePush: MOBILE && nativePushSupported(config),
+    reminderOn: !!S.reminder?.on, nudge: !!S.reminder?.nudge,
     nfc: nfcOK, gymReminder,
     autoBackup: !!S.autoBackup, synced: !!sync, installTip: !MOBILE && !standalone(), androidWeb: IS_ANDROID, desktopWeb: !IS_ANDROID && !APPLE_UA,
     integrations: config?.integrations?.providers || [],
@@ -1442,7 +1447,10 @@ function effortHelpSheet() {
 }
 
 function NotificationsCard({ S, update, toast }) {
-  if (MOBILE) return <MobileReminderCard S={S} update={update} toast={toast} />
+  if (MOBILE) return <>
+    <MobileReminderCard S={S} update={update} toast={toast} />
+    <NativePushCard toast={toast} />
+  </>
   return <PushCard S={S} update={update} toast={toast} />
 }
 
@@ -1478,6 +1486,64 @@ function MobileReminderCard({ S, update, toast }) {
       <WrappedNotifyRow S={S} update={update} />
     </Section>
   )
+}
+
+// Native server push for a paired phone: APNs on iOS, FCM on Android. It is a different switch
+// from the local reminder above because it only exists when this server has the credentials and
+// the app is paired; the time-based reminders stay on the phone.
+function NativePushCard({ toast }) {
+  const user = useStore(s => s.user)
+  const config = useStore(s => s.config)
+  const [on, setOn] = useState(() => nativePushEnabled())
+  const [busy, setBusy] = useState(false)
+  const supported = nativePushSupported(config)
+
+  // Opening Settings is the other moment to heal a row the server lost, like the web card's
+  // sync. It runs on mount and when the pairing/config becomes known, not on every toggle.
+  useEffect(() => {
+    if (!user || !supported || !nativePushEnabled()) return
+    syncNativePushSubscription({ config }).catch(() => {})
+  }, [user?.id, config, supported])
+
+  if (!MOBILE || !user || !platformNow() || !supported) return null
+
+  const toggle = async next => {
+    setBusy(true)
+    try {
+      if (next) {
+        const ok = await enableNativePush(config)
+        if (!ok) {
+          setOn(false)
+          toast(t('Could not turn on server notifications'))
+          return
+        }
+        setOn(true)
+        toast(t('Server notifications on'))
+      } else {
+        await disableNativePush()
+        setOn(false)
+        toast(t('Server notifications off'))
+      }
+    } catch (e) {
+      toast(e.message || t('Could not change notification settings'))
+    } finally {
+      setBusy(false)
+    }
+  }
+  const test = async () => {
+    try { await sendNativeTestPush(); toast(t('Test sent! Should pop up any second')) }
+    catch (e) { toast(e.message || t('Test failed')) }
+  }
+
+  return <>
+    <Section title={t('Server notifications')}
+      footer={t('Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.')}>
+      <Row icon="bell" iconTint="var(--blue)" title={t('Push notifications')}>
+        <Switch checked={on} disabled={busy} onChange={toggle} aria-label={t('Push notifications')} />
+      </Row>
+    </Section>
+    {on && <div style={{ marginTop: -12, marginBottom: 22 }}><Button size="sm" icon="bell" onClick={test}>{t('Send test notification')}</Button></div>}
+  </>
 }
 
 // Your year in openGym (lib/wrapped.js): one notification on Dec 1, on unless switched off here.

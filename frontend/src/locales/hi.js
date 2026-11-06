@@ -3749,4 +3749,9 @@ export default {
   'Stop sharing this workout?': 'इस ट्रेनिंग को साझा करना बंद करें?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'आपके दोस्त अब आपकी प्रगति नहीं देखेंगे। अगली ट्रेनिंग फिर साझा की जाएगी।',
   'Start message tone': 'शुरुआती संदेश का टोन',
-}
+
+  'Server notifications': 'सर्वर सूचनाएं',
+  'Could not turn on server notifications': 'सर्वर सूचनाएं चालू नहीं की जा सकीं',
+  'Server notifications on': 'सर्वर सूचनाएं चालू',
+  'Server notifications off': 'सर्वर सूचनाएं बंद',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'दोस्तों की शुरुआत, मित्रता अनुरोध, प्रतिक्रियाएं, साझा प्लान और Coach सुझाव। रिमाइंडर इस फोन पर रहते हैं।',}

@@ -3769,4 +3769,9 @@ export default {
   'Stop sharing this workout?': 'Dieses Training nicht mehr teilen?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Deine Freunde sehen deinen Fortschritt nicht mehr. Beim nächsten Training wird wieder geteilt.',
   'Start message tone': 'Ton der Startnachricht',
-}
+
+  'Server notifications': 'Server-Benachrichtigungen',
+  'Could not turn on server notifications': 'Server-Benachrichtigungen konnten nicht aktiviert werden',
+  'Server notifications on': 'Server-Benachrichtigungen an',
+  'Server notifications off': 'Server-Benachrichtigungen aus',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Freundes-Starts, Freundschaftsanfragen, Reaktionen, geteilte Pläne und Coach-Vorschläge. Erinnerungen bleiben auf diesem Handy.',}

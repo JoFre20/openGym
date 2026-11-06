@@ -3749,4 +3749,9 @@ export default {
   'Stop sharing this workout?': '이 운동 공유를 중지할까요?',
   'Your friends stop seeing your progress. The next workout is shared again.': '친구들이 더 이상 당신의 진행 상황을 볼 수 없어요. 다음 운동은 다시 공유됩니다.',
   'Start message tone': '시작 메시지 톤',
-}
+
+  'Server notifications': '서버 알림',
+  'Could not turn on server notifications': '서버 알림을 켜지 못했어요',
+  'Server notifications on': '서버 알림 켜짐',
+  'Server notifications off': '서버 알림 꺼짐',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': '친구의 운동 시작, 친구 요청, 반응, 공유된 플랜과 Coach 제안. 알림 리마인더는 이 휴대폰에 남아요.',}

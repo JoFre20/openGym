@@ -75,6 +75,22 @@ function logoutOwed(on) {
   } catch { /* private mode with storage blocked */ }
   return false
 }
+// The paired phone's APNs/FCM row is per account, so a sign-out takes it with it. The local
+// unregister also invalidates the OS token, which makes a row left behind by an offline request
+// die on its next send instead of ringing for an account that has left.
+const dropNativePush = async () => {
+  // A phone build without the plugin (F-Droid) and every test mock skip this entirely; asking
+  // first also keeps a sign-out from waiting on a plugin that is not there.
+  const bridge = globalThis.Capacitor
+  const installed = typeof bridge?.isPluginAvailable === 'function'
+    ? bridge.isPluginAvailable('PushNotifications') === true
+    : !!bridge?.Plugins?.PushNotifications
+  if (!MOBILE || !installed) return
+  try {
+    const { unregisterNativePush } = await import('../lib/native-push.js')
+    await unregisterNativePush()
+  } catch { /* best effort: the phone can sign out offline */ }
+}
 // Mobile build: whose copy the file mirror (lib/mobile.js, opengym-state.json) holds, and which
 // one — { owner, ts }, written after it (saveMirror). A device fact, so never inside S.
 const MIRROR_OWNER_FILE = 'opengym-state-owner.json'
@@ -1934,6 +1950,7 @@ export const useStore = create((set, get) => {
       await stopTimers()
       if (left.owed && !(await stashOwed())) return owedResult(left, { stashed: false })
       if (!left.owed && !(await stashActive())) return { owed: true, count: 0, stashed: false }
+      await dropNativePush()
       // The device is signed out either way. A request that did not get through leaves the cookie
       // behind, still valid, so the logout is owed until the server answers it (see boot).
       try { await api('/api/logout', { method: 'POST', body: '{}' }) } catch (e) { if (!MOBILE) logoutOwed(true) }
@@ -1991,6 +2008,7 @@ export const useStore = create((set, get) => {
       const left = get().unsyncedChanges()
       if (left.owed && !force) return owedResult(left)
       await stopTimers()
+      await dropNativePush()
       await api('/api/logout/all', { method: 'POST', body: '{}' })
       if (left.owed && !(await stashOwed())) return owedResult(left, { stashed: false })
       if (!left.owed && !(await stashActive())) return { owed: true, count: 0, stashed: false }

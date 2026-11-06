@@ -61,8 +61,8 @@ captures/
 .externalNativeBuild
 .cxx/
 
-# Google Services (e.g. APIs or Firebase)
-# google-services.json
+# Google Services (e.g. APIs or Firebase). Native push credentials are per release machine.
+google-services.json
 
 # Freeline
 freeline.py

@@ -3742,4 +3742,9 @@ export default {
   'Stop sharing this workout?': '停止分享這次訓練？',
   'Your friends stop seeing your progress. The next workout is shared again.': '你的朋友將不再看到你的進度。下次訓練會重新分享。',
   'Start message tone': '開始訊息語氣',
-}
+
+  'Server notifications': '伺服器通知',
+  'Could not turn on server notifications': '無法開啟伺服器通知',
+  'Server notifications on': '伺服器通知已開啟',
+  'Server notifications off': '伺服器通知已關閉',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': '好友開始訓練、好友邀請、反應、共享計畫和 Coach 建議。提醒仍保留在這支手機上。',}

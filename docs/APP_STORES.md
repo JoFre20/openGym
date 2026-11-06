@@ -94,6 +94,12 @@ The IPA carries the app, the asset pack downloader extension (`AnimationPacksDow
 widget extension (`OpenGymWidgets`: widgets and the Live Activity) and the Apple Watch app with its
 own widget. Each is a separate bundle id with its own App Store provisioning profile.
 
+Native push credentials are release-machine material and never committed. The Android APK/Play
+build needs `frontend/android/app/google-services.json` from the project's Firebase app; the
+iPhone App Store profile must carry `aps-environment` (Push Notifications). The server side is in
+`docs/SELF_HOSTING.md` §7. Without either, the build still runs and the phone hides its Server
+notifications switch.
+
 1. **Compile (CI).** The `iOS` workflow (`.github/workflows/ios.yml`, job `device-archive`) runs
    on every push to `main` and `stores` and archives the app for devices, unsigned, without the
    exercise media, and stamps the commit into the zip (`ci-commit.txt`). Download the
@@ -158,11 +164,14 @@ server. F-Droid accepts only free software, so this build carries nothing from G
 | Play Asset Delivery (play) | none; the repository's 180 px animations are built in, as in a self-hosted server |
 | In-app updater (sideload) | none; F-Droid updates the app (`lib/channel.js` → `fdroid`) |
 | Gym reminder | the same: the platform's proximity alerts (`LocationManager`), no Play services |
+| Native push (`@capacitor/push-notifications`, FCM) | left out: the plugin and its Firebase Messaging dependency are excluded from the flavour's runtime classpath and its copy of `capacitor.plugins.json`. Local notifications stay |
 | Donation links | the same as the APK (F-Droid allows them) |
 
-The unused `google-services` Gradle plugin (FCM push, never set up) is gone from all builds.
-Health Connect (`androidx.health.connect`, Apache 2.0 AndroidX) stays: it only talks to the
-system's Health Connect, which is part of Android 14 and later.
+The `google-services` Gradle plugin is applied only to the APK and Play builds, and only when
+`frontend/android/app/google-services.json` is present. The F-Droid build has neither the file nor
+the classpath, so it stays Google-free. Health Connect (`androidx.health.connect`, Apache 2.0
+AndroidX) stays: it only talks to the system's Health Connect, which is part of Android 14 and
+later.
 
 **Build** (what F-Droid's recipe runs, no keys, no private files, no network beyond npm, Google's
 and Maven Central's repositories):

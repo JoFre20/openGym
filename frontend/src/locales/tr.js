@@ -3749,4 +3749,9 @@ export default {
   'Stop sharing this workout?': 'Bu antrenmanın paylaşımı durdurulsun mu?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Arkadaşların artık ilerlemeni görmez. Bir sonraki antrenman yine paylaşılır.',
   'Start message tone': 'Başlangıç mesajı tonu',
-}
+
+  'Server notifications': 'Sunucu bildirimleri',
+  'Could not turn on server notifications': 'Sunucu bildirimleri açılamadı',
+  'Server notifications on': 'Sunucu bildirimleri açık',
+  'Server notifications off': 'Sunucu bildirimleri kapalı',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Arkadaş başlangıçları, arkadaşlık istekleri, tepkiler, paylaşılan planlar ve Coach önerileri. Hatırlatıcılar bu telefonda kalır.',}

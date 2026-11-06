@@ -155,6 +155,11 @@ and a small marker in `social.json` so a reload never repeats it. Every social w
 temp file first and is renamed over the old one (`durable.js`), so a crash never leaves half a
 file.
 
+Web Push uses VAPID. A paired phone can also receive native push through APNs or FCM; those
+credentials are optional, read from files mounted into the api container, and the device tokens
+live in `db.json` (`nativeSubs`) beside the browser subscriptions. The time-based reminders stay
+local notifications on the phone, so the native transport only carries social and Coach events.
+
 Sign-in is a passkey (`@simplewebauthn/server`), optionally a password, plus a signed session
 cookie. Phones get the same signed session as a bearer token, made by pairing with a one-time code
 (`device-link.js`). Every route is listed in `api/openapi.yaml`, and `openapi-routes.test.js` fails

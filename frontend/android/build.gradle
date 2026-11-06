@@ -9,6 +9,13 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:8.13.0'
+        // Native push for the sideload and Play builds: the Google Services plugin reads the
+        // app/google-services.json that a self-hoster or the release machine provides. It is
+        // added only when that file is there, so a build without Firebase credentials, and the
+        // F-Droid build (which has no file), keeps a clean classpath.
+        if (file('app/google-services.json').exists()) {
+            classpath 'com.google.gms:google-services:4.4.3'
+        }
         // Kotlin, Compose and kotlinx.serialization for the Wear OS module (wear/) only; app/ stays
         // Java and builds exactly as before.
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$wear_kotlin_version"

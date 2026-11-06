@@ -3796,4 +3796,9 @@ export default {
   'Stop sharing this workout?': 'Sluta dela det här passet?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Dina vänner ser inte längre dina framsteg. Nästa pass delas igen.',
   'Start message tone': 'Ton för startmeddelandet',
-}
+
+  'Server notifications': 'Serveraviseringar',
+  'Could not turn on server notifications': 'Kunde inte slå på serveraviseringar',
+  'Server notifications on': 'Serveraviseringar på',
+  'Server notifications off': 'Serveraviseringar av',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Vänners träningsstart, vänförfrågningar, reaktioner, delade planer och Coachtips. Påminnelser stannar på den här telefonen.',}

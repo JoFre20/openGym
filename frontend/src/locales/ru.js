@@ -3753,4 +3753,9 @@ export default {
   'Stop sharing this workout?': 'Прекратить делиться этой тренировкой?',
   'Your friends stop seeing your progress. The next workout is shared again.': 'Друзья больше не видят твой прогресс. Следующей тренировкой снова поделишься.',
   'Start message tone': 'Тон сообщения о начале',
-}
+
+  'Server notifications': 'Уведомления сервера',
+  'Could not turn on server notifications': 'Не удалось включить уведомления сервера',
+  'Server notifications on': 'Уведомления сервера включены',
+  'Server notifications off': 'Уведомления сервера выключены',
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Старты друзей, заявки в друзья, реакции, общие планы и предложения Coach. Напоминания остаются на этом телефоне.',}

@@ -196,10 +196,16 @@ Traefik and nginx, and there are separate guides for
 | `INTEGRATIONS` | Server integrations to offer, comma-separated: `webhook` ([integrations](docs/INTEGRATIONS.md)) | *(none)* |
 | `INTEGRATIONS_ALLOW_LAN` | `1`: webhooks may reach your home network (Home Assistant), http included; never loopback | *(off)* |
 | `VAPID_SUBJECT` | Contact URL sent with push notifications | your `ORIGIN` |
+| `APNS_KEY_FILE` | APNs `.p8` for native iPhone push; off when absent | *(off)* |
+| `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` | Apple key id, team id and the app's bundle id | *(none)* |
+| `APNS_ENV` | `sandbox` or `production`; unset discovers it per token | *(auto)* |
+| `FCM_SERVICE_ACCOUNT_FILE` | Firebase service-account JSON for native Android push; off when absent | *(off)* |
 | `API_TARGET` | API image to build: `default`, or `coach` with the Claude Agent SDK and Codex CLI | `default` |
 | `COACH_DISABLED` | `1` forces the AI coach off instance-wide | *(unset)* |
 
-Push-notification keys are generated on first run into `./data/vapid.json`. `DATA_DIR` is pinned to
+Push-notification keys are generated on first run into `./data/vapid.json`. Native push to the
+paired phone apps is optional and needs your own APNs/FCM credentials; without them the apps hide
+their Server notifications switch and keep using local reminders. `DATA_DIR` is pinned to
 `/data` inside the container and mapped to `./data` on the host; change the volume, not the
 variable. The [self-hosting guide](docs/SELF_HOSTING.md) covers every option in detail.
 

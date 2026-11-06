@@ -248,7 +248,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.3</span>
-    <span>106 endpoints</span>
+    <span>109 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -337,6 +337,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="ep-body">
 <p>The flags the login screen needs before anyone is signed in. Both reflect environment variables on the server (<code>INVITE_ONLY</code>, <code>ALLOW_GUEST</code>), and so does <code>password_login</code>, which is there only when <code>PASSWORD_LOGIN=1</code>, and <code>default_lang</code>, which is there only when <code>DEFAULT_LANG</code> is set.</p>
 <p><code>media</code> is there unless the instance runs with <code>MEDIA_UPLOADS=0</code>, for everybody: the caps are not a secret, and its absence is how the app knows this server does not store photos and videos at all.</p>
+<p><code>native_push</code> is there when the instance has an APNs key (<code>ios</code>) or a Firebase service account (<code>android</code>); a phone reads it before offering its Server notifications switch. It is absent when neither is configured.</p>
 <p>A caller with a valid session also gets a <code>coach</code> key: the block when the instance has the AI Coach switched on <b>and</b> a provider connected, and <code>null</code> when it has not. A caller with no session gets no key at all. The block names the provider this instance talks to, which is the same fact <code>GET /api/coach/disclosure</code> will not hand out unauthenticated.</p>
 <p>The key is always present for a session, <code>null</code> included, so a client that caches this answer can tell &quot;no Coach on this instance&quot; from &quot;you were not signed in when you asked&quot; and knows whether asking again would change it.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Public: no authentication required.</span></p>
@@ -346,7 +347,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <div class="ptab">
   <div class="prow rrow">
     <span class="r-code s2">200</span>
-    <span class="p-desc">Instance flags, plus the Coach block for a signed-in caller.<span class="r-sig">{ invite_only: boolean, allow_guest: boolean, coach: object | null, password_login: always true, default_lang: string, media: <a href="#schema-MediaConfig">MediaConfig</a>, integrations: object }</span></span>
+    <span class="p-desc">Instance flags, plus the Coach block for a signed-in caller.<span class="r-sig">{ invite_only: boolean, allow_guest: boolean, coach: object | null, password_login: always true, default_lang: string, media: <a href="#schema-MediaConfig">MediaConfig</a>, native_push: object, integrations: object }</span></span>
   </div>
     </div>
   </div>
@@ -2095,6 +2096,131 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
 </details>
 
+<details class="ep" id="op-pushNativeSubscribe">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/push/native</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Register a paired phone's APNs or FCM token</span>
+  </summary>
+  <div class="ep-body">
+<p>Stores one native device token for the caller. <code>platform</code> is <code>ios</code> (APNs) or <code>android</code> (FCM); the matching transport must be configured on this instance, otherwise the route answers <code>native-push-off</code>. An iOS client may send <code>environment</code> (<code>sandbox</code> or <code>production</code>) from its build; without it the sender tries production and then sandbox once and remembers the one that works. Re-registering the same token keeps its original <code>created</code>. A token filed under another account moves only when the caller presents that device's own <code>deviceId</code>; otherwise it is a <code>token-busy</code> 409.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">platform<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;ios&quot; | &quot;android&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">token<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string <span class="p-hint">(&le; 512 chars)</span></span>
+    <span class="p-desc">APNs device token (hex) or FCM registration token.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">deviceId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The app's own short device id, the same one web push uses.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">environment</span>
+    <span class="p-type">&quot;sandbox&quot; | &quot;production&quot;</span>
+    <span class="p-desc">APNs only. Optional; the sender can discover it.</span>
+  </div>
+</div>
+<pre><code>{
+  &quot;platform&quot;: &quot;ios&quot;,
+  &quot;token&quot;: &quot;a1b2…&quot;,
+  &quot;deviceId&quot;: &quot;3f9c1d2e7b0a4c6d9e8f1a2b3c4d5e6f&quot;,
+  &quot;environment&quot;: &quot;production&quot;
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Stored.<span class="r-sig"><a href="#schema-Ok">Ok</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">An unsupported platform or a malformed token.<span class="r-sig"><code>{&quot;error&quot;:&quot;platform must be ios or android&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;invalid device token&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">409</span>
+    <span class="p-desc">Native push is off for this platform, or the token belongs to another device.<span class="r-sig"><code>{&quot;error&quot;:&quot;native push is not configured for this platform&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;this device token belongs to another account&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-pushNativeStatus">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/push/native/status</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Does the server hold this native token?</span>
+  </summary>
+  <div class="ep-body">
+<p>The paired phone's answer to the same question <code>GET /api/push/status</code> asks for a browser.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+<p class="ep-h">Query parameters</p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">token<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The answer.<span class="r-sig">{ subscribed: boolean, platform: &quot;ios&quot; | &quot;android&quot;, environment: &quot;sandbox&quot; | &quot;production&quot; | null }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-pushNativeUnsubscribe">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/push/native/unsubscribe</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Remove a paired phone's native token</span>
+  </summary>
+  <div class="ep-body">
+<p>Removes the caller's row with this token. Idempotent.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">token<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Removed (or was never there).<span class="r-sig"><a href="#schema-Ok">Ok</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
 <details class="ep" id="op-pushTest">
   <summary>
     <span class="m post">POST</span>
@@ -2103,7 +2229,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">Send a test notification</span>
   </summary>
   <div class="ep-body">
-<p>Sends a test push to all of the caller's subscriptions (localized with the <code>lang</code> in their synced state). Returns 200 even if delivery to individual endpoints fails; dead endpoints (404/410, and 403 for a subscription made against a VAPID key the instance no longer has) are pruned as a side effect.</p>
+<p>Sends a test push to every transport of the caller's account: Web Push subscriptions and paired native devices. Localized with the <code>lang</code> in their synced state. Returns 200 even if delivery to individual endpoints fails; dead endpoints and native tokens are pruned as a side effect.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 
@@ -5468,7 +5594,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow">
     <span class="p-name">hasPush</span>
     <span class="p-type">boolean</span>
-    <span class="p-desc">Whether the account holds at least one Web Push subscription. False means a friend-alert switch can be on but will not ring until push is enabled.</span>
+    <span class="p-desc">Whether the account holds at least one push destination, browser or paired phone. False means a friend-alert switch can be on but will not ring until notifications are enabled on a device.</span>
   </div>
 </div>
   </div>
