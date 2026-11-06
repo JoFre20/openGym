@@ -671,6 +671,23 @@ it after every web-code change before building natively.
 > **Heads-up:** after `build:mobile`, `frontend/dist` contains the *mobile* bundle.
 > Run a plain `npm run build` again before deploying `dist` to a server.
 
+### The iPhone simulator on an Apple Silicon Mac
+
+The check-in scanner is Google ML Kit, whose frameworks are arm64 for the device only (their
+podspecs exclude arm64 from the simulator, and the arm64 slice is built for iOS). On an Apple
+Silicon Mac the simulators are arm64, so the app cannot be built for one with the scanner in.
+For simulator work, leave the scanner out:
+
+```sh
+cd ios/App
+touch SIMULATOR_ONLY && pod install   # simulator build; the check-in scan says it is not in this build
+rm SIMULATOR_ONLY && pod install      # device build, scanner back in
+```
+
+The file is gitignored. `npm run build:mobile` runs `pod install` again and keeps whichever
+state the file is in, so set it once and it stays. Building for a real iPhone (or the App Store)
+needs the scanner, so remove the file first.
+
 ## App icons & splash screens
 
 `frontend/resources/icon.svg` is the 1024×1024 source (the app's dumbbell glyph on the

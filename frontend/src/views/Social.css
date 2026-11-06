@@ -82,6 +82,23 @@
 
 .social-section-head{margin:20px 2px 9px;align-items:baseline}
 .social-section-head .sec{margin:0}
+.social-live{margin-top:22px}
+.social-live-list{display:flex;flex-direction:column;gap:10px}
+.social-live-card{background:var(--surface);border-radius:var(--r-card);padding:13px 14px;box-shadow:inset 3px 0 0 var(--green)}
+.social-live-head{display:flex;align-items:center;gap:9px}
+.social-live-who{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.social-live-who b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.social-live-who span{font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.social-live-pill{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:99px;background:var(--surface-2);color:var(--green);font-size:12px;font-weight:600;flex:none}
+.social-live-pill .icn{font-size:7px}
+.social-live-workout{font-size:18px;font-weight:600;line-height:1.2;letter-spacing:-.015em;margin-top:10px}
+.social-live-ex{font-size:13px;color:var(--label-2);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.social-live-progress{height:6px;border-radius:99px;background:var(--surface-3);overflow:hidden;margin-top:10px}
+.social-live-progress i{display:block;height:100%;border-radius:inherit;background:var(--acc);transition:width .4s var(--ease)}
+.social-live-meta{display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px;font-size:12px;color:var(--label-2);font-variant-numeric:tabular-nums}
+.social-live-count{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--green);font-weight:600}
+.social-live-count i{width:7px;height:7px;border-radius:50%;background:var(--green);animation:social-live-pulse 1.8s ease-in-out infinite}
+@keyframes social-live-pulse{0%,100%{opacity:1}50%{opacity:.35}}
 /* One friend is a full-width row: the old 152px carousel tiles left most of a phone screen
    empty beside a single friend, and the count, the workout-privacy word and the weight-privacy
    word read as three unrelated lines. The row keeps avatar, name and both states together,

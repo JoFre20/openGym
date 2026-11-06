@@ -1204,6 +1204,9 @@ body.chips-dragging *{cursor:inherit}
 .whdr-gym{display:inline-flex;align-items:center;gap:3px;font-size:var(--fs-caption);line-height:1.3;color:var(--label-2);background:none;border:0;padding:0;margin-top:1px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 button.whdr-gym{color:var(--acc-ink);cursor:pointer}
 .whdr-gym .icon,.whdr-gym svg{width:13px;height:13px;flex:none}
+.whdr-live{display:inline-flex;align-items:center;gap:3px;margin-inline-start:6px;padding:1px 7px;border:0;border-radius:99px;background:var(--surface-2);color:var(--green);font-size:var(--fs-caption);font-weight:600;line-height:1.45;vertical-align:1px;cursor:pointer}
+.whdr-live .icn{font-size:7px}
+.whdr-live:active{transform:scale(.95)}
 .gym-of-list .icon,.gym-of-list svg{width:13px;height:13px;vertical-align:-2px}
 .btn.pill.whdr-finish{width:auto;flex:none;padding:8px 16px;border-radius:99px;font-size:var(--fs-subhead);max-width:40%}
 /* Animations set to Small: the picture beside the exercise name, with an expand badge. */

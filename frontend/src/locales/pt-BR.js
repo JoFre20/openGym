@@ -2518,6 +2518,22 @@ export const PT_BR_OVERRIDES = {
   'Profile picture removed': 'Foto de perfil removida',
   'That picture is too big. Choose a smaller one.': 'Essa foto é grande demais. Escolha uma menor.',
   '{0} day': '{0} dia',
+  'Live now': 'Agora ao vivo',
+  'Live': 'Ao vivo',
+  'Live training': 'Treino ao vivo',
+  'Share live workout': 'Compartilhar treino ao vivo',
+  'Friends can follow your workout live.': 'Seus amigos podem acompanhar seu treino ao vivo.',
+  'Tell friends when I start': 'Avisar amigos quando eu começar',
+  'Friend workout alerts': 'Alertas de treino dos amigos',
+  'Get a notification when a friend starts training.': 'Receba uma notificação quando um amigo começar a treinar.',
+  'Turn on push notifications in Settings to get these alerts.': 'Ative as notificações push nas configurações para receber estes alertas.',
+  'Done around {0}': 'Termina por volta das {0}',
+  '{0} left': 'Faltam {0}',
+  'Mix': 'Misto',
+  'Stop sharing': 'Parar de compartilhar',
+  'Stop sharing this workout?': 'Parar de compartilhar este treino?',
+  'Your friends stop seeing your progress. The next workout is shared again.': 'Seus amigos deixam de ver seu progresso. O próximo treino será compartilhado novamente.',
+  'Start message tone': 'Tom da mensagem de início',
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

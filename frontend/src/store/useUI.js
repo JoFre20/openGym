@@ -286,6 +286,8 @@ export const useUI = create((set, get) => ({
   countIn: null,       // the 3-2-1 before a hold that starts by itself — { owner, left, total, endsAt, paused?, waiting? }
   autoSay: '',         // what the count-in last said, for a screen reader (RestTimer.jsx, a polite live region)
   timerFlashId: 0,     // changing the id retriggers the theme-blink visual alert
+  liveShared: false,   // the last heartbeat said friends may follow the running workout
+  livePausedWorkoutId: null,   // live sharing stopped for this workout only (Workout's Live chip)
   bindAuto(h) { return bindAuto(h) },   // the workout screen's hooks for holds that run themselves
 
   flashTimer() {

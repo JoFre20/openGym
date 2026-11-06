@@ -100,7 +100,10 @@ test('friends, privacy, squad stats, feed and reactions stay in social.json', as
   const first = await call(h, 'u1', '/api/social/me');
   assert.equal(first.status, 200);
   assert.match(first.body.friendCode, /^[A-HJ-NP-Z2-9]{3}-[A-HJ-NP-Z2-9]{3}$/);
-  assert.deepEqual(first.body.settings, { shareWorkouts: true, shareWeight: 'none' });
+  assert.deepEqual(first.body.settings, {
+    shareWorkouts: true, shareWeight: 'none', shareLive: false, notifyFriends: false,
+    startTone: 'motivational', friendStartAlerts: false
+  });
   assert.deepEqual(first.body.friends, []);
   assert.deepEqual(first.body.pending, []);
   const second = await call(h, 'u2', '/api/social/me');
@@ -140,7 +143,10 @@ test('friends, privacy, squad stats, feed and reactions stay in social.json', as
     method: 'PUT', body: { shareWorkouts: true, shareWeight: 'absolute' }
   });
   assert.equal(settings.status, 200);
-  assert.deepEqual(settings.body.settings, { shareWorkouts: true, shareWeight: 'absolute' });
+  assert.deepEqual(settings.body.settings, {
+    shareWorkouts: true, shareWeight: 'absolute', shareLive: false, notifyFriends: false,
+    startTone: 'motivational', friendStartAlerts: false
+  });
   const badSettings = await call(h, 'u2', '/api/social/settings', {
     method: 'PUT', body: { shareWeight: 'kg' }
   });

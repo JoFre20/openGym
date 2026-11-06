@@ -17,7 +17,7 @@ import { clampIncline, hasIncline, inclineFits, inclineFrom, INCLINE_STEP } from
 import { beep, vibrate, unlock } from '../lib/sound.js'
 import { pinState } from '../lib/queue.js'
 import { t, tn, exerciseNameFor, exerciseNameClass } from '../lib/i18n.js'
-import { api, beacon } from '../lib/api.js'
+import { pauseLiveSharing } from '../lib/live-presence.js'
 import { pyramidRestFor, maxRecordAt, isPyramid, pyramidLabel } from '../lib/pyramid.js'
 import { insertionIndexAfterCurrentUnit, nextUnfinishedUnit, setProgressHighWater, supersetFlowStep, restAfterSet, restOnRecheck, restSecFor, warmupRestSecFor, sideRestFor, ownSetRest, ownExerciseRest, stepUnitIndex, advanceAfterTimedRest } from '../lib/supersetFlow.js'
 import Media from '../components/Media.jsx'
@@ -1082,6 +1082,7 @@ function ActiveWorkout() {
   const workKey = useUI(s => s.work?.endsAt)
   const timerKey = useUI(s => s.timer && `${s.timer.endsAt}:${s.timer.forIdx ?? ''}`)
   const readyRestEnds = useUI(s => (s.timer?.ready ? s.timer.endsAt : undefined))
+  const liveShared = useUI(s => s.liveShared)
   const A = S.active
   const editing = !!A.editingWorkoutId
   // A past workout has no rest to time — the sets were done days ago. The work timer for
@@ -1703,6 +1704,14 @@ function ActiveWorkout() {
   const discardWorkout = () => confirmSheet({
     title: t('Discard workout?'), message: t('The sets you logged in this session will be lost.'), confirmText: t('Discard'), danger: true,
     onConfirm: discardNow,
+  })
+  // The live chip's only action: stop the friend-facing row now, without changing the saved
+  // shareLive setting that starts the next session shared again.
+  const stopLiveSharing = () => confirmSheet({
+    title: t('Stop sharing this workout?'),
+    message: t('Your friends stop seeing your progress. The next workout is shared again.'),
+    confirmText: t('Stop sharing'), danger: true,
+    onConfirm: pauseLiveSharing,
   })
   // Which gym this session is at (#808): small in the header, one tap to switch, only with two gyms
   // or more. A saved workout being edited shows where it was done and does not switch. Switching
@@ -2335,59 +2344,6 @@ function ActiveWorkout() {
     }
   }, [])
 
-  // Live-presence heartbeat so the admin dashboard can show who's training now. Signed-in only —
-  // guests have no server session. Reads fresh state each tick so progress stays current.
-  useEffect(() => {
-    // The tour's practice workout is nobody's training: the dashboard never hears of it.
-    if (!useStore.getState().user || editing || useStore.getState().tourSandbox) return
-    let stopped = false
-    const ping = active => {
-      const A2 = useStore.getState().S.active
-      if (!A2) return
-      const u = supersetUnits(A2.entries)
-      const c = Math.min(A2.cur, Math.max(0, A2.entries.length - 1))
-      const ui = u.findIndex(x => x.includes(c))
-      const tot = setUnitsTotal(A2.entries)
-      api('/api/activity', { method: 'POST', body: JSON.stringify({
-        active, name: A2.name, exIdx: ui + 1, exTotal: u.length,
-        setsDone: setsDoneActive(A2), setsTotal: tot, startedAt: A2.start
-      }) }).catch(() => {})
-    }
-    // The cleanup below runs on in-app navigation only. A closed tab, or a home-screen app swiped
-    // away or killed by the phone, unmounts nothing, so "training now" kept the athlete until the
-    // server's presence expiry, 70 s after they had gone. So the page going away sends the "left"
-    // signal itself, and says why: `closed` on pagehide, which the server acts on at once, and
-    // `hidden` on visibilitychange, because iOS kills a hidden home-screen app without a pagehide.
-    // The server keeps a `hidden` athlete listed for 45 s and a heartbeat cancels it, so a hidden
-    // page that keeps running (a phone locked between sets) goes on heartbeating and never blinks
-    // off the list; an iOS app swiped away sends nothing after `hidden` and is gone in 45 s. Each
-    // is sent once per hide, re-armed by a heartbeat; the pagehide of a close that went hidden
-    // first still sends `closed`, and nothing follows `closed`. A page shown again heartbeats at once.
-    let sent = null
-    const live = () => { sent = null; ping(true) }
-    const leave = reason => {
-      if (sent === 'closed' || sent === reason) return
-      sent = reason; beacon('/api/activity', { active: false, reason })
-    }
-    const onVisibility = () => { if (document.visibilityState === 'hidden') leave('hidden'); else if (sent && !stopped) live() }
-    const onHide = () => leave('closed')
-    const onShow = e => { if (e.persisted && sent && !stopped) live() }
-    live()
-    const iv = setInterval(() => { if (!stopped) live() }, 20000)
-    document.addEventListener('visibilitychange', onVisibility)
-    window.addEventListener('pagehide', onHide)
-    window.addEventListener('pageshow', onShow)
-    return () => {
-      stopped = true; clearInterval(iv)
-      document.removeEventListener('visibilitychange', onVisibility)
-      window.removeEventListener('pagehide', onHide)
-      window.removeEventListener('pageshow', onShow)
-      // best-effort "left" signal: the beacon survives a tab close, fetch covers in-app nav
-      beacon('/api/activity', { active: false, reason: 'navigated' })
-      api('/api/activity', { method: 'POST', body: JSON.stringify({ active: false, reason: 'navigated' }) }).catch(() => {})
-    }
-  }, [])
-
   return <WorkoutScrollAnchor enabled={collapseOn} collapsed={[...collapsed].join(',')}>
     {/* In list mode the whole session scrolls under the header, so the header (name, clock,
         set counter, discard/finish, progress) stays pinned — the one thing you want in view
@@ -2403,7 +2359,7 @@ function ActiveWorkout() {
       {editing
         ? <button className="iconbtn" aria-label={t('Close editor')} title={t('Close editor')} onClick={() => exitWorkoutEdit()}><Icon name="xmark" /></button>
         : <button className="iconbtn" aria-label={t('Minimize')} title={t('Minimize')} onClick={() => nav('/home')}><Icon name="chevronDown" /></button>}
-      <div className="whdr-mid"><div className="whdr-name">{A.name}</div><div className="sub">{(A.backfill || editing) ? fmtDate(A.d, true) : <Elapsed start={A.start} />} · {t('{0} sets', done + '/' + total)}{!(A.backfill || editing) && isOn(S, 'health') && <LiveHeartRate />}</div>{gymShown && (gymSwitchable
+      <div className="whdr-mid"><div className="whdr-name">{A.name}</div><div className="sub">{(A.backfill || editing) ? fmtDate(A.d, true) : <Elapsed start={A.start} />} · {t('{0} sets', done + '/' + total)}{!(A.backfill || editing) && isOn(S, 'health') && <LiveHeartRate />}{liveShared && !A.backfill && !editing && <button type="button" className="whdr-live" onClick={stopLiveSharing} aria-label={t('Live')} title={t('Live')}><Icon name="dot" />{t('Live')}</button>}</div>{gymShown && (gymSwitchable
         ? <button type="button" className="whdr-gym" onClick={openGymMenu} aria-label={t('Gym: {0}', gymShown)}><Icon name="house" />{gymShown}</button>
         : <span className="whdr-gym"><Icon name="house" />{gymShown}</span>)}</div>
       {!chipRow && sessionMap}

@@ -32,6 +32,10 @@ test('every profile gets one stable code and the privacy defaults', () => {
     friendCode: first.profile.friendCode,
     shareWorkouts: true,
     shareWeight: 'none',
+    shareLive: false,
+    notifyFriends: false,
+    startTone: 'motivational',
+    friendStartAlerts: false,
     createdAt: 10,
     updatedAt: 10
   });

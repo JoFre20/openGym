@@ -16,7 +16,7 @@ import * as coachJobs from './coach/jobs.js';
 import { coachRoutes } from './coach/routes.js';
 import { startCadence } from './coach/cadence.js';
 import { startWarmup } from './coach/warmup.js';
-import { dayReminderPush, friendRequestPush, nudgePush, planSharePush, reactionPush, restTimerPush, testPush } from './push-messages.js';
+import { dayReminderPush, friendRequestPush, friendStartPush, nudgePush, planSharePush, reactionPush, restTimerPush, testPush } from './push-messages.js';
 import { verifyError, isMisconfigured, originHint } from './verify-error.js';
 import {
   hashPassword, verifyPassword, needsRehash, passwordProblem, passwordLength, nameKey, BusyError,
@@ -48,8 +48,9 @@ import {
   feedWorkoutId, findPlanShare, findWorkout, friendCodeValid, friendshipBetween, normalizeSocial,
   pendingFriendships, planShareProblem, planShareSummary, PLAN_SHARE_MAX_FRIENDS, profileByCode,
   reactionSummary, receivedPlanShares, sentPlanShares, SOCIAL_EMOJI, SOCIAL_SHARE_WEIGHT,
-  splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
+  SOCIAL_START_TONES, splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
 } from './social.js';
+import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -240,7 +241,14 @@ const socialAvatarOf = uid => {
   const avatar = social?.profiles?.[uid]?.avatar;
   return typeof avatar === 'string' && avatar ? avatar : null;
 };
-const socialSettings = profile => ({ shareWorkouts: profile.shareWorkouts, shareWeight: profile.shareWeight });
+const socialSettings = profile => ({
+  shareWorkouts: profile.shareWorkouts,
+  shareWeight: profile.shareWeight,
+  shareLive: profile.shareLive,
+  notifyFriends: profile.notifyFriends,
+  startTone: profile.startTone,
+  friendStartAlerts: profile.friendStartAlerts,
+});
 function socialFriendRow(friendship, viewerId) {
   const otherId = friendship.from === viewerId ? friendship.to : friendship.from;
   const other = socialUserById(otherId);
@@ -291,6 +299,21 @@ function socialPlanRow(share, viewerId) {
 }
 function socialPlanCount(uid) {
   return receivedPlanShares(social, uid).filter(share => socialUserById(share.from)).length;
+}
+// One notification per fresh start, to friends who asked for it and still hold a subscription.
+// The profile marker is written by the caller before this runs, so a reload, a second device or
+// a server restart cannot send the same start twice. Sends are fire-and-forget: a heartbeat must
+// answer now, and a push service that is slow is not the athlete's problem.
+function notifyFriendsOfStart(sender, { startedAt }) {
+  const profile = social.profiles[sender.id] || {};
+  const recipients = friendStartRecipients(social, sender.id, id => db.subs.some(sub => sub.userId === id))
+    .filter(id => socialUserById(id));
+  for (const id of recipients) {
+    sendPush(id, friendStartPush(readStateCached(id)?.lang, sender.name, {
+      tone: profile.startTone,
+      seed: startedAt,
+    })).catch(e => console.error('social: friend start push failed', e.message));
+  }
 }
 function socialReactionTarget(viewer, value) {
   const friendIds = acceptedFriendIds(social, viewer.id).filter(id => socialUserById(id));
@@ -992,9 +1015,10 @@ const text = v => (typeof v === 'string' ? v : typeof v === 'number' ? String(v)
 const b64uToBuf = s => Buffer.from(s, 'base64url');
 
 /* ---------- live presence (in-memory) ---------- */
-// Clients heartbeat /api/activity while a workout is on screen; the admin dashboard reads who's
-// live. Purely ephemeral — never persisted. Expires shortly after the last ping.
-const presence = new Map();               // uid -> { name, exIdx, exTotal, setsDone, setsTotal, startedAt, updatedAt, hiddenAt? }
+// Clients heartbeat /api/activity while a workout is running; the admin dashboard reads who's
+// live and a friend may follow the same row when the athlete shares it. Purely ephemeral, never
+// persisted. Expires shortly after the last ping.
+const presence = new Map();               // uid -> { name, exIdx, exTotal, setsDone, setsTotal, startedAt, updatedAt, workoutId, exerciseId, exName, etaAt, hiddenAt? }
 const PRESENCE_TTL = 70000;               // ~3.5× the 20s client heartbeat
 // A "left" signal with reason `hidden` (the workout page went to the background) marks the row
 // away at that moment instead of dropping it. A phone locked between sets keeps the page running
@@ -1012,8 +1036,29 @@ function livePresence(uid) {
   const p = presence.get(uid);
   if (!p) return null;
   if (!presenceListed(p, Date.now())) { presence.delete(uid); return null; }
-  const { hiddenAt: _away, ...live } = p;   // the mark is bookkeeping; the dashboard gets the row it always did
+  // The dashboard keeps the row it always had. The workout id, exercise name and ETA are for
+  // the friend-facing route, which has its own sharing gate.
+  const { hiddenAt: _away, workoutId: _wid, exerciseId: _exid, exName: _ex, etaAt: _eta, ...live } = p;
   return live;
+}
+/** The same live row as a friend may see it, or null when it is not listed. */
+function socialPresence(uid, now = Date.now()) {
+  const p = presence.get(uid);
+  if (!p || !presenceListed(p, now)) return null;
+  return {
+    workoutId: p.workoutId || null,
+    name: p.name || '',
+    exerciseId: p.exerciseId || '',
+    exName: p.exName || '',
+    exIdx: p.exIdx || 0,
+    exTotal: p.exTotal || 0,
+    setsDone: p.setsDone || 0,
+    setsTotal: p.setsTotal || 0,
+    startedAt: p.startedAt || 0,
+    updatedAt: p.updatedAt || 0,
+    etaAt: p.etaAt || null,
+    leftSec: p.etaAt ? Math.max(0, Math.round((p.etaAt - now) / 1000)) : null,
+  };
 }
 setInterval(() => { const now = Date.now(); for (const [k, v] of presence) if (!presenceListed(v, now)) presence.delete(k); }, 30000).unref();
 
@@ -2920,7 +2965,10 @@ const routes = {
       ...(profile.avatar ? { avatar: profile.avatar } : {}),
       friends: socialFriends(user.id),
       pending: pendingFriendships(social, user.id).map(f => socialPendingRow(f, user.id)).filter(Boolean),
-      planShares: socialPlanCount(user.id)
+      planShares: socialPlanCount(user.id),
+      // The Friends screen can say that an alert switch will not ring yet. Account-wide: any
+      // device of this profile is enough to receive it.
+      hasPush: db.subs.some(s => s.userId === user.id)
     });
   },
 
@@ -2934,14 +2982,28 @@ const routes = {
     if (body.shareWeight !== undefined && !SOCIAL_SHARE_WEIGHT.includes(body.shareWeight)) {
       return json(res, 400, { error: 'shareWeight must be none, absolute or delta', code: 'invalid-share-weight' });
     }
+    for (const key of ['shareLive', 'notifyFriends', 'friendStartAlerts']) {
+      if (body[key] !== undefined && typeof body[key] !== 'boolean') {
+        return json(res, 400, { error: `${key} must be true or false`, code: 'invalid-' + key.replace(/[A-Z]/g, c => '-' + c.toLowerCase()) });
+      }
+    }
+    if (body.startTone !== undefined && !SOCIAL_START_TONES.includes(body.startTone)) {
+      return json(res, 400, { error: 'startTone must be motivational, drill or mix', code: 'invalid-start-tone' });
+    }
     const profile = ensureSocialProfile(user.id);
     let changed = false;
-    if (body.shareWorkouts !== undefined && profile.shareWorkouts !== body.shareWorkouts) {
-      profile.shareWorkouts = body.shareWorkouts;
-      changed = true;
+    for (const key of ['shareWorkouts', 'shareLive', 'notifyFriends', 'friendStartAlerts']) {
+      if (body[key] !== undefined && profile[key] !== body[key]) {
+        profile[key] = body[key];
+        changed = true;
+      }
     }
     if (body.shareWeight !== undefined && profile.shareWeight !== body.shareWeight) {
       profile.shareWeight = body.shareWeight;
+      changed = true;
+    }
+    if (body.startTone !== undefined && profile.startTone !== body.startTone) {
+      profile.startTone = body.startTone;
       changed = true;
     }
     if (changed) {
@@ -3046,6 +3108,32 @@ const routes = {
       squadStats: squadStats(social, friendIds, userById, stateById, { today }),
       feed: feedItems(social, friendIds, userById, stateById, user.id, { today })
     });
+  },
+
+  // Live rows come from the heartbeat, not from a state file: the active workout is deliberately
+  // device-local (PUT /api/data drops it). Only accepted friends whose shareLive is on can see
+  // one, and the row is empty the moment the workout ends or the athlete turns sharing off.
+  'GET /api/social/live': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    ensureSocialProfile(user.id);
+    const now = Date.now();
+    const live = [];
+    for (const id of acceptedFriendIds(social, user.id)) {
+      const friend = socialUserById(id);
+      if (!friend) continue;
+      const profile = social.profiles[id];
+      if (!profile || profile.shareLive !== true) continue;
+      const row = socialPresence(id, now);
+      if (!row) continue;
+      const avatar = socialAvatarOf(id);
+      live.push({
+        friend: { id, name: friend.name, ...(avatar ? { avatar } : {}) },
+        ...row,
+      });
+    }
+    live.sort((a, b) => b.startedAt - a.startedAt);
+    json(res, 200, { now, live });
   },
 
   'POST /api/social/react': async (req, res) => {
@@ -3169,23 +3257,56 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
-  // Live-workout heartbeat: client pings while a workout is on screen; { active:false } drops it,
-  // except with reason `hidden`, which marks it away (see PRESENCE_HIDDEN_GRACE). `navigated`,
-  // `closed`, and no reason at all (older clients), drop it at once.
+  // Live-workout heartbeat: client pings while a workout is running, whichever screen is open;
+  // { active:false } drops it, except with reason `hidden`, which marks it away (see
+  // PRESENCE_HIDDEN_GRACE). `navigated`, `closed`, and no reason at all (older clients), drop it
+  // at once. The answer tells the athlete's own screen whether friends can follow.
   'POST /api/activity': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
     const body = await readBody(req);
     if (body.active) {
+      const now = Date.now();
+      const prev = presence.get(user.id);
+      const workoutId = text(body.workoutId).slice(0, 120) || null;
+      const rawStart = +body.startedAt;
+      const startedAt = Number.isFinite(rawStart) && rawStart > 0 ? rawStart : now;
+      // The ETA arrives as seconds left, not as a clock time: a device's clock can be wrong and
+      // the friend's row should still describe the server's now.
+      const etaSec = typeof body.etaSec === 'number' || typeof body.etaSec === 'string' ? Number(body.etaSec) : NaN;
+      const etaAt = Number.isFinite(etaSec) && etaSec >= 0 && etaSec <= 21600 ? now + Math.round(etaSec * 1000) : null;
       // a fresh row, which also clears any hidden mark
       presence.set(user.id, {
         name: text(body.name).slice(0, 60),
+        exerciseId: text(body.exerciseId).slice(0, 80),
+        exName: text(body.exName).slice(0, 80),
         exIdx: +body.exIdx || 0, exTotal: +body.exTotal || 0,
         setsDone: +body.setsDone || 0, setsTotal: +body.setsTotal || 0,
-        startedAt: +body.startedAt || Date.now(),
-        updatedAt: Date.now()
+        startedAt,
+        updatedAt: now,
+        workoutId,
+        ...(etaAt != null ? { etaAt } : {}),
       });
-    } else if (body.reason === 'hidden') {
+      let profile = null;
+      try { profile = ensureSocialProfile(user.id); }
+      catch (e) { console.error('social: could not prepare the profile for a heartbeat', e.message); }
+      if (profile) {
+        const key = liveStartKey(workoutId, startedAt);
+        const isNew = !prev || prev.workoutId !== workoutId || Math.abs(prev.startedAt - startedAt) > 5000;
+        if (isNew && startNotifyDue(profile, { key, startedAt, now })) {
+          try {
+            profile.lastStartNotify = { id: key, at: now };
+            profile.updatedAt = now;
+            saveSocial();
+            notifyFriendsOfStart(user, { startedAt });
+          } catch (e) {
+            console.error('social: could not record or send a start notification', e.message);
+          }
+        }
+      }
+      return json(res, 200, { ok: true, shared: profile?.shareLive === true });
+    }
+    if (body.reason === 'hidden') {
       // The first mark stands: a repeat without a heartbeat between cannot stretch the grace.
       const p = presence.get(user.id);
       if (p && p.hiddenAt === undefined) p.hiddenAt = Date.now();

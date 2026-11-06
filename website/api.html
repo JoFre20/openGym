@@ -248,7 +248,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.3</span>
-    <span>105 endpoints</span>
+    <span>106 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -2309,7 +2309,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">Update what friends may see</span>
   </summary>
   <div class="ep-body">
-<p>Updates either field or both. <code>shareWorkouts</code> hides the caller's workouts from the squad board and the activity feed. <code>shareWeight</code> is <code>none</code> (no weight), <code>absolute</code> (the latest weigh-in and its trend) or <code>delta</code> (the trend only, never the number). Missing fields are left as they are.</p>
+<p>Updates any of the caller's social settings. <code>shareWorkouts</code> hides the caller's workouts from the squad board and the activity feed. <code>shareWeight</code> is <code>none</code> (no weight), <code>absolute</code> (the latest weigh-in and its trend) or <code>delta</code> (the trend only, never the number). <code>shareLive</code> lets confirmed friends follow the running workout; <code>notifyFriends</code> sends a start notification while it is on; <code>startTone</code> picks the message pool; <code>friendStartAlerts</code> is the recipient-side opt-in. Missing fields are left as they are. Turning <code>shareLive</code> off does not clear <code>notifyFriends</code>, so turning it back on resumes the old choice.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 <p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
@@ -2323,10 +2323,31 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-type">&quot;none&quot; | &quot;absolute&quot; | &quot;delta&quot;</span>
     <span class="p-desc"></span>
   </div>
+  <div class="prow">
+    <span class="p-name">shareLive</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">notifyFriends</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">startTone</span>
+    <span class="p-type">&quot;motivational&quot; | &quot;drill&quot; | &quot;mix&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friendStartAlerts</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc"></span>
+  </div>
 </div>
 <pre><code>{
-  &quot;shareWorkouts&quot;: true,
-  &quot;shareWeight&quot;: &quot;delta&quot;
+  &quot;shareLive&quot;: true,
+  &quot;notifyFriends&quot;: true,
+  &quot;startTone&quot;: &quot;drill&quot;
 }</code></pre>
     <p class="ep-h">Responses</p>
     <div class="ptab">
@@ -2336,7 +2357,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
   <div class="prow rrow">
     <span class="r-code s4">400</span>
-    <span class="p-desc">A field has an unsupported value.<span class="r-sig"><code>{&quot;error&quot;:&quot;shareWorkouts must be true or false&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;shareWeight must be none, absolute or delta&quot;}</code></span></span>
+    <span class="p-desc">A field has an unsupported value.<span class="r-sig"><code>{&quot;error&quot;:&quot;shareWorkouts must be true or false&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;shareWeight must be none, absolute or delta&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;shareLive must be true or false&quot;}</code> &middot; <code>{&quot;error&quot;:&quot;startTone must be motivational, drill or mix&quot;}</code></span></span>
   </div>
   <div class="prow rrow">
     <span class="r-code s4">401</span>
@@ -2471,6 +2492,32 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow rrow">
     <span class="r-code s2">200</span>
     <span class="p-desc">The squad board and activity feed.<span class="r-sig"><a href="#schema-SocialFeed">SocialFeed</a></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
+<details class="ep" id="op-socialLive">
+  <summary>
+    <span class="m get">GET</span>
+    <span class="ep-path"><code>/api/social/live</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Confirmed friends who are training and sharing it live</span>
+  </summary>
+  <div class="ep-body">
+<p>Reads the in-memory workout heartbeats, never a state file. A row appears only for an accepted friend whose <code>shareLive</code> is on; it disappears when the workout ends, the app closes, the athlete turns sharing off, or the heartbeat expires. <code>etaAt</code> and <code>leftSec</code> come from the athlete's own pace calculation; both are null when the heartbeat carried no estimate. Nothing here is persisted.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">The friends training right now, newest start first.<span class="r-sig"><a href="#schema-SocialLive">SocialLive</a></span></span>
   </div>
   <div class="prow rrow">
     <span class="r-code s4">401</span>
@@ -2770,7 +2817,8 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">Live-workout presence heartbeat</span>
   </summary>
   <div class="ep-body">
-<p>The client pings this every ~20 s while a workout is on screen; the admin dashboard reads who is training right now. Purely ephemeral, in-memory, never persisted; entries expire 70 s after the last ping. <code>{&quot;active&quot;: false}</code> is the &quot;left&quot; signal: with <code>reason</code> <code>navigated</code> or <code>closed</code>, or with no reason, it drops the caller's entry immediately. With <code>reason: hidden</code> (the page went to the background) it marks the entry away instead, and the entry stops being listed 45 s after that mark unless a heartbeat arrives first; a heartbeat clears the mark. The 70 s expiry applies either way.</p>
+<p>The client pings this every ~20 s while a workout is running, whichever screen is open; the admin dashboard reads who is training right now and a friend may follow the same row when the athlete shares it. Purely ephemeral, in-memory, never persisted; entries expire 70 s after the last ping. <code>{&quot;active&quot;: false}</code> is the &quot;left&quot; signal: with <code>reason</code> <code>navigated</code> or <code>closed</code>, or with no reason, it drops the caller's entry immediately. With <code>reason: hidden</code> (the page went to the background) it marks the entry away instead, and the entry stops being listed 45 s after that mark unless a heartbeat arrives first; a heartbeat clears the mark. The 70 s expiry applies either way.</p>
+<p>The first fresh heartbeat of a workout may also send the athlete's start notification to friends who opted in. The answer's <code>shared</code> says whether the athlete's own <code>shareLive</code> setting is on, so the workout screen can show its Live chip.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 <p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
@@ -2785,14 +2833,29 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-desc">Why the client sent <code>active: false</code>: <code>navigated</code> (an in-app route change), <code>closed</code> (the page is going away) or <code>hidden</code> (the page went to the background). <code>navigated</code> and <code>closed</code> drop the entry at once, as no reason does; <code>hidden</code> marks it away rather than dropping it. Ignored with <code>active: true</code>.</span>
   </div>
   <div class="prow">
+    <span class="p-name">workoutId</span>
+    <span class="p-type">string <span class="p-hint">(&le; 120 chars)</span></span>
+    <span class="p-desc">The active workout's id, for deduplicating the start notification.</span>
+  </div>
+  <div class="prow">
     <span class="p-name">name</span>
     <span class="p-type">string <span class="p-hint">(&le; 60 chars)</span></span>
     <span class="p-desc">Routine/workout name being trained.</span>
   </div>
   <div class="prow">
+    <span class="p-name">exerciseId</span>
+    <span class="p-type">string <span class="p-hint">(&le; 80 chars)</span></span>
+    <span class="p-desc">The current exercise's id, so the friend's app can localize its name.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exName</span>
+    <span class="p-type">string <span class="p-hint">(&le; 80 chars)</span></span>
+    <span class="p-desc">The athlete's own name for the current exercise, a custom-name fallback.</span>
+  </div>
+  <div class="prow">
     <span class="p-name">exIdx</span>
     <span class="p-type">integer</span>
-    <span class="p-desc">Current exercise index (0-based).</span>
+    <span class="p-desc">Current exercise number</span>
   </div>
   <div class="prow">
     <span class="p-name">exTotal</span>
@@ -2814,21 +2877,30 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-type">number</span>
     <span class="p-desc">Workout start, ms since epoch (defaults to now).</span>
   </div>
+  <div class="prow">
+    <span class="p-name">etaSec</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">Estimated seconds left, computed by the athlete's app. The server turns it into <code>etaAt</code> from its own clock; values outside 0 to 6 hours are ignored.</span>
+  </div>
 </div>
 <pre><code>{
   &quot;active&quot;: true,
+  &quot;workoutId&quot;: &quot;w_8k2m1&quot;,
   &quot;name&quot;: &quot;Push Day&quot;,
+  &quot;exerciseId&quot;: &quot;0025&quot;,
+  &quot;exName&quot;: &quot;Bench Press&quot;,
   &quot;exIdx&quot;: 2,
   &quot;exTotal&quot;: 5,
   &quot;setsDone&quot;: 7,
   &quot;setsTotal&quot;: 16,
-  &quot;startedAt&quot;: 1756500000000
+  &quot;startedAt&quot;: 1756500000000,
+  &quot;etaSec&quot;: 1200
 }</code></pre>
     <p class="ep-h">Responses</p>
     <div class="ptab">
   <div class="prow rrow">
     <span class="r-code s2">200</span>
-    <span class="p-desc">Presence updated.<span class="r-sig"><a href="#schema-Ok">Ok</a></span></span>
+    <span class="p-desc">Presence updated.<span class="r-sig">{ ok: always true, shared: boolean }</span></span>
   </div>
   <div class="prow rrow">
     <span class="r-code s4">401</span>
@@ -5249,6 +5321,26 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-type">&quot;none&quot; | &quot;absolute&quot; | &quot;delta&quot;</span>
     <span class="p-desc"><code>none</code> shares no body weight; <code>absolute</code> shares the latest weigh-in and its trend; <code>delta</code> shares only the change and never the number.</span>
   </div>
+  <div class="prow">
+    <span class="p-name">shareLive<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Let confirmed friends follow the running workout (current exercise, set counts and ETA). Off by default; nothing is stored on the server.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">notifyFriends<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Send a start notification to friends who enabled <code>friendStartAlerts</code>. Only effective while <code>shareLive</code> is on.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">startTone<em class="p-req" title="required">required</em></span>
+    <span class="p-type">&quot;motivational&quot; | &quot;drill&quot; | &quot;mix&quot;</span>
+    <span class="p-desc">The tone pool the sender's start notification is picked from.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friendStartAlerts<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Receive a push when a confirmed friend starts a workout they share live. Off by default.</span>
+  </div>
 </div>
   </div>
 </details>
@@ -5372,6 +5464,11 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">planShares</span>
     <span class="p-type">integer</span>
     <span class="p-desc">Unread plan snapshots in the caller's inbox, for the friends badge.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">hasPush</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Whether the account holds at least one Web Push subscription. False means a friend-alert switch can be on but will not ring until push is enabled.</span>
   </div>
 </div>
   </div>
@@ -5762,6 +5859,135 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">feed</span>
     <span class="p-type"><a href="#schema-SocialFeedWorkout">SocialFeedWorkout</a>[]</span>
     <span class="p-desc">The last 30 workouts across confirmed friends, newest first.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialLiveFriend">
+  <summary>
+    <span class="sch-name"><code>SocialLiveFriend</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">avatar</span>
+    <span class="p-type"><a href="#schema-AvatarDataUrl">AvatarDataUrl</a></span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialLiveRow">
+  <summary>
+    <span class="sch-name"><code>SocialLiveRow</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">friend</span>
+    <span class="p-type"><a href="#schema-SocialLiveFriend">SocialLiveFriend</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">workoutId</span>
+    <span class="p-type">string | null</span>
+    <span class="p-desc">The running workout's own id, when the client sent one.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Workout or routine name.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exerciseId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The current exercise's catalogue or custom id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exName</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The athlete's own name for the current exercise.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exIdx</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc">Current exercise number</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">exTotal</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">setsDone</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">setsTotal</span>
+    <span class="p-type">integer</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">startedAt</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">Workout start</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">updatedAt</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">Last heartbeat</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">etaAt</span>
+    <span class="p-type">number | null</span>
+    <span class="p-desc">Estimated finish, ms since epoch, from the athlete's pace estimate.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">leftSec</span>
+    <span class="p-type">integer | null</span>
+    <span class="p-desc">Seconds left at the moment of this answer; easier than comparing clocks.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialLive">
+  <summary>
+    <span class="sch-name"><code>SocialLive</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum"></span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">now</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">The server's clock at this answer</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">live</span>
+    <span class="p-type"><a href="#schema-SocialLiveRow">SocialLiveRow</a>[]</span>
+    <span class="p-desc">Confirmed friends training now with <code>shareLive</code> on.</span>
   </div>
 </div>
   </div>

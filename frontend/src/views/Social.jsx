@@ -3,14 +3,15 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
-import { Button, Row, Section, Segmented, Switch } from '../components/ui.jsx'
+import { Button, Row, Section, Segmented, SelectRow, Switch } from '../components/ui.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
+import Elapsed from '../components/Elapsed.jsx'
 import { EXIDX } from '../lib/exercises.js'
 import { exCount, fmtDate, fmtDur, fmtNum, fmtVol, isoOf, routineCount, exerciseNameText } from '../lib/format.js'
-import { t, tn } from '../lib/i18n.js'
+import { t, tn, dateLocale } from '../lib/i18n.js'
 import {
   getSharedPlan, reactToWorkout, removeSharedPlan, respondToFriendRequest, saveSocialSettings,
-  socialError, socialFeed, socialMe, socialPlans,
+  socialError, socialFeed, socialLive, socialMe, socialPlans,
 } from '../lib/api.js'
 import { parsePlan } from '../lib/plan-share.js'
 import { activeSeason } from '../lib/seasonal.js'
@@ -23,6 +24,7 @@ import './Social.css'
 
 const REACTIONS = ['🔥', '💪', '👑']
 export const SOCIAL_REFRESH_MS = 30000
+export const SOCIAL_LIVE_MS = 15000
 const RING_R = 22
 const RING_C = 2 * Math.PI * RING_R
 
@@ -67,7 +69,56 @@ function LoadError({ error, retry }) {
   </div>
 }
 
-function PrivacyCard({ settings, unit, saving, onSave }) {
+function liveExerciseName(row) {
+  const known = row.exerciseId ? EXIDX[row.exerciseId] : null
+  return known ? exerciseNameText(known) : (row.exName || '')
+}
+
+function LiveCard({ row }) {
+  const done = Math.max(0, Number(row.setsDone) || 0)
+  const total = Math.max(0, Number(row.setsTotal) || 0)
+  const pct = total ? Math.min(100, done / total * 100) : 0
+  const left = Number.isFinite(row.leftSec) ? row.leftSec : null
+  const finish = Number.isFinite(row.etaAt) && row.etaAt > 0
+    ? new Date(row.etaAt).toLocaleTimeString(dateLocale(), { hour: '2-digit', minute: '2-digit' })
+    : ''
+  const ex = liveExerciseName(row)
+    || (row.exIdx > 0 && row.exTotal > 0 ? t('Exercise {0} of {1}', row.exIdx, row.exTotal) : '')
+  return <div className="social-live-card" role="listitem">
+    <div className="social-live-head">
+      <Avatar name={row.friend.name} avatar={row.friend.avatar} size="sm" />
+      <div className="social-live-who">
+        <b>{row.friend.name}</b>
+        <span><Elapsed start={row.startedAt} /></span>
+      </div>
+      <span className="social-live-pill"><Icon name="dot" />{t('Live')}</span>
+    </div>
+    <div className="social-live-workout">{row.name || t('Workout')}</div>
+    {ex && <div className="social-live-ex">{ex}</div>}
+    <div className="social-live-progress"><i style={{ width: pct + '%' }} /></div>
+    <div className="social-live-meta">
+      <span>{t('{0} sets', done + '/' + total)}</span>
+      {left != null && left > 0 && <span>{t('{0} left', fmtDur(Math.max(60000, left * 1000)))}</span>}
+      {left === 0 && <span>{t('Finished')}</span>}
+      {finish && <span>{t('Done around {0}', finish)}</span>}
+    </div>
+  </div>
+}
+
+function LiveSection({ rows }) {
+  if (!rows.length) return null
+  return <section className="social-live">
+    <div className="row between social-section-head">
+      <h4 className="sec">{t('Live now')}</h4>
+      <span className="social-live-count"><i />{rows.length}</span>
+    </div>
+    <div className="social-live-list" role="list">
+      {rows.map(row => <LiveCard key={row.friend.id} row={row} />)}
+    </div>
+  </section>
+}
+
+function PrivacyCard({ settings, unit, saving, onSave, hasPush }) {
   const [local, setLocal] = useState(settings)
   useEffect(() => { setLocal(settings) }, [settings])
   const change = patch => {
@@ -76,20 +127,49 @@ function PrivacyCard({ settings, unit, saving, onSave }) {
     setLocal(next)
     onSave(next)
   }
-  return <Section title={t('Privacy')}>
-    <Row icon="dumbbell" iconTint="var(--green)" title={t('Share workouts')}>
-      <Switch aria-label={t('Share workouts')} checked={local.shareWorkouts} disabled={saving}
-        onChange={v => change({ shareWorkouts: v })} />
-    </Row>
-    <Row icon="scale" iconTint="var(--teal)" title={t('Weight')}>
-      <Segmented className="seg-inline" value={local.shareWeight} onChange={v => change({ shareWeight: v })}
+  const shareLive = local.shareLive === true
+  const notifyFriends = local.notifyFriends === true
+  return <>
+    <Section title={t('Privacy')}>
+      <Row icon="dumbbell" iconTint="var(--green)" title={t('Share workouts')}>
+        <Switch aria-label={t('Share workouts')} checked={local.shareWorkouts} disabled={saving}
+          onChange={v => change({ shareWorkouts: v })} />
+      </Row>
+      <Row icon="scale" iconTint="var(--teal)" title={t('Weight')}>
+        <Segmented className="seg-inline" value={local.shareWeight} onChange={v => change({ shareWeight: v })}
+          options={[
+            { value: 'none', label: t('Off') },
+            { value: 'delta', label: t('Delta') },
+            { value: 'absolute', label: unit },
+          ]} />
+      </Row>
+    </Section>
+    <Section title={t('Live training')}>
+      <Row icon="dot" iconTint="var(--green)" title={t('Share live workout')}
+        subtitle={t('Friends can follow your workout live.')}>
+        <Switch aria-label={t('Share live workout')} checked={shareLive} disabled={saving}
+          onChange={v => change({ shareLive: v, ...(v ? {} : { notifyFriends: false }) })} />
+      </Row>
+      <Row icon="bell" iconTint="var(--orange)" title={t('Tell friends when I start')}>
+        <Switch aria-label={t('Tell friends when I start')} checked={notifyFriends}
+          disabled={saving || !shareLive} onChange={v => change({ notifyFriends: v })} />
+      </Row>
+      {shareLive && notifyFriends && <SelectRow icon="chat" iconTint="var(--blue)" title={t('Start message tone')}
+        value={local.startTone || 'motivational'} onChange={v => change({ startTone: v })}
         options={[
-          { value: 'none', label: t('Off') },
-          { value: 'delta', label: t('Delta') },
-          { value: 'absolute', label: unit },
-        ]} />
-    </Row>
-  </Section>
+          { value: 'motivational', label: t('Friendly') },
+          { value: 'drill', label: t('Drill sergeant') },
+          { value: 'mix', label: t('Mix') },
+        ]} />}
+      <Row icon="bell" iconTint="var(--teal)" title={t('Friend workout alerts')}
+        subtitle={local.friendStartAlerts && !hasPush
+          ? t('Turn on push notifications in Settings to get these alerts.')
+          : t('Get a notification when a friend starts training.')}>
+        <Switch aria-label={t('Friend workout alerts')} checked={local.friendStartAlerts === true}
+          disabled={saving} onChange={v => change({ friendStartAlerts: v })} />
+      </Row>
+    </Section>
+  </>
 }
 
 function EmptySquad({ onAdd }) {
@@ -267,6 +347,7 @@ export default function Social() {
   const toast = useUI(s => s.toast)
   const [me, setMe] = useState(null)
   const [data, setData] = useState(null)
+  const [live, setLive] = useState([])
   const [plans, setPlans] = useState({ received: [], sent: [] })
   const [loading, setLoading] = useState(!!user)
   const [error, setError] = useState(null)
@@ -275,11 +356,13 @@ export default function Social() {
   const [planBusy, setPlanBusy] = useState(null)
   const alive = useRef(true)
   const lastLoaded = useRef(0)
+  const liveBusy = useRef(false)
   const userId = user?.id || ''
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     if (!userId) {
-      setMe(null); setData(null); setPlans({ received: [], sent: [] }); setError(null); setLoading(false)
+      liveBusy.current = false
+      setMe(null); setData(null); setLive([]); setPlans({ received: [], sent: [] }); setError(null); setLoading(false)
       return
     }
     if (!quiet) setLoading(true)
@@ -304,11 +387,28 @@ export default function Social() {
     if (alive.current && nextPlans) setPlans(nextPlans)
   }, [userId])
 
+  const refreshLive = useCallback(async () => {
+    if (!userId || liveBusy.current || document.visibilityState === 'hidden') return
+    liveBusy.current = true
+    try {
+      const next = await socialLive()
+      if (alive.current) setLive(Array.isArray(next?.live) ? next.live : [])
+    } catch { /* the live strip is additive: a failure leaves the squad and feed alone */ }
+    finally { liveBusy.current = false }
+  }, [userId])
+
   useEffect(() => {
     alive.current = true
     load()
+    refreshLive()
     return () => { alive.current = false }
-  }, [load])
+  }, [load, refreshLive])
+
+  useEffect(() => {
+    if (!userId) { setLive([]); return undefined }
+    const iv = setInterval(refreshLive, SOCIAL_LIVE_MS)
+    return () => clearInterval(iv)
+  }, [userId, refreshLive])
 
   const refreshFeed = useCallback(async () => {
     if (!userId) return
@@ -332,13 +432,14 @@ export default function Social() {
   }, [userId, saving, reactionBusy, load])
 
   useEffect(() => {
-    document.addEventListener('visibilitychange', refreshIfStale)
-    window.addEventListener('focus', refreshIfStale)
+    const onFocus = () => { refreshIfStale(); refreshLive() }
+    document.addEventListener('visibilitychange', onFocus)
+    window.addEventListener('focus', onFocus)
     return () => {
-      document.removeEventListener('visibilitychange', refreshIfStale)
-      window.removeEventListener('focus', refreshIfStale)
+      document.removeEventListener('visibilitychange', onFocus)
+      window.removeEventListener('focus', onFocus)
     }
-  }, [refreshIfStale])
+  }, [refreshIfStale, refreshLive])
 
   const openAdd = useCallback((initialCode = '') => {
     if (!me) return
@@ -415,6 +516,7 @@ export default function Social() {
     try {
       await Promise.all([
         refreshFeed(),
+        refreshLive(),
         socialPlans().then(next => { if (alive.current) setPlans(next || { received: [], sent: [] }) }),
       ])
     } catch { /* keep the removal even if the feed is briefly unavailable */ }
@@ -519,8 +621,9 @@ export default function Social() {
                 <Button size="sm" icon="reset" onClick={() => load({ quiet: true })}>{t('Try again')}</Button>
               </div>
             </div>}
+            <LiveSection rows={live} />
             <PrivacyCard settings={me.settings} unit={S.unit === 'lb' ? 'lb' : 'kg'}
-              saving={saving} onSave={saveSettings} />
+              saving={saving} onSave={saveSettings} hasPush={!!me.hasPush} />
             <SquadSection stats={squadStats} friends={me.friends} unit={S.unit === 'lb' ? 'lb' : 'kg'}
               onMenu={openFriendMenu} onAdd={() => openAdd()} />
             <SharedPlansSection plans={plans.received} busyId={planBusy}

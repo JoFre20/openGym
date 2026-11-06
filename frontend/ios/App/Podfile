@@ -8,6 +8,31 @@ use_frameworks!
 # Requires CocoaPods 1.6 or newer
 install! 'cocoapods', :disable_input_output_paths => true
 
+# Google ML Kit, behind the check-in scanner, ships its arm64 framework for the device only: its
+# podspecs pin EXCLUDED_ARCHS[sdk=iphonesimulator*]=arm64, and its arm64 slice is built for iOS,
+# not for the simulator. On an Apple Silicon Mac that on its own makes the app impossible to build
+# for a simulator, whatever the project says. So the scanner can be left out on purpose:
+#   touch SIMULATOR_ONLY && pod install   a simulator build (no scanner: the check-in scan says so)
+#   rm SIMULATOR_ONLY && pod install      a device build, the scanner back in
+# A file rather than a shell variable on purpose: `npx cap sync` runs `pod install` again, and a
+# variable would be lost there. SIMULATOR_ONLY is in .gitignore, so it never leaves this machine.
+SIMULATOR_ONLY = File.exist?(File.join(__dir__, 'SIMULATOR_ONLY'))
+
+# ... and the filter has to sit here, not on the pod line below: `cap sync` regenerates the whole
+# capacitor_pods helper from the installed plugins on every run (Capacitor CLI, updatePodfile), so
+# an `unless SIMULATOR_ONLY` written in there is gone after the next build:mobile. Everything
+# outside that one helper survives. (The helper's name must not appear in a comment either: the
+# CLI's regex starts at the first occurrence of it, comments included.)
+if SIMULATOR_ONLY
+  module DropMlKitForSimulator
+    def pod(name, *args, **kwargs)
+      return if name.to_s == 'CapacitorMlkitBarcodeScanning'
+      super
+    end
+  end
+  Pod::Podfile.prepend(DropMlKitForSimulator)
+end
+
 def capacitor_pods
   pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
   pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'

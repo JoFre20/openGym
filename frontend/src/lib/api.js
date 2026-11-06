@@ -440,6 +440,7 @@ export async function passwordResetRedeem(name, code, next) {
 // the answers in local state; these six calls are the whole surface.
 export const socialMe = () => api('/api/social/me')
 export const socialFeed = () => api('/api/social/feed')
+export const socialLive = () => api('/api/social/live')
 export const saveSocialSettings = settings => api('/api/social/settings', { method: 'PUT', body: JSON.stringify(settings) })
 export const sendFriendRequest = friendCode => post('/api/social/friends/request', { friendCode })
 export const respondToFriendRequest = (requestId, action) => post('/api/social/friends/respond', { requestId, action })

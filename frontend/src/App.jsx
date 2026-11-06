@@ -29,6 +29,7 @@ import { startWidgetSync } from './lib/widgets.js'
 import { startWidgetLinks } from './lib/widget-links.js'
 import { startVoice, todayRoutineIds } from './lib/voice.js'
 import { startLiveActivitySync } from './lib/live-activity.js'
+import { useLivePresence } from './lib/live-presence.js'
 import { useWakeLock } from './lib/wakelock.js'
 import { installViewportGuard } from './lib/viewport-guard.js'
 import { installChipDrag } from './lib/hchips.js'
@@ -128,6 +129,8 @@ function Shell() {
   const loc = useLocation()
   const navType = useNavigationType()
   const { S, user, ready } = useStore()
+  // The running workout's presence, from any screen in the app (lib/live-presence.js).
+  useLivePresence()
   // iOS: whether timer sounds get past the ring/silent switch (Settings → Sounds). Page-level,
   // so it is applied here on load and on change rather than at each beep.
   useEffect(() => { setPlayOnSilent(!!S.soundOnSilent) }, [S.soundOnSilent])

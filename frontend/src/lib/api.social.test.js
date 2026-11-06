@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getSharedPlan, reactToWorkout, removeSharedPlan, respondToFriendRequest, saveSocialSettings,
-  sendFriendRequest, sharePlanWithFriends, socialError, socialFeed, socialMe, socialPlans
+  sendFriendRequest, sharePlanWithFriends, socialError, socialFeed, socialLive, socialMe, socialPlans
 } from './api.js'
 import de from '../locales/de.js'
 import { _setLangState } from './i18n-core.js'
@@ -26,6 +26,10 @@ describe('social API', () => {
     answer({ weekStart: '2026-11-02', squadStats: [], feed: [] })
     expect(await socialFeed()).toEqual({ weekStart: '2026-11-02', squadStats: [], feed: [] })
     expect(fetch.mock.calls[0][0]).toMatch(/\/api\/social\/feed$/)
+
+    answer({ now: 1, live: [] })
+    expect(await socialLive()).toEqual({ now: 1, live: [] })
+    expect(fetch.mock.calls[0][0]).toMatch(/\/api\/social\/live$/)
   })
 
   it('writes settings, requests and reactions with JSON bodies', async () => {

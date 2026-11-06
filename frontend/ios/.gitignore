@@ -11,3 +11,6 @@ capacitor-cordova-ios-plugins
 # Generated Config files
 App/App/capacitor.config.json
 App/App/config.xml
+
+# Set by hand for a simulator-only build on an Apple Silicon Mac (see App/Podfile)
+App/SIMULATOR_ONLY

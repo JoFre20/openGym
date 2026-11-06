@@ -2819,7 +2819,14 @@ paths:
               schema: { $ref: '#/components/schemas/SocialMe' }
               example:
                 friendCode: "A7X-92B"
-                settings: { shareWorkouts: true, shareWeight: none }
+                settings:
+                  shareWorkouts: true
+                  shareWeight: none
+                  shareLive: false
+                  notifyFriends: false
+                  startTone: motivational
+                  friendStartAlerts: false
+                hasPush: true
                 friends:
                   - { friendshipId: "fJ8sK2mQ", id: "u_2", name: "Ada", since: 1762000000000 }
                 pending:
@@ -2832,10 +2839,14 @@ paths:
       operationId: socialSettings
       summary: Update what friends may see
       description: >-
-        Updates either field or both. `shareWorkouts` hides the caller's workouts from the
-        squad board and the activity feed. `shareWeight` is `none` (no weight), `absolute`
-        (the latest weigh-in and its trend) or `delta` (the trend only, never the number).
-        Missing fields are left as they are.
+        Updates any of the caller's social settings. `shareWorkouts` hides the caller's
+        workouts from the squad board and the activity feed. `shareWeight` is `none` (no
+        weight), `absolute` (the latest weigh-in and its trend) or `delta` (the trend only,
+        never the number). `shareLive` lets confirmed friends follow the running workout;
+        `notifyFriends` sends a start notification while it is on; `startTone` picks the
+        message pool; `friendStartAlerts` is the recipient-side opt-in. Missing fields are
+        left as they are. Turning `shareLive` off does not clear `notifyFriends`, so turning
+        it back on resumes the old choice.
       requestBody:
         required: true
         content:
@@ -2845,7 +2856,11 @@ paths:
               properties:
                 shareWorkouts: { type: boolean }
                 shareWeight: { type: string, enum: [none, absolute, delta] }
-            example: { shareWorkouts: true, shareWeight: delta }
+                shareLive: { type: boolean }
+                notifyFriends: { type: boolean }
+                startTone: { type: string, enum: [motivational, drill, mix] }
+                friendStartAlerts: { type: boolean }
+            example: { shareLive: true, notifyFriends: true, startTone: drill }
       responses:
         '200':
           description: Saved. The full settings object is returned.
@@ -2855,7 +2870,14 @@ paths:
                 type: object
                 properties:
                   settings: { $ref: '#/components/schemas/SocialSettings' }
-              example: { settings: { shareWorkouts: true, shareWeight: delta } }
+              example:
+                settings:
+                  shareWorkouts: true
+                  shareWeight: delta
+                  shareLive: true
+                  notifyFriends: true
+                  startTone: drill
+                  friendStartAlerts: false
         '400':
           description: A field has an unsupported value.
           content:
@@ -2864,6 +2886,8 @@ paths:
               examples:
                 workouts: { value: { error: "shareWorkouts must be true or false", code: "invalid-share-workouts" } }
                 weight: { value: { error: "shareWeight must be none, absolute or delta", code: "invalid-share-weight" } }
+                live: { value: { error: "shareLive must be true or false", code: "invalid-share-live" } }
+                tone: { value: { error: "startTone must be motivational, drill or mix", code: "invalid-start-tone" } }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/social/friends/request:
@@ -3026,6 +3050,41 @@ paths:
                       "🔥": { count: 2, mine: true }
                       "💪": { count: 0, mine: false }
                       "👑": { count: 0, mine: false }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /api/social/live:
+    get:
+      tags: [social]
+      operationId: socialLive
+      summary: Confirmed friends who are training and sharing it live
+      description: >-
+        Reads the in-memory workout heartbeats, never a state file. A row appears only for
+        an accepted friend whose `shareLive` is on; it disappears when the workout ends,
+        the app closes, the athlete turns sharing off, or the heartbeat expires. `etaAt`
+        and `leftSec` come from the athlete's own pace calculation; both are null when the
+        heartbeat carried no estimate. Nothing here is persisted.
+      responses:
+        '200':
+          description: The friends training right now, newest start first.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SocialLive' }
+              example:
+                now: 1762000000000
+                live:
+                  - friend: { id: "u_2", name: "Ada", avatar: "data:image/png;base64,..." }
+                    workoutId: "w_8k2m1"
+                    name: "Push Day"
+                    exerciseId: "0025"
+                    exName: "Bench Press"
+                    exIdx: 2
+                    exTotal: 5
+                    setsDone: 7
+                    setsTotal: 16
+                    startedAt: 1761998800000
+                    updatedAt: 1761999995000
+                    etaAt: 1762001200000
+                    leftSec: 1200
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/social/react:
@@ -3265,14 +3324,20 @@ paths:
       operationId: postActivity
       summary: Live-workout presence heartbeat
       description: |
-        The client pings this every ~20 s while a workout is on screen; the admin
-        dashboard reads who is training right now. Purely ephemeral, in-memory, never
-        persisted; entries expire 70 s after the last ping. `{"active": false}` is the
-        "left" signal: with `reason` `navigated` or `closed`, or with no reason, it
+        The client pings this every ~20 s while a workout is running, whichever screen
+        is open; the admin dashboard reads who is training right now and a friend may
+        follow the same row when the athlete shares it. Purely ephemeral, in-memory,
+        never persisted; entries expire 70 s after the last ping. `{"active": false}` is
+        the "left" signal: with `reason` `navigated` or `closed`, or with no reason, it
         drops the caller's entry immediately. With `reason: hidden` (the page went to
         the background) it marks the entry away instead, and the entry stops being
         listed 45 s after that mark unless a heartbeat arrives first; a heartbeat
         clears the mark. The 70 s expiry applies either way.
+
+        The first fresh heartbeat of a workout may also send the athlete's start
+        notification to friends who opted in. The answer's `shared` says whether the
+        athlete's own `shareLive` setting is on, so the workout screen can show its
+        Live chip.
       requestBody:
         required: true
         content:
@@ -3292,31 +3357,58 @@ paths:
                     to the background). `navigated` and `closed` drop the entry at once,
                     as no reason does; `hidden` marks it away rather than dropping it.
                     Ignored with `active: true`.
+                workoutId:
+                  type: string
+                  maxLength: 120
+                  description: The active workout's id, for deduplicating the start notification.
                 name:
                   type: string
                   maxLength: 60
                   description: Routine/workout name being trained.
-                exIdx: { type: integer, description: Current exercise index (0-based). }
+                exerciseId:
+                  type: string
+                  maxLength: 80
+                  description: The current exercise's id, so the friend's app can localize its name.
+                exName:
+                  type: string
+                  maxLength: 80
+                  description: The athlete's own name for the current exercise, a custom-name fallback.
+                exIdx: { type: integer, description: Current exercise number, 1-based. }
                 exTotal: { type: integer, description: Exercises in the workout. }
                 setsDone: { type: integer }
                 setsTotal: { type: integer }
                 startedAt:
                   type: number
                   description: Workout start, ms since epoch (defaults to now).
+                etaSec:
+                  type: number
+                  description: >-
+                    Estimated seconds left, computed by the athlete's app. The server turns
+                    it into `etaAt` from its own clock; values outside 0 to 6 hours are ignored.
             example:
               active: true
+              workoutId: "w_8k2m1"
               name: "Push Day"
+              exerciseId: "0025"
+              exName: "Bench Press"
               exIdx: 2
               exTotal: 5
               setsDone: 7
               setsTotal: 16
               startedAt: 1756500000000
+              etaSec: 1200
       responses:
         '200':
           description: Presence updated.
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/Ok' }
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  shared:
+                    type: boolean
+                    description: The caller's `shareLive` setting; absent on a left signal.
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/admin/users:
@@ -4763,7 +4855,7 @@ components:
     # ------------------------------------------------------------------ social
     SocialSettings:
       type: object
-      required: [shareWorkouts, shareWeight]
+      required: [shareWorkouts, shareWeight, shareLive, notifyFriends, startTone, friendStartAlerts]
       properties:
         shareWorkouts:
           type: boolean
@@ -4774,6 +4866,25 @@ components:
           description: >-
             `none` shares no body weight; `absolute` shares the latest weigh-in and its trend;
             `delta` shares only the change and never the number.
+        shareLive:
+          type: boolean
+          description: >-
+            Let confirmed friends follow the running workout (current exercise, set counts
+            and ETA). Off by default; nothing is stored on the server.
+        notifyFriends:
+          type: boolean
+          description: >-
+            Send a start notification to friends who enabled `friendStartAlerts`. Only
+            effective while `shareLive` is on.
+        startTone:
+          type: string
+          enum: [motivational, drill, mix]
+          description: The tone pool the sender's start notification is picked from.
+        friendStartAlerts:
+          type: boolean
+          description: >-
+            Receive a push when a confirmed friend starts a workout they share live.
+            Off by default.
 
     SocialFriend:
       type: object
@@ -4810,6 +4921,11 @@ components:
         planShares:
           type: integer
           description: Unread plan snapshots in the caller's inbox, for the friends badge.
+        hasPush:
+          type: boolean
+          description: >-
+            Whether the account holds at least one Web Push subscription. False means a
+            friend-alert switch can be on but will not ring until push is enabled.
 
     SocialPlanPeer:
       type: object
@@ -4945,6 +5061,45 @@ components:
           type: array
           description: The last 30 workouts across confirmed friends, newest first.
           items: { $ref: '#/components/schemas/SocialFeedWorkout' }
+
+    SocialLiveFriend:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
+
+    SocialLiveRow:
+      type: object
+      properties:
+        friend: { $ref: '#/components/schemas/SocialLiveFriend' }
+        workoutId:
+          oneOf: [{ type: string }, { type: 'null' }]
+          description: The running workout's own id, when the client sent one.
+        name: { type: string, description: Workout or routine name. }
+        exerciseId: { type: string, description: The current exercise's catalogue or custom id. }
+        exName: { type: string, description: The athlete's own name for the current exercise. }
+        exIdx: { type: integer, description: Current exercise number, 1-based. }
+        exTotal: { type: integer }
+        setsDone: { type: integer }
+        setsTotal: { type: integer }
+        startedAt: { type: number, description: Workout start, ms since epoch. }
+        updatedAt: { type: number, description: Last heartbeat, ms since epoch. }
+        etaAt:
+          oneOf: [{ type: number }, { type: 'null' }]
+          description: Estimated finish, ms since epoch, from the athlete's pace estimate.
+        leftSec:
+          oneOf: [{ type: integer }, { type: 'null' }]
+          description: Seconds left at the moment of this answer; easier than comparing clocks.
+
+    SocialLive:
+      type: object
+      properties:
+        now: { type: number, description: The server's clock at this answer, ms since epoch. }
+        live:
+          type: array
+          description: Confirmed friends training now with `shareLive` on.
+          items: { $ref: '#/components/schemas/SocialLiveRow' }
 
     # ------------------------------------------------------------------ state sync
     State:

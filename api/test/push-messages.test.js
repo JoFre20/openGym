@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dayReminderPush, friendRequestPush, planSharePush, reactionPush, restTimerPush, routineEmoji, testPush } from '../push-messages.js';
+import { dayReminderPush, friendRequestPush, friendStartPush, planSharePush, reactionPush, restTimerPush, routineEmoji, testPush } from '../push-messages.js';
 
 test('localizes every server-generated notification in pt-BR', () => {
   assert.deepEqual(restTimerPush('pt-BR'), {
@@ -85,10 +85,35 @@ test('every app language has social push copy', () => {
   }
 });
 
+test('friend start pushes follow the tone and rotate through its lines', () => {
+  assert.deepEqual(friendStartPush('de', 'Ada', { tone: 'motivational', seed: 0 }), {
+    title: '💪 Ada trainiert jetzt',
+    body: 'Dein Zug. Auch ein Satz zählt.',
+    tag: 'friend-start',
+    url: '#/social',
+  });
+  assert.equal(friendStartPush('de', 'Ada', { tone: 'motivational', seed: 1 }).body, 'Das Gym ist offen. Komm dazu.');
+  assert.equal(friendStartPush('de', 'Ada', { tone: 'drill', seed: 0 }).body, 'Keine Ausreden. Ab unter die Stange.');
+  assert.equal(friendStartPush('de', 'Ada', { tone: 'mix', seed: 3 }).body, 'Keine Ausreden. Ab unter die Stange.');
+  assert.equal(friendStartPush('de', 'Ada', { tone: 'unknown', seed: 0 }).body, 'Dein Zug. Auch ein Satz zählt.');
+  assert.equal(friendStartPush('de-CH', 'Ada', { tone: 'motivational', seed: 0 }).title, '💪 Ada trainiert jetzt');
+});
+
+test('every app language has both friend start tones', () => {
+  for (const lang of ['en', 'de', 'pt', 'pt-BR', 'es', 'fr', 'it', 'pl', 'ru', 'uk', 'sv', 'hu', 'tr', 'ar', 'hi', 'bn', 'ko', 'zh', 'zh-TW', 'th', 'de-CH']) {
+    for (const tone of ['motivational', 'drill']) {
+      const push = friendStartPush(lang, 'Ada', { tone, seed: 1 });
+      assert.ok(push.title.includes('Ada'), lang + ' ' + tone);
+      assert.ok(push.body, lang + ' ' + tone);
+    }
+  }
+});
+
 test('social pushes fall back to English for an unknown language', () => {
   assert.deepEqual(friendRequestPush('xx', 'Ada'), friendRequestPush('en', 'Ada'));
   assert.deepEqual(reactionPush(undefined, 'Ada', '👑'), reactionPush('en', 'Ada', '👑'));
   assert.equal(friendRequestPush('en', 'Ada').body, 'Ada wants to join your squad.');
   assert.equal(reactionPush('en', 'Ada', '💪').title, '💪 Ada reacted to your workout');
   assert.deepEqual(planSharePush('xx', 'Ada'), planSharePush('en', 'Ada'));
+  assert.deepEqual(friendStartPush('xx', 'Ada', { tone: 'motivational', seed: 0 }), friendStartPush('en', 'Ada', { tone: 'motivational', seed: 0 }));
 });

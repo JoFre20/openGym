@@ -211,6 +211,283 @@ const PLAN_SHARE_COPY = {
   th: { title: 'แผนใหม่จาก {0}', body: 'พร้อมใน squad ของคุณ เปิด openGym เพื่อเพิ่ม' },
 };
 
+// A friend's start, in the tone the sender chose. Each tone keeps three lines, so a run of
+// sessions does not repeat the same sentence; `mix` draws from both pools.
+const FRIEND_START_COPY = {
+  en: {
+    title: '💪 {0} is training now',
+    motivational: [
+      'Your move. Even one set counts.',
+      'The gym is open. Go join them.',
+      'Future you says thanks.',
+    ],
+    drill: [
+      'No excuses. Get under the bar.',
+      'They are already training. Are you?',
+      'Your muscles are waiting. Move it.',
+    ],
+  },
+  de: {
+    title: '💪 {0} trainiert jetzt',
+    motivational: [
+      'Dein Zug. Auch ein Satz zählt.',
+      'Das Gym ist offen. Komm dazu.',
+      'Dein zukünftiges Ich sagt danke.',
+    ],
+    drill: [
+      'Keine Ausreden. Ab unter die Stange.',
+      'Die Hanteln warten. Du auch?',
+      'Deine Muskeln warten. Bewegung.',
+    ],
+  },
+  pt: {
+    title: '💪 {0} está a treinar agora',
+    motivational: [
+      'É a tua vez. Até uma série conta.',
+      'O ginásio está aberto. Vem juntar-te.',
+      'O teu eu do futuro agradece.',
+    ],
+    drill: [
+      'Sem desculpas. Para debaixo da barra.',
+      'Eles já estão a treinar. E tu?',
+      'Os teus músculos estão à espera. Mexe-te.',
+    ],
+  },
+  'pt-BR': {
+    title: '💪 {0} está treinando agora',
+    motivational: [
+      'Sua vez. Até uma série conta.',
+      'A academia está aberta. Venha treinar.',
+      'Seu eu do futuro agradece.',
+    ],
+    drill: [
+      'Sem desculpas. Para baixo da barra.',
+      'Eles já estão treinando. E você?',
+      'Seus músculos estão esperando. Mexa-se.',
+    ],
+  },
+  es: {
+    title: '💪 {0} está entrenando ahora',
+    motivational: [
+      'Te toca. Hasta una serie cuenta.',
+      'El gimnasio está abierto. Únete.',
+      'Tu yo del futuro te lo agradecerá.',
+    ],
+    drill: [
+      'Sin excusas. Bajo la barra.',
+      'Ya están entrenando. ¿Y tú?',
+      'Tus músculos esperan. Muévete.',
+    ],
+  },
+  fr: {
+    title: '💪 {0} s’entraîne maintenant',
+    motivational: [
+      'À toi. Même une série compte.',
+      'La salle est ouverte. Rejoins-les.',
+      'Ton toi du futur te remerciera.',
+    ],
+    drill: [
+      'Pas d’excuses. Sous la barre.',
+      'Ils s’entraînent déjà. Et toi ?',
+      'Tes muscles attendent. Bouge.',
+    ],
+  },
+  it: {
+    title: '💪 {0} si sta allenando ora',
+    motivational: [
+      'Tocca a te. Anche una serie conta.',
+      'La palestra è aperta. Unisciti.',
+      'Il te del futuro ti ringrazierà.',
+    ],
+    drill: [
+      'Niente scuse. Sotto il bilanciere.',
+      'Si stanno già allenando. E tu?',
+      'I tuoi muscoli aspettano. Muoviti.',
+    ],
+  },
+  pl: {
+    title: '💪 {0} właśnie trenuje',
+    motivational: [
+      'Twoja kolej. Nawet jedna seria się liczy.',
+      'Siłownia jest otwarta. Dołącz.',
+      'Twoje przyszłe ja podziękuje.',
+    ],
+    drill: [
+      'Bez wymówek. Pod sztangę.',
+      'Oni już trenują. A ty?',
+      'Twoje mięśnie czekają. Rusz się.',
+    ],
+  },
+  ru: {
+    title: '💪 {0} сейчас тренируется',
+    motivational: [
+      'Твой ход. Даже один подход считается.',
+      'Зал открыт. Присоединяйся.',
+      'Ты из будущего скажет спасибо.',
+    ],
+    drill: [
+      'Никаких отговорок. Под штангу.',
+      'Они уже тренируются. А ты?',
+      'Твои мышцы ждут. Двигайся.',
+    ],
+  },
+  uk: {
+    title: '💪 {0} зараз тренується',
+    motivational: [
+      'Твій хід. Навіть один підхід рахується.',
+      'Зал відкритий. Приєднуйся.',
+      'Ти з майбутнього подякуєш.',
+    ],
+    drill: [
+      'Жодних відмовок. Під штангу.',
+      'Вони вже тренуються. А ти?',
+      'Твої м’язи чекають. Рухайся.',
+    ],
+  },
+  sv: {
+    title: '💪 {0} tränar nu',
+    motivational: [
+      'Din tur. Även ett set räknas.',
+      'Gymmet är öppet. Häng på.',
+      'Ditt framtida jag tackar dig.',
+    ],
+    drill: [
+      'Inga ursäkter. Under stången.',
+      'De tränar redan. Gör du?',
+      'Dina muskler väntar. Rör på dig.',
+    ],
+  },
+  hu: {
+    title: '💪 {0} most edz',
+    motivational: [
+      'Te jössz. Egy sorozat is számít.',
+      'A terem nyitva. Csatlakozz.',
+      'A jövőbeli éned hálás lesz.',
+    ],
+    drill: [
+      'Nincs kifogás. A rúd alá.',
+      'Már edzenek. Te is?',
+      'Az izmaid várnak. Mozogj.',
+    ],
+  },
+  tr: {
+    title: '💪 {0} şu anda antrenmanda',
+    motivational: [
+      'Sıra sende. Bir set bile sayılır.',
+      'Salon açık. Katıl onlara.',
+      'Gelecekteki sen teşekkür edecek.',
+    ],
+    drill: [
+      'Mazeret yok. Barın altına.',
+      'Onlar zaten antrenmanda. Sen?',
+      'Kasların bekliyor. Harekete geç.',
+    ],
+  },
+  ar: {
+    title: '💪 {0} يتدرب الآن',
+    motivational: [
+      'دورك. حتى مجموعة واحدة تُحسب.',
+      'الصالة مفتوحة. انضم إليهم.',
+      'نسختك المستقبلية ستشكرك.',
+    ],
+    drill: [
+      'لا أعذار. تحت البار.',
+      'إنهم يتدربون بالفعل. وأنت؟',
+      'عضلاتك تنتظر. تحرّك.',
+    ],
+  },
+  hi: {
+    title: '💪 {0} अभी ट्रेनिंग कर रहे हैं',
+    motivational: [
+      'आपकी बारी। एक सेट भी मायने रखता है।',
+      'जिम खुला है। शामिल हो जाइए।',
+      'आपका भविष्य वाला आप धन्यवाद कहेगा।',
+    ],
+    drill: [
+      'कोई बहाना नहीं। बार के नीचे आओ।',
+      'वे पहले से ट्रेनिंग कर रहे हैं। आप?',
+      'आपकी मांसपेशियां इंतज़ार कर रही हैं। हिलो।',
+    ],
+  },
+  bn: {
+    title: '💪 {0} এখন ট্রেনিং করছেন',
+    motivational: [
+      'আপনার পালা। একটা সেটও গণনা হয়।',
+      'জিম খোলা। যোগ দিন।',
+      'আপনার ভবিষ্যৎ আপনি ধন্যবাদ বলবে।',
+    ],
+    drill: [
+      'কোনো অজুহাত নয়। বারের নিচে আসুন।',
+      'তারা ইতিমধ্যে ট্রেনিং করছে। আপনি?',
+      'আপনার পেশি অপেক্ষা করছে। নড়ুন।',
+    ],
+  },
+  ko: {
+    title: '💪 {0} 님이 지금 운동 중이에요',
+    motivational: [
+      '당신 차례예요. 한 세트도 중요해요.',
+      '헬스장이 열었어요. 같이 가요.',
+      '미래의 당신이 고마워할 거예요.',
+    ],
+    drill: [
+      '변명 금지. 바 아래로.',
+      '그들은 이미 운동 중이에요. 당신은?',
+      '근육이 기다려요. 움직여요.',
+    ],
+  },
+  zh: {
+    title: '💪 {0} 正在训练',
+    motivational: [
+      '轮到你了。一组也算。',
+      '健身房开着。去加入他们。',
+      '未来的你会感谢现在的你。',
+    ],
+    drill: [
+      '别找借口。去杠铃下面。',
+      '他们已经在练了。你呢？',
+      '你的肌肉在等你。动起来。',
+    ],
+  },
+  'zh-TW': {
+    title: '💪 {0} 正在訓練',
+    motivational: [
+      '換你了。一組也算。',
+      '健身房開著。去加入他們。',
+      '未來的你會感謝現在的你。',
+    ],
+    drill: [
+      '別找藉口。去槓鈴下面。',
+      '他們已經在練了。你呢？',
+      '你的肌肉在等你。動起來。',
+    ],
+  },
+  th: {
+    title: '💪 {0} กำลังออกกำลังกายอยู่',
+    motivational: [
+      'ถึงตาคุณแล้ว แค่เซ็ตเดียวก็มีค่า',
+      'ยิมเปิดอยู่ ไปร่วมด้วยเลย',
+      'ตัวคุณในอนาคตจะขอบคุณ',
+    ],
+    drill: [
+      'ไม่ต้องมีข้ออ้าง ไปใต้บาร์',
+      'พวกเขาออกกำลังกายแล้ว คุณล่ะ',
+      'กล้ามเนื้อคุณรออยู่ ขยับตัว',
+    ],
+  },
+};
+
+const friendStartCopyFor = lang => {
+  if (lang === 'de-CH') {
+    const ch = s => s.replace(/ß/g, 'ss');
+    return {
+      title: ch(FRIEND_START_COPY.de.title),
+      motivational: FRIEND_START_COPY.de.motivational.map(ch),
+      drill: FRIEND_START_COPY.de.drill.map(ch),
+    };
+  }
+  return FRIEND_START_COPY[lang] || FRIEND_START_COPY.en;
+};
+
 const socialCopyFor = lang => {
   if (lang === 'de-CH') {
     const ch = s => s.replace(/ß/g, 'ss');
@@ -255,6 +532,20 @@ export function planSharePush(lang, name) {
     title: fill(copy.title, [name || 'openGym']),
     body: copy.body,
     tag: 'social-plan',
+    url: '#/social',
+  };
+}
+
+const START_TONES = new Set(['motivational', 'drill', 'mix']);
+export function friendStartPush(lang, name, { tone = 'motivational', seed = 0 } = {}) {
+  const copy = friendStartCopyFor(lang);
+  const chosen = START_TONES.has(tone) ? tone : 'motivational';
+  const pool = chosen === 'mix' ? [...copy.motivational, ...copy.drill] : copy[chosen];
+  const index = Math.abs(Math.floor(Number(seed) || 0)) % pool.length;
+  return {
+    title: fill(copy.title, [name || 'openGym']),
+    body: pool[index],
+    tag: 'friend-start',
     url: '#/social',
   };
 }

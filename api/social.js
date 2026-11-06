@@ -1,6 +1,7 @@
 import crypto from 'node:crypto';
 
 export const SOCIAL_SHARE_WEIGHT = ['none', 'absolute', 'delta'];
+export const SOCIAL_START_TONES = ['motivational', 'drill', 'mix'];
 export const SOCIAL_EMOJI = ['🔥', '💪', '👑'];
 export const FRIEND_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -203,6 +204,12 @@ export function ensureProfile(social, uid, { now = Date.now(), friendCode = null
   }
   if (typeof profile.shareWorkouts !== 'boolean') { profile.shareWorkouts = true; changed = true; }
   if (!SOCIAL_SHARE_WEIGHT.includes(profile.shareWeight)) { profile.shareWeight = 'none'; changed = true; }
+  // Live sharing and its two notifications are opt-in on both sides: the sender decides whether
+  // friends may follow the session, and each friend decides whether a start may ping them.
+  if (typeof profile.shareLive !== 'boolean') { profile.shareLive = false; changed = true; }
+  if (typeof profile.notifyFriends !== 'boolean') { profile.notifyFriends = false; changed = true; }
+  if (!SOCIAL_START_TONES.includes(profile.startTone)) { profile.startTone = 'motivational'; changed = true; }
+  if (typeof profile.friendStartAlerts !== 'boolean') { profile.friendStartAlerts = false; changed = true; }
   if (!Number.isFinite(profile.createdAt)) { profile.createdAt = now; changed = true; }
   if (!Number.isFinite(profile.updatedAt)) { profile.updatedAt = profile.createdAt; changed = true; }
   return { profile, changed };

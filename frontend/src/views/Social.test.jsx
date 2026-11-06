@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 const mocks = vi.hoisted(() => ({
   socialMe: vi.fn(),
   socialFeed: vi.fn(),
+  socialLive: vi.fn(),
   socialPlans: vi.fn(),
   getSharedPlan: vi.fn(),
   removeSharedPlan: vi.fn(),
@@ -20,6 +21,7 @@ vi.mock('../lib/api.js', async importOriginal => ({
   ...(await importOriginal()),
   socialMe: mocks.socialMe,
   socialFeed: mocks.socialFeed,
+  socialLive: mocks.socialLive,
   socialPlans: mocks.socialPlans,
   getSharedPlan: mocks.getSharedPlan,
   removeSharedPlan: mocks.removeSharedPlan,
@@ -29,18 +31,24 @@ vi.mock('../lib/api.js', async importOriginal => ({
   reactToWorkout: mocks.reactToWorkout,
 }))
 
+import { bindUI } from '../components/ui.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import Social, { SOCIAL_REFRESH_MS } from './Social.jsx'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
+bindUI(useUI)
 const clone = v => JSON.parse(JSON.stringify(v))
 
 const AVATAR = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII='
 
 const ME = {
   friendCode: 'A7X-92B',
-  settings: { shareWorkouts: true, shareWeight: 'delta' },
+  hasPush: true,
+  settings: {
+    shareWorkouts: true, shareWeight: 'delta', shareLive: false, notifyFriends: false,
+    startTone: 'motivational', friendStartAlerts: false,
+  },
   friends: [
     { friendshipId: 'f1', id: 'u2', name: 'Ben', avatar: AVATAR, since: 1 },
     { friendshipId: 'f2', id: 'u3', name: 'Cara', since: 1 },
@@ -116,6 +124,7 @@ beforeEach(() => {
   seed()
   mocks.socialMe.mockReset().mockResolvedValue(ME)
   mocks.socialFeed.mockReset().mockResolvedValue(FEED)
+  mocks.socialLive.mockReset().mockResolvedValue({ now: Date.now(), live: [] })
   mocks.socialPlans.mockReset().mockResolvedValue({ received: [], sent: [] })
   mocks.getSharedPlan.mockReset()
   mocks.removeSharedPlan.mockReset()
@@ -192,14 +201,59 @@ describe('Friends & squad', () => {
   })
 
   it('saves the privacy switches', async () => {
-    mocks.saveSocialSettings.mockResolvedValue({ settings: { shareWorkouts: false, shareWeight: 'delta' } })
+    mocks.saveSocialSettings.mockResolvedValue({ settings: { ...ME.settings, shareWorkouts: false } })
     const host = render(<Social />)
     await flush()
 
     act(() => host.querySelector('button[role="switch"][aria-label="Share workouts"]').click())
     await flush()
-    expect(mocks.saveSocialSettings).toHaveBeenCalledWith({ shareWorkouts: false, shareWeight: 'delta' })
+    expect(mocks.saveSocialSettings).toHaveBeenCalledWith({ ...ME.settings, shareWorkouts: false })
     expect(host.querySelector('button[aria-label="Share workouts"]').getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('saves live sharing, its start alert and the message tone', async () => {
+    mocks.saveSocialSettings.mockImplementation(async settings => ({ settings }))
+    const host = render(<Social />)
+    await flush()
+
+    const liveSwitch = () => host.querySelector('button[role="switch"][aria-label="Share live workout"]')
+    act(() => liveSwitch().click())
+    await flush()
+    expect(mocks.saveSocialSettings).toHaveBeenLastCalledWith({ ...ME.settings, shareLive: true })
+
+    act(() => host.querySelector('button[role="switch"][aria-label="Tell friends when I start"]').click())
+    await flush()
+    expect(mocks.saveSocialSettings).toHaveBeenLastCalledWith({ ...ME.settings, shareLive: true, notifyFriends: true })
+
+    const toneRow = [...host.querySelectorAll('button.lrow')].find(row => row.textContent.includes('Start message tone'))
+    act(() => toneRow.click())
+    const sheet = topSheet()
+    const drill = [...sheet.querySelectorAll('button.lrow')].find(row => row.textContent.trim() === 'Drill sergeant')
+    act(() => drill.click())
+    await flush()
+    expect(mocks.saveSocialSettings).toHaveBeenLastCalledWith({ ...ME.settings, shareLive: true, notifyFriends: true, startTone: 'drill' })
+  })
+
+  it('shows a friend training now with progress and an ETA', async () => {
+    mocks.socialLive.mockResolvedValue({
+      now: Date.now(),
+      live: [{
+        friend: { id: 'u2', name: 'Ben', avatar: AVATAR },
+        workoutId: 'w1', name: 'Push Day', exerciseId: '0025', exName: 'Bench Press',
+        exIdx: 2, exTotal: 5, setsDone: 7, setsTotal: 16,
+        startedAt: Date.now() - 10 * 60 * 1000, updatedAt: Date.now(),
+        etaAt: Date.now() + 15 * 60 * 1000, leftSec: 15 * 60,
+      }],
+    })
+    const host = render(<Social />)
+    await flush()
+
+    expect(host.textContent).toContain('Live now')
+    expect(host.textContent).toContain('Push Day')
+    expect(host.textContent).toContain('7/16 sets')
+    expect(host.textContent).toContain('15 min left')
+    expect(host.textContent).toContain('Done around')
+    expect(host.querySelector('.social-live-card img').getAttribute('src')).toBe(AVATAR)
   })
 
   it('copies the code, sends a request and accepts an incoming one', async () => {

@@ -146,8 +146,14 @@ changes never cause a state conflict. Profile pictures are small data URLs in th
 profile (re-encoded on the device, capped at 128 KiB on the server); they travel with the name to
 friends and admins and never enter the sync document. A shared plan is a copy of the sender's plan
 bundle with a per-recipient cap; importing it merges new routines on the recipient's device, and
-neither side's state file is written by the social routes. Every write goes to a temp file first
-and is renamed over the old one (`durable.js`), so a crash never leaves half a file.
+neither side's state file is written by the social routes. Live progress is a different kind of
+social data: the running workout never leaves the device as a state document (`PUT /api/data`
+drops `active`), so the app heartbeats `/api/activity` and the server keeps only an in-memory
+row. A friend sees it through `GET /api/social/live` while the athlete's `shareLive` setting is
+on; the same fresh heartbeat can send an opt-in start notification, with a per-profile cooldown
+and a small marker in `social.json` so a reload never repeats it. Every social write goes to a
+temp file first and is renamed over the old one (`durable.js`), so a crash never leaves half a
+file.
 
 Sign-in is a passkey (`@simplewebauthn/server`), optionally a password, plus a signed session
 cookie. Phones get the same signed session as a bearer token, made by pairing with a one-time code
