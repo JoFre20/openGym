@@ -75,6 +75,13 @@ const LABELS = {
   'admin.owner.transfer': 'Handed the owner role on',
   'admin.invite.create': 'Created an invite code',
   'admin.invite.revoke': 'Revoked an invite code',
+  'admin.push.apns.set': 'Added or changed the iPhone push credentials',
+  'admin.push.apns.remove': 'Removed the iPhone push credentials',
+  'admin.push.fcm.set': 'Added or changed the Android push credentials',
+  'admin.push.fcm.remove': 'Removed the Android push credentials',
+  'admin.push.vapid.set': 'Changed the Web Push keys or contact',
+  'admin.push.vapid.rotate': 'Rotated the Web Push keys',
+  'admin.push.vapid.remove': 'Removed the Web Push override',
   'admin.audit.clear': 'Cleared the activity log',
   // FIRST_USER_ADMIN=1: the first profile on a fresh instance is made admin as it signs up.
   'admin.first-user': 'Became admin as the first profile',

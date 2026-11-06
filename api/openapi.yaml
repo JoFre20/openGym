@@ -4600,6 +4600,178 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
 
+  /api/admin/push:
+    get:
+      tags: [admin, push]
+      operationId: adminPushStatus
+      summary: 'Admin: push credential status'
+      description: |
+        What the dashboard card shows. Secrets are never included: only whether each transport
+        is configured, where it came from (`dashboard`, `environment`, `unreadable`, or a
+        generated Web Push pair), the non-secret metadata, and how many devices are registered.
+        Admin only.
+      responses:
+        '200':
+          description: Push status.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminPushStatus' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/apns:
+    post:
+      tags: [admin, push]
+      operationId: adminPushApnsSet
+      summary: 'Admin: add or replace APNs credentials'
+      description: |
+        Stores the APNs token credentials in `./data/push.json`, encrypted with a key derived
+        from `./data/secret`. They override the environment for iPhone push. Send an empty
+        `key` to keep the already stored .p8 while changing the other fields.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [keyId, teamId, bundleId]
+              properties:
+                key: { type: string, description: "Contents of the APNs .p8 file. Required unless a dashboard key is already stored." }
+                keyId: { type: string, pattern: '^[A-Za-z0-9]{10}$' }
+                teamId: { type: string, pattern: '^[A-Za-z0-9]{10}$' }
+                bundleId: { type: string, description: "The app's bundle id, e.g. com.example.app." }
+                environment: { type: string, enum: ['', sandbox, production], description: Empty discovers the environment per token. }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '400':
+          description: Invalid credentials.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/apns/remove:
+    post:
+      tags: [admin, push]
+      operationId: adminPushApnsRemove
+      summary: 'Admin: remove dashboard APNs credentials'
+      description: Removes the dashboard copy; the environment credentials, if any, apply again.
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/fcm:
+    post:
+      tags: [admin, push]
+      operationId: adminPushFcmSet
+      summary: 'Admin: add or replace FCM credentials'
+      description: |
+        Stores a Firebase service-account JSON in `./data/push.json`, encrypted with a key
+        derived from `./data/secret`. It overrides the environment for Android push.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [serviceAccount]
+              properties:
+                serviceAccount:
+                  type: string
+                  description: The service-account JSON as a string. `project_id`, `client_email` and `private_key` are required.
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '400':
+          description: Invalid service account.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/fcm/remove:
+    post:
+      tags: [admin, push]
+      operationId: adminPushFcmRemove
+      summary: 'Admin: remove dashboard FCM credentials'
+      description: Removes the dashboard copy; the environment credentials, if any, apply again.
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/vapid:
+    post:
+      tags: [admin, push]
+      operationId: adminPushVapidSet
+      summary: 'Admin: change or rotate Web Push keys'
+      description: |
+        With `rotate: true`, generates a new VAPID pair. With `publicKey` and `privateKey`,
+        installs a pair from elsewhere. With only `subject`, changes the contact address while
+        keeping the current pair. Browsers whose subscription was made with an older key
+        re-register on their next start.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                rotate: { type: boolean }
+                publicKey: { type: string }
+                privateKey: { type: string }
+                subject: { type: string, maxLength: 200, description: "mailto: or http(s) URL; empty uses VAPID_SUBJECT or the origin." }
+      responses:
+        '200':
+          description: Saved.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  publicKey: { type: string }
+        '400':
+          description: Invalid key pair or subject.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  /api/admin/push/vapid/remove:
+    post:
+      tags: [admin, push]
+      operationId: adminPushVapidRemove
+      summary: 'Admin: remove the dashboard Web Push override'
+      description: Falls back to the generated ./data/vapid.json pair and the environment subject.
+      responses:
+        '200':
+          description: Removed.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Ok' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
 components:
   securitySchemes:
     cookieAuth:
@@ -5538,6 +5710,54 @@ components:
             auth: { type: string }
 
     # ------------------------------------------------------------------ admin
+    AdminPushStatus:
+      type: object
+      description: |
+        Push configuration as the admin card sees it. Credentials themselves are never
+        returned; `source` says where the effective value came from.
+      properties:
+        web:
+          type: object
+          properties:
+            configured: { type: boolean }
+            publicKey: { type: string, description: The public VAPID key browsers subscribe against. }
+            subject: { type: string, description: The VAPID contact address. }
+            source: { type: string, enum: [dashboard, generated, 'vapid.json', unreadable] }
+            unreadable: { type: boolean }
+            updatedAt: { oneOf: [{ type: integer }, { type: 'null' }] }
+        apns:
+          type: object
+          properties:
+            configured: { type: boolean }
+            source: { type: string, enum: [dashboard, environment, none, unreadable] }
+            unreadable: { type: boolean }
+            keyId: { oneOf: [{ type: string }, { type: 'null' }] }
+            teamId: { oneOf: [{ type: string }, { type: 'null' }] }
+            bundleId: { oneOf: [{ type: string }, { type: 'null' }] }
+            environment: { oneOf: [{ type: string, enum: [sandbox, production] }, { type: 'null' }] }
+            updatedAt: { oneOf: [{ type: integer }, { type: 'null' }] }
+        fcm:
+          type: object
+          properties:
+            configured: { type: boolean }
+            source: { type: string, enum: [dashboard, environment, none, unreadable] }
+            unreadable: { type: boolean }
+            projectId: { oneOf: [{ type: string }, { type: 'null' }] }
+            clientEmail: { oneOf: [{ type: string }, { type: 'null' }] }
+            updatedAt: { oneOf: [{ type: integer }, { type: 'null' }] }
+        native:
+          type: object
+          properties:
+            ios: { type: boolean }
+            android: { type: boolean }
+        devices:
+          type: object
+          properties:
+            web: { type: integer, description: Stored Web Push subscriptions. }
+            ios: { type: integer, description: Stored iOS device tokens. }
+            android: { type: integer, description: Stored Android device tokens. }
+        now: { type: number, description: Server time (ms). }
+
     AdminUserRow:
       type: object
       properties:

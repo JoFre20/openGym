@@ -195,17 +195,20 @@ Traefik and nginx, and there are separate guides for
 | `ALLOWED_PRIVATE_IPS` | Private addresses push endpoints may resolve to (FakeDNS, split-horizon DNS): comma-separated IPs, `a-b` ranges or CIDR blocks | *(none)* |
 | `INTEGRATIONS` | Server integrations to offer, comma-separated: `webhook` ([integrations](docs/INTEGRATIONS.md)) | *(none)* |
 | `INTEGRATIONS_ALLOW_LAN` | `1`: webhooks may reach your home network (Home Assistant), http included; never loopback | *(off)* |
-| `VAPID_SUBJECT` | Contact URL sent with push notifications | your `ORIGIN` |
-| `APNS_KEY_FILE` | APNs `.p8` for native iPhone push; off when absent | *(off)* |
+| `VAPID_SUBJECT` | Contact URL sent with push notifications; the admin dashboard can override it | your `ORIGIN` |
+| `APNS_KEY_FILE` | APNs `.p8` for native iPhone push; off when absent. The admin dashboard can add one instead | *(off)* |
 | `APNS_KEY_ID` / `APNS_TEAM_ID` / `APNS_BUNDLE_ID` | Apple key id, team id and the app's bundle id | *(none)* |
 | `APNS_ENV` | `sandbox` or `production`; unset discovers it per token | *(auto)* |
-| `FCM_SERVICE_ACCOUNT_FILE` | Firebase service-account JSON for native Android push; off when absent | *(off)* |
+| `FCM_SERVICE_ACCOUNT_FILE` | Firebase service-account JSON for native Android push; off when absent. The admin dashboard can add one instead | *(off)* |
 | `API_TARGET` | API image to build: `default`, or `coach` with the Claude Agent SDK and Codex CLI | `default` |
 | `COACH_DISABLED` | `1` forces the AI coach off instance-wide | *(unset)* |
 
 Push-notification keys are generated on first run into `./data/vapid.json`. Native push to the
 paired phone apps is optional and needs your own APNs/FCM credentials; without them the apps hide
-their Server notifications switch and keep using local reminders. `DATA_DIR` is pinned to
+their Server notifications switch and keep using local reminders. An admin can add those
+credentials in **Admin → Push notifications** instead of mounting files; dashboard values override
+the environment, removing one falls back to it, and the Web Push keys can be rotated there too.
+`DATA_DIR` is pinned to
 `/data` inside the container and mapped to `./data` on the host; change the volume, not the
 variable. The [self-hosting guide](docs/SELF_HOSTING.md) covers every option in detail.
 
@@ -280,6 +283,8 @@ Everything lives in `./data` on your host:
 | `state-<user>.json` | Each user's plan, workouts, body weight and settings |
 | `social.json` | Friend codes, privacy and live-sharing settings, friendships, workout reactions and shared plan snapshots |
 | `audit.log` | Admin activity log (no IP addresses unless you turn that on) |
+| `vapid.json` | Web Push VAPID keys, generated on first run |
+| `push.json` | Dashboard-added APNs/FCM credentials, encrypted with `secret` |
 | `secret` | Session-cookie signing key |
 
 Back up `./data` and you've backed up everything. Passkey private keys never reach the server; they

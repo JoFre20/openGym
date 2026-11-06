@@ -358,7 +358,7 @@ for other modules to consume — setting them yourself is an error.
 | --- | --- | --- | --- |
 | `enable` | `bool` | `false` | Enable openGym (user, services, directories). |
 | `package` | `attrsOf package` | packages built from source | The package set: `{ opengym-frontend, opengym-api, opengym-mcp }`. Override to serve pre-built binaries (e.g. from a cache). |
-| `dataDir` | `path` | `/var/lib/opengym` | Persistent data directory — `db.json`, per-user `state-<uid>.json`, `secret`, `vapid.json`, `audit.log`. With the default `/var/lib/opengym`, systemd's `StateDirectory` creates (and cleans up) it; a custom path is created by a tmpfiles rule and `ReadWritePaths` points at it instead. |
+| `dataDir` | `path` | `/var/lib/opengym` | Persistent data directory — `db.json`, per-user `state-<uid>.json`, `secret`, `vapid.json`, `push.json`, `audit.log`. With the default `/var/lib/opengym`, systemd's `StateDirectory` creates (and cleans up) it; a custom path is created by a tmpfiles rule and `ReadWritePaths` points at it instead. |
 | `apiPort` | `port` | `3000` | Port the API listens on (internal — reachable via your reverse proxy, front it yourself if you open the firewall). |
 | `rpId` | `str` | `localhost` | WebAuthn Relying Party ID. Bare hostname, must match the address bar exactly. |
 | `origin` | `str` | `http://localhost:8080` | Full origin for CSRF validation. Must match the address bar exactly (scheme + host, no trailing slash). |
@@ -430,8 +430,9 @@ unit exactly as you write them (see [Extra environment variables](#extra-environ
 
 **Everything** lives under `dataDir` (`/var/lib/opengym`): `db.json` (profiles + public passkeys),
 `state-<uid>.json` (each user's plan, workouts, body weight, settings), `social.json` (friend
-codes, friendships and reactions), `secret` (session-cookie key), `vapid.json` (push keys), and
-`audit.log`. Passkey private keys never reach the server.
+codes, friendships and reactions), `secret` (session-cookie key), `vapid.json` (push keys),
+`push.json` (dashboard-added push credentials, encrypted), and `audit.log`. Passkey private keys
+never reach the server.
 
 ```bash
 sudo tar czf opengym-backup-$(date +%F).tar.gz /var/lib/opengym

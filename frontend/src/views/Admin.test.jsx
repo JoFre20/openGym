@@ -54,6 +54,12 @@ beforeEach(() => {
     '/api/admin/users': { users: [{ id: 'u1', name: 'Mallory', workouts: 2, lastSync: null, disabled: false }], invite_only: false },
     '/api/admin/invites': { invites: [] },
     '/api/admin/audit': { rows: [] },
+    '/api/admin/push': {
+      web: { configured: true, publicKey: 'BKEY', subject: 'mailto:admin@example.com', source: 'generated', unreadable: false, updatedAt: null },
+      apns: { configured: false, source: 'none', unreadable: false },
+      fcm: { configured: false, source: 'none', unreadable: false },
+      native: { ios: false, android: false }, devices: { web: 0, ios: 0, android: 0 },
+    },
     '/api/admin/user': {
       user: { id: 'u1', name: 'Mallory', created: '2026-09-01T00:00:00Z', disabled: false, admin: false },
       unit: 'kg', lastSync: null, routines: [], bodyweight: [],

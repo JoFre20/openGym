@@ -11,6 +11,7 @@ import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import AdminCoach from './AdminCoach.jsx'
+import AdminPush from './AdminPush.jsx'
 import '../admin.css'
 
 // Admin-only operator dashboard (owner passkey + admin flag; guarded again server-side).
@@ -378,7 +379,7 @@ export default function Admin() {
       <button className="iconbtn" onClick={() => { loadUsers(); loadInvites(); setTick(n => n + 1) }} aria-label="refresh">↻</button>
     </div>
     <div className="adm-intro">
-      Everything about running this instance: who uses it, how they get in, the AI Coach, and what has happened on it. Nothing here shows anyone's training data beyond counts.
+      Everything about running this instance: who uses it, how they get in, push notifications, the AI Coach, and what has happened on it. Nothing here shows anyone's training data beyond counts.
     </div>
 
     {usersErr && <div className="card" role="alert" style={{ borderColor: 'var(--red)' }}>
@@ -409,6 +410,8 @@ export default function Admin() {
     {/* The Coach setup. Renders nothing at all unless the instance offers the Coach, so an admin
         page on a box that never enabled it is byte-for-byte the page it was before. */}
     <div ref={coachRef} className="adm-coach-anchor"><AdminCoach /></div>
+
+    <AdminPush />
 
     <InvitesCard invites={invites} reload={loadInvites} inviteOnly={inviteOnly} />
 

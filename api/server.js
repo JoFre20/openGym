@@ -52,8 +52,9 @@ import {
 } from './social.js';
 import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
 import {
-  nativeEnvironment, nativePushCapabilities, nativeTokenProblem, readNativePushConfig, sendNativeNotifications,
+  nativeEnvironment, nativeTokenProblem, resetNativePushCache, sendNativeNotifications,
 } from './push-native.js';
+import * as pushConfig from './push-config.js';
 import { wrappedPushYear, wrappedSummary, wrappedPushOwed, wrappedPush } from './wrapped.js';
 
 const PORT = +(process.env.PORT || 3000);
@@ -128,7 +129,7 @@ fs.mkdirSync(DATA, { recursive: true });
  * reason to refuse to boot. The privilege drop in adapters/spawn.js is the control that does
  * fail closed. */
 const lock = f => { try { fs.chmodSync(path.join(DATA, f), 0o600); } catch { /* not present yet, or host says no */ } };
-['secret', 'db.json', 'coach.json'].forEach(lock);
+['secret', 'db.json', 'coach.json', 'push.json', 'vapid.json'].forEach(lock);
 
 /* ---------- secret + db ---------- */
 const secretFile = path.join(DATA, 'secret');
@@ -391,20 +392,13 @@ const record = x => !!x && typeof x === 'object' && !Array.isArray(x);
 const records = v => (Array.isArray(v) ? v.filter(record) : []);
 
 /* ---------- push notifications (Web Push / VAPID) ---------- */
-const vapidFile = path.join(DATA, 'vapid.json');
-let vapid;
-try { vapid = JSON.parse(fs.readFileSync(vapidFile, 'utf8')); }
-catch { vapid = webpush.generateVAPIDKeys(); fs.writeFileSync(vapidFile, JSON.stringify(vapid), { mode: 0o600 }); }
-const VAPID_SUBJECT = process.env.VAPID_SUBJECT || (SECURE ? ORIGIN : 'mailto:admin@localhost');
-webpush.setVapidDetails(VAPID_SUBJECT, vapid.publicKey, vapid.privateKey);
-
-// Native push is optional per platform: a server with only an APNs key serves iPhones, one with
-// only a Firebase service account serves Android. Missing credentials disable that transport,
-// never the server. The credentials stay outside DATA_DIR and outside db.json.
-const nativePush = readNativePushConfig();
-const NATIVE_PUSH = nativePushCapabilities(nativePush);
-if (NATIVE_PUSH.ios || NATIVE_PUSH.android) {
-  console.log(`push: native ${NATIVE_PUSH.ios ? 'APNs' : ''}${NATIVE_PUSH.ios && NATIVE_PUSH.android ? ' + ' : ''}${NATIVE_PUSH.android ? 'FCM' : ''} configured`);
+// VAPID keys and the native APNs/FCM credentials are resolved through push-config.js. The
+// dashboard-owned copy in ./data/push.json wins over the environment; a deployment that only
+// mounts the files keeps working unchanged.
+pushConfig.applyVapid(webpush);
+const bootNativePush = pushConfig.capabilities();
+if (bootNativePush.ios || bootNativePush.android) {
+  console.log(`push: native ${bootNativePush.ios ? 'APNs' : ''}${bootNativePush.ios && bootNativePush.android ? ' + ' : ''}${bootNativePush.android ? 'FCM' : ''} configured`);
 }
 
 /* A push subscription's `endpoint` is a URL this server connects out to, chosen by whoever is
@@ -520,7 +514,7 @@ async function sendNativePush(userId, payload, deviceId) {
   let rows = db.nativeSubs.filter(s => s.userId === userId);
   if (deviceId) rows = rows.filter(s => !s.deviceId || s.deviceId === deviceId);
   if (!rows.length) return;
-  const result = await sendNativeNotifications(rows, payload, nativePush);
+  const result = await sendNativeNotifications(rows, payload, pushConfig.native());
   let dirty = false;
   for (const row of result.results) {
     if (!row) continue;
@@ -2345,6 +2339,7 @@ const routes = {
     // holds was made for a session: without the key it cannot tell "no Coach here" from "you
     // were not signed in when you asked", and would re-ask on every sign-in on every instance
     // that has no Coach. The key's absence is that answer.
+    const nativePush = pushConfig.capabilities();
     json(res, 200, {
       invite_only: INVITE_ONLY, allow_guest: ALLOW_GUEST,
       // Only when on, so an instance without passwords answers exactly as it did before (#118).
@@ -2355,8 +2350,9 @@ const routes = {
       // block is how the app knows this server does not take photos and videos at all.
       ...(MEDIA_ON ? { media: mediaConfig(MEDIA_LIMITS) } : {}),
       // Native push is per platform; absent when this server has neither credential. A phone
-      // reads it before offering the Server notifications switch.
-      ...(NATIVE_PUSH.ios || NATIVE_PUSH.android ? { native_push: NATIVE_PUSH } : {}),
+      // reads it before offering the Server notifications switch. Resolved per request so an
+      // admin adding credentials in the dashboard reaches phones without a restart.
+      ...(nativePush.ios || nativePush.android ? { native_push: nativePush } : {}),
       ...(readSession(req) ? { coach: coachConfig.publicConfig() } : {}),
       // Which integrations this server offers (only to a session, like the Coach block). Absent
       // with INTEGRATIONS unset, which is how the app knows to show the server cards as off.
@@ -2875,7 +2871,7 @@ const routes = {
     json(res, 200, { ok: true, ts: body.state._ts || null, rev: curRev + 1, wid: body.state._wid });
   },
 
-  'GET /api/push/public-key': async (req, res) => json(res, 200, { key: vapid.publicKey }),
+  'GET /api/push/public-key': async (req, res) => json(res, 200, { key: pushConfig.vapid().publicKey }),
 
   'POST /api/push/subscribe': async (req, res) => {
     const user = readSession(req);
@@ -2962,7 +2958,7 @@ const routes = {
       return json(res, 400, { error: 'platform must be ios or android', code: 'invalid-platform' });
     }
     if (problem) return json(res, 400, { error: 'invalid device token', code: 'invalid-token' });
-    if (!NATIVE_PUSH[platform]) {
+    if (!pushConfig.capabilities()[platform]) {
       return json(res, 409, { error: 'native push is not configured for this platform', code: 'native-push-off' });
     }
     const deviceId = deviceIdOf(body.deviceId);
@@ -3597,6 +3593,75 @@ const routes = {
     saveDb();
     audit(req, 'admin.owner.transfer', { user: owner, target: u });
     json(res, 200, { ok: true, id: u.id });
+  },
+
+  /* ---------- push credentials ---------- */
+  // The dashboard-owned copy in ./data/push.json. Secrets go in, metadata comes out; no route
+  // here ever returns the APNs key, the Firebase private key or the VAPID private key.
+  'GET /api/admin/push': async (req, res) => {
+    if (!requireAdmin(req, res)) return;
+    json(res, 200, {
+      ...pushConfig.status(),
+      devices: {
+        web: db.subs.length,
+        ios: db.nativeSubs.filter(s => s.platform === 'ios').length,
+        android: db.nativeSubs.filter(s => s.platform === 'android').length,
+      },
+      now: Date.now(),
+    });
+  },
+
+  'POST /api/admin/push/apns': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = (await readBody(req)) || {};
+    const saved = pushConfig.saveApns(body);
+    if (saved.error) return json(res, 400, { error: saved.error });
+    resetNativePushCache();
+    audit(req, 'admin.push.apns.set', { user: admin, msg: String(body.keyId || '').toUpperCase().slice(0, 40) });
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/admin/push/apns/remove': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    pushConfig.remove('apns');
+    resetNativePushCache();
+    audit(req, 'admin.push.apns.remove', { user: admin });
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/admin/push/fcm': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = (await readBody(req)) || {};
+    const saved = pushConfig.saveFcm(body);
+    if (saved.error) return json(res, 400, { error: saved.error });
+    resetNativePushCache();
+    const st = pushConfig.status();
+    audit(req, 'admin.push.fcm.set', { user: admin, msg: String(st.fcm.projectId || '').slice(0, 100) });
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/admin/push/fcm/remove': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    pushConfig.remove('fcm');
+    resetNativePushCache();
+    audit(req, 'admin.push.fcm.remove', { user: admin });
+    json(res, 200, { ok: true });
+  },
+
+  'POST /api/admin/push/vapid': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    const body = (await readBody(req)) || {};
+    const saved = pushConfig.saveVapid(body);
+    if (saved.error) return json(res, 400, { error: saved.error });
+    audit(req, body.rotate ? 'admin.push.vapid.rotate' : 'admin.push.vapid.set', { user: admin });
+    json(res, 200, { ok: true, publicKey: saved.publicKey });
+  },
+
+  'POST /api/admin/push/vapid/remove': async (req, res) => {
+    const admin = requireAdmin(req, res); if (!admin) return;
+    pushConfig.remove('vapid');
+    audit(req, 'admin.push.vapid.remove', { user: admin });
+    json(res, 200, { ok: true });
   },
 
   'GET /api/admin/invites': async (req, res) => {

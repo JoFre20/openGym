@@ -156,8 +156,9 @@ temp file first and is renamed over the old one (`durable.js`), so a crash never
 file.
 
 Web Push uses VAPID. A paired phone can also receive native push through APNs or FCM; those
-credentials are optional, read from files mounted into the api container, and the device tokens
-live in `db.json` (`nativeSubs`) beside the browser subscriptions. The time-based reminders stay
+credentials are optional, read from files mounted into the api container or added in the admin
+dashboard (`api/push-config.js`, encrypted in `data/push.json`), and the device tokens live in
+`db.json` (`nativeSubs`) beside the browser subscriptions. The time-based reminders stay
 local notifications on the phone, so the native transport only carries social and Coach events.
 
 Sign-in is a passkey (`@simplewebauthn/server`), optionally a password, plus a signed session

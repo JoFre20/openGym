@@ -30,7 +30,9 @@ Wrapped and rest timer stay native local notifications, so enabling this does no
 The repository's current identifiers belong to the upstream project (`hb.opengym.app` and the
 `VHBVLLJ369` team). For your own build, use your own bundle id and team, and change the bundle id
 of the App target and of the embedded extensions/watch targets to match yours. The server's
-`APNS_BUNDLE_ID` must be the App target's bundle id.
+`APNS_BUNDLE_ID` must be the App target's bundle id. The same fields can be pasted into
+**Admin → Push notifications** in the app; that copy overrides the environment and does not need a
+restart.
 
 ## 2. Xcode
 

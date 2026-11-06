@@ -212,8 +212,8 @@ Read this before hosting openGym for anyone other than yourself.
   `noopener,noreferrer`, and the Coach cannot write one.
 - **There is an activity log.** Sign-ins, sign-outs, failed and refused attempts, and every admin
   action are appended to `./data/audit.log`, one JSON object per line, and shown in the admin
-  dashboard. It is on by default (`AUDIT_LOG=0` disables it) and capped at `AUDIT_MAX` events /
-  `AUDIT_DAYS` days. Clearing it from the dashboard is itself recorded and the event ids keep
+  dashboard, including adding, replacing or removing push credentials. It is on by default
+  (`AUDIT_LOG=0` disables it) and capped at `AUDIT_MAX` events / `AUDIT_DAYS` days. Clearing it from the dashboard is itself recorded and the event ids keep
   counting, so an erased stretch always leaves a visible gap.
 
 ### What it does not do
@@ -221,8 +221,9 @@ Read this before hosting openGym for anyone other than yourself.
 - **Nothing in `./data` is encrypted against someone who can read it.** It holds `db.json` (users,
   passkey public keys, push subscriptions, invite codes), one `state-<uid>.json` per user with
   their complete workout history and body-weight log, `audit.log`, `secret`, and `vapid.json`, and
-  once the Coach is set up `coach.json`. The Coach's provider credential is the one thing stored
-  encrypted there, with a key derived from `secret` in the same folder, so it is no safer from
+  once the Coach is set up `coach.json`. The Coach's provider credential, the dashboard's
+  APNs/FCM credentials and any VAPID private key set there are stored encrypted in `coach.json` /
+  `push.json`, with a key derived from `secret` in the same folder, so they are no safer from
   whoever holds the folder. Anyone who can read that folder (you,
   whoever holds the backups, whoever gets into the host) can read every user's data, and with
   `secret` can mint a valid session cookie for any account. **If you host openGym for other
@@ -239,10 +240,11 @@ Read this before hosting openGym for anyone other than yourself.
   that same profile).
 - **Admins can read everything.** A user listed in `ADMIN_UIDS` (or flagged `admin: true` in
   `db.json`) gets every user's full history and body weight, can disable or delete accounts, and
-  can create or revoke invite codes (the `/api/admin/*` routes in `api/server.js`). Off by
-  default: a fresh instance has no admin. One admin is the **owner** (on an existing instance, the
-  oldest admin): only the owner makes or removes admins, deletes an admin, hands the role on or
-  clears the activity log (`requireOwner`).
+  can create or revoke invite codes, and can add, replace or remove the instance's push
+  credentials (the `/api/admin/*` routes in `api/server.js`). Push secrets are written encrypted
+  and are never returned by an admin route. Off by default: a fresh instance has no admin. One
+  admin is the **owner** (on an existing instance, the oldest admin): only the owner makes or
+  removes admins, deletes an admin, hands the role on or clears the activity log (`requireOwner`).
 - **Sessions can't be revoked one device at a time.** Revocation is per *account*, not per
   session: `POST /api/logout/all` kills all of them at once and there is no device list to pick
   from. `POST /api/logout` on its own only clears the cookie in that one browser; a copy taken

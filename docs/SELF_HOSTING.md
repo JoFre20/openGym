@@ -595,7 +595,8 @@ Serve from [§3](#3-expose-it-over-https-on-your-own-domain). Then `ORIGIN` and 
 hostname, and the LAN address stops being a way in.
 
 **Permissions.** The `api` container runs as root and writes everything under `data/`; its
-`secret`, `db.json` and `coach.json` end up root-owned with mode 600. A share mounted over NFS
+`secret`, `db.json`, `coach.json`, `push.json`, `vapid.json` and `db.json.bak` end up root-owned
+with mode 600. A share mounted over NFS
 with root squash, or a TrueNAS dataset whose ACL maps root away, refuses those writes, and the
 API log says `EACCES` or `EPERM`. Give the dataset to root, or run `api` with `user: "568:568"`
 (TrueNAS's `apps` user, say) and make `data/` that user's first. Coach providers with an API key
@@ -802,6 +803,10 @@ API keys for the HTTPS providers (Anthropic, OpenAI, Gemini, a compatible endpoi
 other way round: they are in `./data/coach.json`, encrypted with `./data/secret`, so they *are*
 in this archive — and unreadable without the secret next to them, like everything else in it.
 
+The APNs/FCM credentials and VAPID override added in **Admin → Push notifications** are the same:
+`./data/push.json` is in the archive, encrypted with `./data/secret`. Restore both together, or
+enter the push credentials again in the dashboard.
+
 ## 7. Notifications
 
 openGym can push two kinds of alert to your phone/desktop, even when the app isn't open:
@@ -847,7 +852,9 @@ friend requests, reactions, shared plans and Coach suggestions. The time-based r
 native local notifications, so enabling this does not duplicate them.
 
 Native push is per phone OS and needs the app developer's credentials. It is off until the
-credentials are mounted:
+credentials are added. An admin can paste them into **Admin → Push notifications**; that copy
+lives encrypted in `./data/push.json` and overrides the environment. Removing it falls back to
+the files below, so either way works:
 
 - **iPhone:** an Apple Developer App ID with Push Notifications, an APNs Auth Key `.p8`, its
   Key ID, your Team ID and the app's bundle id. Set `APNS_KEY_FILE`, `APNS_KEY_ID`,
@@ -869,8 +876,10 @@ services:
       - ./secrets/firebase-service-account.json:/run/secrets/firebase-service-account.json:ro
 ```
 
-Restart the `api` container after adding or replacing the files. The server reports what it has
-in `GET /api/config` under `native_push`. A phone only shows its Server notifications switch when
+Restart the `api` container after adding or replacing the files. The admin dashboard does not need
+a restart: save the credentials there and the next `/api/config` answer carries them. The server
+reports what it has in `GET /api/config` under `native_push`. A phone only shows its Server
+notifications switch when
 its platform is configured and the app has its push plugin. A small self-hosted instance does not
 need either credential; Web Push keeps working on its own.
 

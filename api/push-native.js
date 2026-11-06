@@ -21,6 +21,12 @@ const MAX_NATIVE_CONCURRENCY = 6;
 // process keeps a busy instance from asking the token endpoints for every notification.
 const defaultCache = {};
 
+/** Forget the short-lived APNs/FCM provider tokens after a credential change. */
+export function resetNativePushCache() {
+  delete defaultCache.apns;
+  delete defaultCache.fcm;
+}
+
 const readText = file => {
   try { return fs.readFileSync(file, 'utf8'); } catch { return null; }
 };
@@ -30,7 +36,7 @@ export const nativeEnvironment = value => {
   return v === 'sandbox' || v === 'production' ? v : undefined;
 };
 
-const serviceAccount = raw => {
+export const serviceAccount = raw => {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
   const projectId = typeof raw.project_id === 'string' ? raw.project_id.trim() : '';
   const clientEmail = typeof raw.client_email === 'string' ? raw.client_email.trim() : '';

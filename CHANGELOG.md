@@ -4,6 +4,15 @@ Newest first. Each release is a `## vX.Y.Z (YYYY-MM-DD)` section, and the releas
 GitHub and GitLab are that section, word for word. New work goes under `## Unreleased` until the
 tag. Write it for the people using the app: what changed for them, short, no em dashes.
 
+## Unreleased
+
+**Push credentials in the admin dashboard.** An admin can now add, replace or remove the APNs
+key for iPhone and the Firebase service account for Android under Admin → Push notifications,
+without mounting files or restarting the server. Web Push keys can be rotated and the contact
+address changed there too. Credentials saved in the dashboard override the server environment and
+are encrypted in `./data/push.json`; removing one falls back to the environment. The card also
+shows how many devices are registered and sends a test notification to the admin's own devices.
+
 ## v1.4.4 (2026-11-03)
 
 **Modules: as much app as you want.** Settings → Modules switches whole parts of openGym on and
