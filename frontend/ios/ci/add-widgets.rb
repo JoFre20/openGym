@@ -3,18 +3,19 @@
 # style of add-asset-downloader.rb. Two files of the app are compiled into it too: what the Live
 # Activity carries and its Done button (App/WorkoutActivity.swift) and the views
 # (App/WidgetViews.swift), which the app also draws for CI's pictures (App/WidgetPreview.swift).
-# Running it again changes nothing. Until the project with it is committed, CI runs it before
-# every build (.github/workflows/ios.yml).
+# The committed project already contains it, so CI's call only reports that it is there; the
+# script is kept so a regenerated Capacitor project gets the extension back. Running it again
+# changes nothing.
 #
 #   ruby frontend/ios/ci/add-widgets.rb
 #
-# App Store Connect needs, before a signed build: the bundle id ch.opengym.app.widgets with the
-# App Group group.ch.opengym.app, and an App Store provisioning profile for it, which the release
+# App Store Connect needs, before a signed build: the bundle id hb.opengym.app.widgets with the
+# App Group group.hb.opengym.app, and an App Store provisioning profile for it, which the release
 # script signs the extension with (scripts/ios/finish-ipa.sh, WIDGETS_PROFILE).
 require 'xcodeproj'
 
 NAME = 'OpenGymWidgets'
-BUNDLE_ID = 'ch.opengym.app.widgets'
+BUNDLE_ID = 'hb.opengym.app.widgets'
 SHARED = %w[WorkoutActivity.swift WidgetViews.swift].freeze
 
 dir = File.expand_path('../App', __dir__)

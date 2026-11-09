@@ -4,9 +4,10 @@ import XCTest
  * Walks the iPhone app the way someone new does and checks what only a real phone shows: that the
  * end of a rest still arrives as a notification once the app has left the screen (RestAlertPlugin),
  * that a sheet with a text field stays above the keyboard, and that the training reminder and the
- * missed-day nudge are really pending with iOS once switched on. Run by .github/workflows/ios.yml,
- * which adds this target to the project for the run only (ios/ci/add-ui-tests.rb). The run's
- * build carries no exercise media, so the screenshots it keeps show placeholders.
+ * missed-day nudge are really pending with iOS once switched on. Run by .github/workflows/ios.yml
+ * through the target committed in the project (ios/ci/add-ui-tests.rb restores it if the project
+ * is regenerated). The run's build carries no exercise media, so the screenshots it keeps show
+ * placeholders.
  */
 final class OpenGymUITests: XCTestCase {
     let app = XCUIApplication()

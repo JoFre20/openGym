@@ -18,31 +18,31 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>openGym shows your heart rate during a workout and next to each set.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>openGym saves your workouts to Apple Health when you switch it on.</string>
-	<key>WKBackgroundModes</key>
-	<array>
-		<string>workout-processing</string>
-	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>ch.opengym.app.watchkitapp</string>
+			<string>hb.opengym.app.watchkitapp</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>opengym-watch</string>
 			</array>
 		</dict>
 	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>openGym shows your heart rate during a workout and next to each set.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>openGym saves your workouts to Apple Health when you switch it on.</string>
 	<key>WKApplication</key>
 	<true/>
+	<key>WKBackgroundModes</key>
+	<array>
+		<string>workout-processing</string>
+	</array>
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>ch.opengym.app</string>
+	<string>hb.opengym.app</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<false/>
 </dict>

@@ -1,19 +1,19 @@
 # Adds the Apple Watch app (ios/App/Watch) to App.xcodeproj as its own target and embeds it in the
-# iPhone app (App.app/Watch), in the style of add-ui-tests.rb: the project Capacitor generated stays
-# as it is in the repository, and CI runs this before every iOS build while the watch app is being
-# built up. Running it twice changes nothing. Once it ships, run it once and commit the project.
+# iPhone app (App.app/Watch), in the style of add-ui-tests.rb. The committed project already
+# contains it, so CI's call only reports that it is there; the script is kept so a regenerated
+# Capacitor project gets the target back. Running it twice changes nothing.
 #
 #   ruby frontend/ios/ci/add-watch-app.rb
 #
-# App Store Connect needs, before a signed build: the bundle ids ch.opengym.app.watchkitapp
-# (HealthKit, App Group group.ch.opengym.app) and ch.opengym.app.watchkitapp.widgets (App Group
-# group.ch.opengym.app), an App Store provisioning profile for each; the release script
+# App Store Connect needs, before a signed build: the bundle ids hb.opengym.app.watchkitapp
+# (HealthKit, App Group group.hb.opengym.app) and hb.opengym.app.watchkitapp.widgets (App Group
+# group.hb.opengym.app), an App Store provisioning profile for each; the release script
 # (scripts/ios/finish-ipa.sh) signs the watch app with WATCH_PROFILE and its widget extension with
 # WATCH_WIDGET_PROFILE.
 require 'xcodeproj'
 
 NAME = 'OpenGymWatch'
-BUNDLE_ID = 'ch.opengym.app.watchkitapp'
+BUNDLE_ID = 'hb.opengym.app.watchkitapp'
 DIR = 'Watch'
 
 dir = File.expand_path('../App', __dir__)
@@ -77,7 +77,7 @@ file.settings = { 'ATTRIBUTES' => ['RemoveHeadersOnCopy'] }
 
 # The complications and the Smart Stack widget (ios/App/WatchWidgets), a WidgetKit extension in the
 # watch app (OpenGymWatch.app/PlugIns), reading the state the app writes (Watch/WidgetState.swift,
-# compiled into both) through the App Group group.ch.opengym.app.
+# compiled into both) through the App Group group.hb.opengym.app.
 WIDGET = 'OpenGymWatchWidgets'
 WIDGET_DIR = 'WatchWidgets'
 widget = proj.new_target(:app_extension, WIDGET, :watchos, '10.0')

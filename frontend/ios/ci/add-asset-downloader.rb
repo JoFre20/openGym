@@ -1,19 +1,18 @@
 # Adds the Background Assets downloader extension (ios/App/AnimationPacksDownloader) to
 # App.xcodeproj and embeds it in the app: the system runs it to fetch the Apple-hosted asset
-# packs of the exercise animations (App/AnimationPacksPlugin.swift). Unlike the UI tests
-# (add-ui-tests.rb) this is a real shipping target: run it once on a machine with the xcodeproj
-# gem (it ships with CocoaPods) and commit the project it writes. Running it again changes
-# nothing. Until the result is committed, CI runs it before every build (.github/workflows/ios.yml).
+# packs of the exercise animations (App/AnimationPacksPlugin.swift). The committed project already
+# contains it, so CI's call only reports that it is there; the script is kept so a regenerated
+# Capacitor project gets the extension back. Running it again changes nothing.
 #
 #   ruby frontend/ios/ci/add-asset-downloader.rb
 #
-# App Store Connect needs, before a signed build: the App Group group.ch.opengym.app on both
-# bundle ids, the extension's bundle id ch.opengym.app.AnimationPacksDownloader, and an App Store
+# App Store Connect needs, before a signed build: the App Group group.hb.opengym.app on both
+# bundle ids, the extension's bundle id hb.opengym.app.AnimationPacksDownloader, and an App Store
 # provisioning profile for each (docs/MOBILE.md, "Animation packs").
 require 'xcodeproj'
 
 NAME = 'AnimationPacksDownloader'
-BUNDLE_ID = 'ch.opengym.app.AnimationPacksDownloader'
+BUNDLE_ID = 'hb.opengym.app.AnimationPacksDownloader'
 
 dir = File.expand_path('../App', __dir__)
 proj = Xcodeproj::Project.open(File.join(dir, 'App.xcodeproj'))

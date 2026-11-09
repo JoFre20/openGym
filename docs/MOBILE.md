@@ -395,10 +395,10 @@ and **Delete**.
 - **iOS:** `AnimationPacksPlugin.swift` (`AssetPackManager`: status, download with progress,
   remove, the folder of a pack's files). Before iOS 26 it answers "unavailable" and the setting
   offers only Still only and Built in. Apple-hosted packs need the downloader extension
-  `ios/App/AnimationPacksDownloader` (a `StoreDownloaderExtension`), added and embedded by
-  `ios/ci/add-asset-downloader.rb` (run once and commit the project; CI runs it until then), the
+  `ios/App/AnimationPacksDownloader` (a `StoreDownloaderExtension`), added and embedded in the
+  committed project by `ios/ci/add-asset-downloader.rb` (kept for a regenerated project), the
   Info.plist keys `BAAppGroupID`, `BAHasManagedAssetPacks`, `BAUsesAppleHosting`, and the App
-  Group `group.ch.opengym.app` on the app and the extension. `scripts/ios/finish-ipa.sh` signs the
+  Group `group.hb.opengym.app` on the app and the extension. `scripts/ios/finish-ipa.sh` signs the
   extension with its own profile (`EXT_PROFILE`).
 - **Android:** in the `play` flavour the same interface goes through Play Asset Delivery (status,
   download with progress, Wi-Fi only with Play's own prompt for mobile data, remove) for the packs
@@ -409,9 +409,9 @@ and **Delete**.
   built-in animations: 180 px in the Standard APK, 240 px in Plus, 360 px in HD. Each APK's updater
   stays with its own kind (`pickApk` in `lib/update.js`, told by `VITE_APK_VARIANT`).
 
-App Store Connect, once: the App Group `group.ch.opengym.app`; the bundle id
-`ch.opengym.app.AnimationPacksDownloader` (an app extension); the App Groups capability on
-`ch.opengym.app` and on the extension, both with that group; an App Store provisioning profile
+App Store Connect, once: the App Group `group.hb.opengym.app`; the bundle id
+`hb.opengym.app.AnimationPacksDownloader` (an app extension); the App Groups capability on
+`hb.opengym.app` and on the extension, both with that group; an App Store provisioning profile
 for each; then the ten packs uploaded as Apple-hosted background assets for the app.
 
 Worth checking on a device: picking 720 px starts a download that shows its progress; the

@@ -245,17 +245,17 @@ on the phone (Settings → Reset, or uninstall).
 1. Apple Developer Program (99 USD a year, as an individual; the seller name shown is your
    legal name).
 2. App Store Connect → new app "openGym: Workout Tracker" (plain "openGym" is taken as an App
-   Store name; the home screen still says openGym), bundle id `ch.opengym.app`. The iPhone app
+   Store name; the home screen still says openGym), bundle id `hb.opengym.app`. The iPhone app
    has its own bundle id because `ch.duartesantos.opengym` is held by another Apple team (an
    Xcode build of the public code reserves it); Android keeps `ch.duartesantos.opengym`.
 3. Signing material, all doable from Linux:
    - `openssl req -new -newkey rsa:2048 -nodes -keyout dist.key -out dist.csr -subj "/CN=Duarte Santos/emailAddress=…"`,
      upload the CSR under Certificates → Apple Distribution, download `distribution.cer`, then
      `openssl x509 -inform der -in distribution.cer -out dist.pem && openssl pkcs12 -export -legacy -inkey dist.key -in dist.pem -out dist.p12`.
-   - Profiles → an App Store Connect profile for `ch.opengym.app` → `openGym_AppStore.mobileprovision`,
-     and one each for `ch.opengym.app.AnimationPacksDownloader`, `ch.opengym.app.widgets`,
-     `ch.opengym.app.watchkitapp` and `ch.opengym.app.watchkitapp.widgets`. The app, the downloader,
-     the widgets and the watch widget share the App Group `group.ch.opengym.app`; the app and the
+   - Profiles → an App Store Connect profile for `hb.opengym.app` → `openGym_AppStore.mobileprovision`,
+     and one each for `hb.opengym.app.AnimationPacksDownloader`, `hb.opengym.app.widgets`,
+     `hb.opengym.app.watchkitapp` and `hb.opengym.app.watchkitapp.widgets`. The app, the downloader,
+     the widgets and the watch widget share the App Group `group.hb.opengym.app`; the app and the
      watch app have HealthKit.
    - Users and Access → Integrations → App Store Connect API key (Admin) for uploads; with it the
      bundle id, certificate and profile can also be created through the API instead of the portal.
