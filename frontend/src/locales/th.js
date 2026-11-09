@@ -3765,4 +3765,17 @@ export default {
   'Could not turn on server notifications': 'เปิดการแจ้งเตือนจากเซิร์ฟเวอร์ไม่ได้',
   'Server notifications on': 'การแจ้งเตือนจากเซิร์ฟเวอร์เปิดอยู่',
   'Server notifications off': 'การแจ้งเตือนจากเซิร์ฟเวอร์ปิดอยู่',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'เพื่อนเริ่มออกกำลังกาย คำขอเป็นเพื่อน ปฏิกิริยา แพลนที่แชร์และคำแนะนำจาก Coach การเตือนยังอยู่บนโทรศัพท์นี้',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'เพื่อนเริ่มออกกำลังกาย คำขอเป็นเพื่อน ปฏิกิริยา แพลนที่แชร์และคำแนะนำจาก Coach การเตือนยังอยู่บนโทรศัพท์นี้',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": "{0} friend requests",
+}

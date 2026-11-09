@@ -2606,10 +2606,10 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="m get">GET</span>
     <span class="ep-path"><code>/api/social/feed</code></span>
     <span class="ep-chev" aria-hidden="true"></span>
-    <span class="ep-sum">Squad stats and the friends' recent workouts</span>
+    <span class="ep-sum">Squad stats, the friends' recent workouts and everyone's reached goals</span>
   </summary>
   <div class="ep-body">
-<p>Reads only confirmed friends whose <code>shareWorkouts</code> is on, from their own state files. <code>squadStats</code> has one row per confirmed friend: workouts since their own week start and weight progress filtered by their <code>shareWeight</code>. <code>feed</code> holds the last 30 workouts across all friends, newest first, with volume, duration, PR exercise ids, up to three top sets and the three supported reactions. A friend who turned workout sharing off has <code>workoutsThisWeek: null</code> and is absent from <code>feed</code>; their weight can still appear if they share it.</p>
+<p>Reads only confirmed friends whose <code>shareWorkouts</code> is on, from their own state files. <code>squadStats</code> has one row per confirmed friend: workouts since their own week start and weight progress filtered by their <code>shareWeight</code>. <code>feed</code> holds the last 30 workouts across all friends, newest first, with volume, duration, PR exercise ids, up to three top sets and the three supported reactions. A friend who turned workout sharing off has <code>workoutsThisWeek: null</code> and is absent from <code>feed</code>; their weight can still appear if they share it. <code>own</code> holds the caller's own workouts and reached goals, with the reactions friends sent. <code>milestones</code> holds friends' reached goals after the same sharing rules: workout sharing for the goal itself, <code>shareWeight</code> for a weight goal's numbers. Older clients ignore both new arrays.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 
@@ -2658,17 +2658,22 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="m post">POST</span>
     <span class="ep-path"><code>/api/social/react</code></span>
     <span class="ep-chev" aria-hidden="true"></span>
-    <span class="ep-sum">React to a friend's workout</span>
+    <span class="ep-sum">React to a friend's workout or reached goal</span>
   </summary>
   <div class="ep-body">
-<p>Stores one reaction per caller per workout; sending a different emoji replaces the previous one. The workout's owner gets a Web Push notification. <code>workoutId</code> is the value returned in <code>feed</code> (owner id plus the workout's own id). At most 120 reactions an hour per profile.</p>
+<p>Stores one reaction per caller per item; sending a different emoji replaces the previous one. The owner gets a Web Push notification. <code>workoutId</code> is the value returned in <code>feed</code> (owner id plus the workout's own id); <code>itemId</code> is the value returned in <code>own</code> and <code>milestones</code> for a reached goal. At most 120 reactions an hour per profile.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 <p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
   <div class="prow">
-    <span class="p-name">workoutId<em class="p-req" title="required">required</em></span>
+    <span class="p-name">workoutId</span>
     <span class="p-type">string</span>
     <span class="p-desc">The <code>workoutId</code> from <code>GET /api/social/feed</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">itemId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The <code>itemId</code> of a reached goal from <code>own</code> or <code>milestones</code>.</span>
   </div>
   <div class="prow">
     <span class="p-name">emoji<em class="p-req" title="required">required</em></span>
@@ -6164,6 +6169,16 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-desc">Stable id for a reaction: the owner's user id, a colon, then the workout's own id (or its date and start when an older workout has no id).</span>
   </div>
   <div class="prow">
+    <span class="p-name">kind</span>
+    <span class="p-type">&quot;workout&quot;</span>
+    <span class="p-desc">Present in Activity rows; older clients ignore it.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">at</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch, for sorting the Activity feed</span>
+  </div>
+  <div class="prow">
     <span class="p-name">friend</span>
     <span class="p-type">object</span>
     <span class="p-desc"></span>
@@ -6237,6 +6252,92 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
 </details>
 
+<details class="ep sch" id="schema-SocialMilestone">
+  <summary>
+    <span class="sch-name"><code>SocialMilestone</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">A reached goal stored in the owner's profile (lib/milestones.js).</span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Deterministic id shared by every device that reached it.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">kind</span>
+    <span class="p-type">&quot;weight_goal&quot; | &quot;challenge&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">data</span>
+    <span class="p-type">object</span>
+    <span class="p-desc">For a weight goal: mode (absolute or delta), unit, and the numbers that mode allows. For a challenge: month, challengeId, n and an optional target unit.</span>
+  </div>
+</div>
+  </div>
+</details>
+
+<details class="ep sch" id="schema-SocialMilestoneItem">
+  <summary>
+    <span class="sch-name"><code>SocialMilestoneItem</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">A reached goal as one Activity feed row.</span>
+  </summary>
+  <div class="ep-body">
+
+<div class="ptab">
+  <div class="prow">
+    <span class="p-name">itemId</span>
+    <span class="p-type">string</span>
+    <span class="p-desc">Stable id for a reaction, the owner's user id plus <code>:m:</code> and the milestone id.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">kind</span>
+    <span class="p-type">&quot;milestone&quot;</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">at</span>
+    <span class="p-type">number</span>
+    <span class="p-desc">ms since epoch</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend</span>
+    <span class="p-type">object</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend.id</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">friend.name</span>
+    <span class="p-type">string</span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">date</span>
+    <span class="p-type">string <span class="p-hint">(date)</span></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">milestone</span>
+    <span class="p-type"><a href="#schema-SocialMilestone">SocialMilestone</a></span>
+    <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">reactions</span>
+    <span class="p-type"><a href="#schema-SocialReactions">SocialReactions</a></span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+  </div>
+</details>
+
 <details class="ep sch" id="schema-SocialFeed">
   <summary>
     <span class="sch-name"><code>SocialFeed</code></span>
@@ -6260,6 +6361,16 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">feed</span>
     <span class="p-type"><a href="#schema-SocialFeedWorkout">SocialFeedWorkout</a>[]</span>
     <span class="p-desc">The last 30 workouts across confirmed friends, newest first.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">own</span>
+    <span class="p-type">(<a href="#schema-SocialFeedWorkout">SocialFeedWorkout</a> | <a href="#schema-SocialMilestoneItem">SocialMilestoneItem</a>)[]</span>
+    <span class="p-desc">The caller's own Activity rows: workouts and reached goals, with the reactions friends sent. New in 1.4.5; older clients ignore it.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">milestones</span>
+    <span class="p-type"><a href="#schema-SocialMilestoneItem">SocialMilestoneItem</a>[]</span>
+    <span class="p-desc">Friends' reached goals after the sharing settings. New in 1.4.5.</span>
   </div>
 </div>
   </div>

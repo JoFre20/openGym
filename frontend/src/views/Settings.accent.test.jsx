@@ -79,6 +79,22 @@ const drag = value => act(() => {
 const release = () => act(() => { picker().dispatchEvent(new Event('change', { bubbles: true })) })
 const pick = value => { drag(value); release() }
 
+describe('Settings: the app layout', () => {
+  it('switches between Classic and the new navigation', () => {
+    mount()
+    const row = [...host.querySelectorAll('.lrow')].find(r => r.textContent.includes('App layout'))
+    expect(row).toBeTruthy()
+    const pick = label => [...row.querySelectorAll('.seg-inline button')].find(b => b.textContent.trim() === label)
+    expect(pick('Classic').getAttribute('aria-pressed')).toBe('true')
+    act(() => pick('New').click())
+    expect(mocks.S.uiMode).toBe('new')
+    mount()
+    expect(pick('New').getAttribute('aria-pressed')).toBe('true')
+    act(() => pick('Classic').click())
+    expect(mocks.S.uiMode).toBe('classic')
+  })
+})
+
 describe('Settings: your own accent colour', () => {
   it('starts as a rainbow swatch that opens the colour picker', () => {
     mount()

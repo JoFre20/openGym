@@ -2,8 +2,9 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   acceptedFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial, ensureProfile, feedItems,
-  feedWorkoutId, findPlanShare, findWorkout, formatFriendCode, friendCodeFromBytes, friendCodeValid,
-  friendshipBetween, generateFriendCode, normalizeFriendCode, normalizeSocial, pendingFriendships,
+  feedMilestoneId, feedWorkoutId, findMilestone, findPlanShare, findWorkout, formatFriendCode,
+  friendCodeFromBytes, friendCodeValid, friendshipBetween, generateFriendCode, milestoneForViewer,
+  milestoneItems, milestonesOf, normalizeFriendCode, normalizeSocial, pendingFriendships,
   planShareProblem, planShareSummary, PLAN_SHARE_MAX_BYTES, profileByCode, reactionSummary,
   receivedPlanShares, sentPlanShares, squadStats, topSetsOf, trimPlanShares, weekKeyOf,
   weightProgressOf, workoutDurationSec, workoutVolumeOf
@@ -134,6 +135,44 @@ test('the feed omits friends who turned workout sharing off and counts reactions
   assert.deepEqual(reactionSummary(social, workoutId, 'u2')['🔥'], { count: 1, mine: true });
   assert.deepEqual(reactionSummary(social, workoutId, 'u1')['🔥'], { count: 1, mine: false });
   assert.equal(squadStats(social, ['u1', 'u2'], id => users[id], id => states[id], { today })[1].workoutsThisWeek, null);
+});
+
+test('reached goals are read from the state and filtered by the friend privacy', () => {
+  const social = emptySocial();
+  ensureProfile(social, 'u1');
+  social.profiles.u1.shareWeight = 'delta';
+  const user = { id: 'u1', name: 'Ada' };
+  const state = {
+    unit: 'kg',
+    milestones: [
+      { id: 'weight:78:2026-11-09', kind: 'weight_goal', at: 10, d: '2026-11-09', data: { targetW: 78, w: 77.8, from: 82, unit: 'kg' } },
+      { id: 'challenge:2026-11:workouts', kind: 'challenge', at: 11, d: '2026-11-09', data: { month: '2026-11', challengeId: 'workouts', n: 14 } },
+      'broken',
+    ],
+  };
+  assert.equal(milestonesOf(state).length, 2);
+  assert.deepEqual(milestoneForViewer(social.profiles.u1, milestonesOf(state)[0]), {
+    id: 'weight:78:2026-11-09', kind: 'weight_goal', data: { mode: 'delta', unit: 'kg', delta: -4.2 }
+  });
+  social.profiles.u1.shareWeight = 'absolute';
+  assert.deepEqual(milestoneForViewer(social.profiles.u1, milestonesOf(state)[0]), {
+    id: 'weight:78:2026-11-09', kind: 'weight_goal',
+    data: { mode: 'absolute', unit: 'kg', targetW: 78, current: 77.8, delta: -4.2 }
+  });
+  social.profiles.u1.shareWeight = 'none';
+  assert.equal(milestoneForViewer(social.profiles.u1, milestonesOf(state)[0]), null);
+  social.profiles.u1.shareWeight = 'absolute';
+  social.profiles.u1.shareWorkouts = false;
+  assert.deepEqual(milestoneItems(social, 'u1', state, user, 'u2'), []);
+  social.profiles.u1.shareWorkouts = true;
+  const rows = milestoneItems(social, 'u1', state, user, 'u2');
+  assert.equal(rows.length, 2);
+  const weight = rows.find(row => row.milestone.kind === 'weight_goal');
+  assert.equal(weight.itemId, feedMilestoneId('u1', 'weight:78:2026-11-09'));
+  assert.equal(weight.friend.name, 'Ada');
+  assert.deepEqual(weight.reactions['🔥'], { count: 0, mine: false });
+  assert.equal(findMilestone(state, 'u1', weight.itemId).id, 'weight:78:2026-11-09');
+  assert.equal(findMilestone(state, 'u2', weight.itemId), null);
 });
 
 const planBundle = (patch = {}) => ({

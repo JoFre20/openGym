@@ -210,6 +210,50 @@ test('friends, privacy, squad stats, feed and reactions stay in social.json', as
   assert.deepEqual(afterRemove.body.squadStats, []);
 });
 
+test('the Activity feed returns own rows, friends’ reached goals and reactions on both', async t => {
+  const workout = {
+    id: 'w1', d: TODAY, name: 'Push Day', start: Date.parse(TODAY + 'T08:00:00Z'), end: Date.parse(TODAY + 'T09:00:00Z'),
+    vol: 800, prs: [], entries: []
+  };
+  const stateU1 = {
+    unit: 'kg',
+    workouts: [{ ...workout, id: 'own1' }],
+    milestones: [{ id: 'weight:78:2026-11-08', kind: 'weight_goal', at: Date.parse('2026-11-08T08:00:00Z'), d: '2026-11-08', data: { targetW: 78, w: 77.8, from: 82, unit: 'kg' } }]
+  };
+  const stateU2 = {
+    unit: 'kg',
+    workouts: [workout],
+    milestones: [
+      { id: 'weight:80:2026-11-07', kind: 'weight_goal', at: Date.parse('2026-11-07T08:00:00Z'), d: '2026-11-07', data: { targetW: 80, w: 79.8, from: 84, unit: 'kg' } },
+      { id: 'challenge:2026-11:workouts', kind: 'challenge', at: Date.parse('2026-11-06T18:00:00Z'), d: '2026-11-06', data: { month: '2026-11', challengeId: 'workouts', n: 14 } }
+    ]
+  };
+  const h = await startServer(t, { u1: stateU1, u2: stateU2 });
+  await befriend(h, 'u1', 'u2');
+  await call(h, 'u2', '/api/social/settings', { method: 'PUT', body: { shareWeight: 'absolute' } });
+
+  const feed = await call(h, 'u1', '/api/social/feed');
+  assert.equal(feed.status, 200);
+  assert.equal(feed.body.own.length, 2, 'own workout and own reached goal');
+  assert.equal(feed.body.feed.length, 1);
+  assert.equal(feed.body.milestones.length, 2, 'weight goal and challenge');
+
+  const goal = feed.body.milestones.find(row => row.milestone.kind === 'weight_goal');
+  assert.match(goal.itemId, /^u2:m:weight:/);
+  assert.equal(goal.milestone.data.mode, 'absolute');
+  assert.equal(goal.milestone.data.current, 79.8);
+
+  const reacted = await call(h, 'u1', '/api/social/react', {
+    method: 'POST', body: { itemId: goal.itemId, emoji: '🔥' }
+  });
+  assert.equal(reacted.status, 200);
+  assert.deepEqual(reacted.body.reactions['🔥'], { count: 1, mine: true });
+
+  const again = await call(h, 'u1', '/api/social/feed');
+  assert.deepEqual(again.body.milestones.find(row => row.itemId === goal.itemId).reactions['🔥'], { count: 1, mine: true });
+  assert.deepEqual(again.body.own.find(row => row.itemId === 'u1:m:weight:78:2026-11-08').reactions['🔥'], { count: 0, mine: false });
+});
+
 test('friend request validation and authorization', async t => {
   const h = await startServer(t);
   const me = await call(h, 'u1', '/api/social/me');

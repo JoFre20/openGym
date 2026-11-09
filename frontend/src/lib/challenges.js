@@ -34,6 +34,7 @@ import { musclesOf } from './muscles.js'
 import { isoOf, weekKey, weekStartOf } from './format.js'
 import { LB_KG } from './units.js'
 import { isOn } from './modules.js'
+import { recordChallengeDone } from './milestones.js'
 
 export const PICKS = 3
 export const LOOKBACK = 3
@@ -387,8 +388,14 @@ export function markDone(s, key, ids, picked, now = Date.now()) {
   const m = all[key]
   if (!m) return false
   const before = m.done.length
+  const fresh = [...new Set(ids)].filter(id => !m.done.includes(id))
   m.done = [...new Set([...m.done, ...ids])]
   s.challenges = cleanChallenges(all)
+  // A challenge reached is a goal in the Activity feed (lib/milestones.js), written once per id.
+  if (fresh.length) {
+    const picks = m.picked.filter(p => fresh.includes(p.id))
+    recordChallengeDone(s, key, picks, now)
+  }
   return (s.challenges?.[key]?.done.length || 0) > before
 }
 

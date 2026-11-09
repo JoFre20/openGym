@@ -12,7 +12,7 @@ afterEach(() => { localStorage.clear(); closeTour() })
 
 describe('steps', () => {
   it('runs Home, Plan, Library, the workout, Stats, Settings and a closing card, in that order', () => {
-    const routes = tourSteps({}).map(s => s.route).filter((r, i, all) => r !== all[i - 1])
+    const routes = tourSteps({}).map(s => routeOf(s, {})).filter((r, i, all) => r !== all[i - 1])
     expect(routes).toEqual(['/home', '/plan', '/library', '/workout', '/home', '/stats', '/home', '/settings', null])
     expect(tourSteps({}).at(-1)).toMatchObject({ id: 'done', anchor: null })
   })

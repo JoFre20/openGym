@@ -3747,4 +3747,17 @@ export default {
   'Could not turn on server notifications': '無法開啟伺服器通知',
   'Server notifications on': '伺服器通知已開啟',
   'Server notifications off': '伺服器通知已關閉',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': '好友開始訓練、好友邀請、反應、共享計畫和 Coach 建議。提醒仍保留在這支手機上。',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': '好友開始訓練、好友邀請、反應、共享計畫和 Coach 建議。提醒仍保留在這支手機上。',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": "{0} friend requests",
+}

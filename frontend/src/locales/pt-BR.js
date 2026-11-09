@@ -2539,6 +2539,19 @@ export const PT_BR_OVERRIDES = {
   'Server notifications on': 'Notificações do servidor ativadas',
   'Server notifications off': 'Notificações do servidor desativadas',
   'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Inícios de amigos, solicitações de amizade, reações, planos compartilhados e sugestões do Coach. Os lembretes ficam neste celular.',
+  "App layout": "Layout do app",
+  "Classic": "Clássico",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "O Clássico mantém Início, Plano, Começar, Estatísticas e Exercícios. O Novo coloca Atividade ao lado de Início e move Exercícios para a tela inicial.",
+  "Crew": "Equipe",
+  "Me": "Eu",
+  "Goals": "Objetivos",
+  "For you": "Para você",
+  "No activity yet": "Ainda sem atividade",
+  "Your workouts and reached goals show up here.": "Seus treinos e objetivos alcançados aparecem aqui.",
+  "Reached goals show up here.": "Os objetivos alcançados aparecem aqui.",
+  "{0} friend request": "{0} pedido de amizade",
+  "{0} friend requests": "{0} pedidos de amizade",
+
 }
 
 export default { ...pt, ...PT_BR_OVERRIDES }

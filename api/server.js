@@ -45,10 +45,11 @@ import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import {
   acceptedFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial, ensureProfile, feedItems,
-  feedWorkoutId, findPlanShare, findWorkout, friendCodeValid, friendshipBetween, normalizeSocial,
+  feedWorkoutId, findMilestone, findPlanShare, findWorkout, friendCodeValid, friendshipBetween,
+  milestoneForViewer, milestoneItems, normalizeSocial,
   pendingFriendships, planShareProblem, planShareSummary, PLAN_SHARE_MAX_FRIENDS, profileByCode,
   reactionSummary, receivedPlanShares, sentPlanShares, SOCIAL_EMOJI, SOCIAL_SHARE_WEIGHT,
-  SOCIAL_START_TONES, splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
+  SOCIAL_START_TONES, splitFeedMilestoneId, splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
 } from './social.js';
 import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
 import {
@@ -322,6 +323,18 @@ function notifyFriendsOfStart(sender, { startedAt }) {
 }
 function socialReactionTarget(viewer, value) {
   const friendIds = acceptedFriendIds(social, viewer.id).filter(id => socialUserById(id));
+  // A reached goal (Activity feed) is an item with its own id, `owner:m:milestoneId`.
+  const goal = splitFeedMilestoneId(value);
+  if (goal) {
+    if (!friendIds.includes(goal[0])) return { error: 'not-friends' };
+    const state = readState(goal[0]);
+    if (!state) return { error: 'milestone-not-found' };
+    const milestone = findMilestone(state, goal[0], value);
+    if (!milestone) return { error: 'milestone-not-found' };
+    const profile = social?.profiles?.[goal[0]] || {};
+    if (!milestoneForViewer(profile, milestone)) return { error: 'not-shared' };
+    return { ownerId: goal[0], milestone, itemId: value };
+  }
   const split = splitFeedWorkoutId(value);
   if (split) {
     if (!friendIds.includes(split[0])) return { error: 'not-friends' };
@@ -3226,10 +3239,21 @@ const routes = {
       return states.get(id);
     };
     const userById = id => socialUserById(id);
+    const me = userById(user.id);
+    const ownState = stateById(user.id) || viewerState;
+    const own = [
+      ...feedItems(social, [user.id], userById, stateById, user.id, { today, limit: 30, skipShare: true }),
+      ...milestoneItems(social, user.id, ownState, me, user.id, { own: true })
+    ].sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0));
+    const milestones = friendIds.flatMap(id => milestoneItems(social, id, stateById(id), userById(id), user.id));
     json(res, 200, {
       weekStart: weekStartISO(new Date(), viewerState.weekStart === 0 ? 0 : 1),
       squadStats: squadStats(social, friendIds, userById, stateById, { today }),
-      feed: feedItems(social, friendIds, userById, stateById, user.id, { today })
+      feed: feedItems(social, friendIds, userById, stateById, user.id, { today }),
+      // The Activity feed's own rows and friends' reached goals. `feed` stays the friends'
+      // workouts alone, so an older client sees exactly the screen it always did.
+      own,
+      milestones: milestones.sort((a, b) => (Number(b.at) || 0) - (Number(a.at) || 0)).slice(0, 50)
     });
   },
 
@@ -3267,8 +3291,8 @@ const routes = {
     if (!SOCIAL_EMOJI.includes(emoji)) {
       return json(res, 400, { error: 'unsupported reaction', code: 'invalid-emoji' });
     }
-    const value = text(body.workoutId).trim().slice(0, 512);
-    if (!value) return json(res, 400, { error: 'workoutId required', code: 'workout-required' });
+    const value = text(body.itemId || body.workoutId).trim().slice(0, 512);
+    if (!value) return json(res, 400, { error: 'workoutId or itemId required', code: 'workout-required' });
     if (pushThrottled(res, SOCIAL_REACTIONS, user)) return;
     const target = socialReactionTarget(user, value);
     if (target.error === 'workout-ambiguous') {
@@ -3277,12 +3301,18 @@ const routes = {
     if (target.error === 'not-friends') {
       return json(res, 403, { error: 'you can only react to a friend workout', code: 'not-friends' });
     }
+    if (target.error === 'milestone-not-found') {
+      return json(res, 404, { error: 'reached goal not found', code: 'milestone-not-found' });
+    }
+    if (target.error === 'not-shared') {
+      return json(res, 403, { error: 'that friend does not share it', code: 'not-shared' });
+    }
     if (target.error) return json(res, 404, { error: 'workout not found', code: 'workout-not-found' });
     const owner = ensureSocialProfile(target.ownerId);
     if (owner.shareWorkouts === false) {
       return json(res, 403, { error: 'that friend does not share workouts', code: 'not-shared' });
     }
-    const workoutId = feedWorkoutId(target.ownerId, target.workout);
+    const workoutId = target.milestone ? target.itemId : feedWorkoutId(target.ownerId, target.workout);
     const previous = social.reactions.find(r => r.workoutId === workoutId && r.userId === user.id);
     let changed = false;
     if (!previous || previous.emoji !== emoji) {

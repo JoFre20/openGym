@@ -961,6 +961,22 @@ describe('a reset leads the unit over a copy that switched before it', () => {
   })
 })
 
+describe('reached goals across devices', () => {
+  const goal = (id, at) => ({ id, kind: 'challenge', at, d: '2026-11-09', data: { month: '2026-11', challengeId: 'workouts', n: 14 } })
+  it('keeps both copies, one row per deterministic id', () => {
+    const a = base({ _ts: 100, milestones: [goal('challenge:2026-11:workouts', 10)] })
+    const b = base({ _ts: 200, milestones: [goal('challenge:2026-11:prs', 20), goal('challenge:2026-11:workouts', 10)] })
+    for (const m of [mergeStates(a, b), mergeStates(b, a)]) {
+      expect(m.milestones.map(x => x.id).sort()).toEqual(['challenge:2026-11:prs', 'challenge:2026-11:workouts'])
+    }
+  })
+  it('a reset names the goals it wiped, so an older copy cannot bring them back', () => {
+    const old = base({ _ts: 100, milestones: [goal('challenge:2026-10:workouts', 10)] })
+    const reset = base({ _ts: 200, resetAt: 200, milestones: [], resetIds: { milestones: ['challenge:2026-10:workouts'] } })
+    for (const m of [mergeStates(reset, old), mergeStates(old, reset)]) expect(m.milestones || []).toEqual([])
+  })
+})
+
 describe('body measurements across devices (#82)', () => {
   const base = { unit: 'kg', _ts: 100 }
   it('keeps both devices\' check-ins, and of one day the one saved later', () => {

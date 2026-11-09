@@ -3754,4 +3754,17 @@ export default {
   'Could not turn on server notifications': 'Nie udało się włączyć powiadomień serwera',
   'Server notifications on': 'Powiadomienia serwera włączone',
   'Server notifications off': 'Powiadomienia serwera wyłączone',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Starty znajomych, zaproszenia do znajomych, reakcje, udostępnione plany i sugestie Coacha. Przypomnienia zostają na tym telefonie.',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Starty znajomych, zaproszenia do znajomych, reakcje, udostępnione plany i sugestie Coacha. Przypomnienia zostają na tym telefonie.',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": { one: "{0} zaproszenie do znajomych", few: "{0} zaproszenia do znajomych", many: "{0} zaproszeń do znajomych", other: "{0} zaproszenia do znajomych" },
+}

@@ -949,6 +949,18 @@ export default function Settings({ page = null, find = null, via = null, entryKe
 
     look: () => <>
       <Section footer={DEMO || MOBILE || !user ? undefined : t('synced with your profile')}>
+        <Row icon="layout" iconTint="var(--blue)" title={t('App layout')}
+          subtitle={t('Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.')}>
+          <Segmented
+            className="seg-inline"
+            options={[
+              { value: 'classic', label: t('Classic') },
+              { value: 'new', label: t('New') },
+            ]}
+            value={S.uiMode === 'new' ? 'new' : 'classic'}
+            onChange={v => update(s => { s.uiMode = v })}
+          />
+        </Row>
         <Row icon="moon" iconTint="var(--indigo)" title={t('Theme')}>
           <Segmented
             className="seg-inline"

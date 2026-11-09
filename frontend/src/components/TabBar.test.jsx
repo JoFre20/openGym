@@ -137,3 +137,30 @@ describe('the tab a screen without its own lights', () => {
     expect(lit()).toEqual(['Stats'])
   })
 })
+
+// The new layout (Settings → Look & Home → App layout): Start, Activity, Go, Plan, Stats. The
+// exercise library has no tab; it is a screen from Start.
+describe('the new layout tab bar', () => {
+  beforeEach(() => {
+    useStore.setState({ S: { ...JSON.parse(JSON.stringify(DEF)), uiMode: 'new' } })
+  })
+  const labels = () => tabs().map(b => b.textContent.trim())
+  const lit = () => tabs().filter(b => b.classList.contains('on')).map(b => b.textContent.trim())
+
+  it('orders Home, Activity, Start, Plan and Stats', () => {
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    expect(labels()).toEqual(['Home', 'Activity', 'Start', 'Plan', 'Stats'])
+  })
+
+  it('lights Activity on the feed and on Crew, Start on the library', () => {
+    where.loc = { pathname: '/social' }
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    expect(lit()).toEqual(['Activity'])
+    where.loc = { pathname: '/crew' }
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    expect(lit()).toEqual(['Activity'])
+    where.loc = { pathname: '/library' }
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    expect(lit()).toEqual(['Home'])
+  })
+})

@@ -17,6 +17,7 @@ import { hrFromSamples, sanitizeHr } from './heart-rate.js'
 import { stampWorkout } from './sync-merge.js'
 import { isoOf } from './format.js'
 import { addWeighIn, readingsOf, timeOf, hashId } from './weigh-ins.js'
+import { recordWeightGoal } from './milestones.js'
 
 export const LB_PER_KG = 2.2046226218
 // Weigh-ins outside this are a typo or another person's profile in the hub, not a body weight.
@@ -115,5 +116,6 @@ export function mergeWeighIns(S, records, { src, seen = {} } = {}) {
     seen[rid] = { id: r.id, t: r.t }
     days.add(d)
   }
+  if (days.size) recordWeightGoal(S)
   return [...days].sort()
 }

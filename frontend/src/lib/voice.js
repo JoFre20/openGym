@@ -13,6 +13,7 @@
 // A pending weigh-in comes in once: by its id, and a day whose weigh-in is as new or newer keeps
 // it. Nothing here does more than the weigh-in sheet would.
 import { addWeighIn, readingsOf, timeOf } from './weigh-ins.js'
+import { recordWeightGoal } from './milestones.js'
 import { MOBILE, nativePlatform } from './mobile.js'
 import { effectiveRoutines } from './history.js'
 import { isoOf, todayISO, fmtNum } from './format.js'
@@ -117,6 +118,7 @@ export function importPendingWeighIns (s, items, { now = Date.now(), seen = [] }
     const day = s.bodyweight.find(b => b.d === p.d)
     if (day && readingsOf(day).some(r => r.id === 'siri-' + p.id)) continue
     if (!addWeighIn(s, { d: p.d, at: timeOf(p.at), w, t: p.at, id: 'siri-' + p.id })) continue
+    recordWeightGoal(s)
     logged.push({ id: p.id, d: p.d, w, unit })
   }
   return { logged, ids: [...new Set(ids)] }

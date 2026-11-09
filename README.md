@@ -80,6 +80,11 @@ if you want to try it before installing anything.
 - Machine taken? A planned backup exercise swaps in with one tap and keeps the slot's sets and reps.
   Machines can carry their real weight stack, odd steps included, and progression sticks to it.
 - The session's volume runs live at the end of the progress bar.
+- **Sensor-based Auto-Rep & Set Tracker (`SmartSetTracker`)**: Hands-free repetition counting
+  and automatic set-finish detection using the phone's motion sensors (`DeviceMotionEvent`). Record
+  a single reference rep once per exercise; the app detects the dominant 3D axis, counts reps live
+  via a fatigue-tolerant hysteresis state machine, and triggers set completion when the weight is
+  racked.
 
 **Progress**
 
@@ -106,6 +111,8 @@ if you want to try it before installing anything.
   everything as one JSON file, or your workouts and body data as a spreadsheet (CSV).
 - Share a plan as a small file, print it as a PDF, or send it to a friend from the squad screen.
 - A friends and squad screen: friend codes, profile pictures, privacy controls, a weekly squad board, one-tap reactions and plans shared between friends. Friends can follow a workout live with a finish-time estimate, and opt in to a start notification when you share one.
+- An Activity feed with your own and your friends' workouts, live sessions, reached weight and
+  monthly goals, and reactions. Settings → Look & Home switches between the new layout and Classic.
 - Optional admin dashboard with invite-only signup and an activity log.
 - 20 languages, including right-to-left Arabic and Traditional Chinese. Exercise names and
   instructions are translated for most of them.
@@ -122,6 +129,10 @@ if you want to try it before installing anything.
   complications. No watch? AirPods Pro 3 do the heart rate on iOS 26.
 - Widgets and a Live Activity on the iPhone: log a set, skip the rest or jump to the next exercise
   from the Lock Screen without opening the app.
+- **Auto-Rep & Set Tracking with Real-time Oscilloscope**: Put the phone in your pocket or armband.
+  3D Principal Component Analysis (Power Iteration) projects motion along the exercise trajectory
+  regardless of how the phone is oriented. Synthetic Web Audio API beeps and haptic pulses guide
+  countdown, reps and set end without needing external sound files or taking the phone out.
 
 **Only what you use**
 
@@ -250,7 +261,10 @@ The [architecture overview](docs/ARCHITECTURE.md) has the longer version, with d
 frontend, sync, the exercise media and the watch.
 
 The training logic (progression rules, 1RM, how a logged session is read back) lives in pure
-functions under `frontend/src/lib/` with tests beside them. The HTTP API is documented as an
+functions under `frontend/src/lib/` with tests beside them. The sensor engine (`frontend/src/lib/useRepTracker.ts`
+and `frontend/src/components/SmartSetTracker.tsx`) implements high-pass gravity filtering, 3D PCA
+dominant-vector extraction, exponential moving average smoothing, a 3-phase hysteresis state machine
+with minimum duration debounce, and zero-dependency Web Audio / vibration synthesis. The HTTP API is documented as an
 OpenAPI spec in [`api/openapi.yaml`](api/openapi.yaml), browsable at
 [opengym.ch/api.html](https://opengym.ch/api.html).
 

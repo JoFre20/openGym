@@ -3754,4 +3754,17 @@ export default {
   'Could not turn on server notifications': 'Não foi possível ativar as notificações do servidor',
   'Server notifications on': 'Notificações do servidor ligadas',
   'Server notifications off': 'Notificações do servidor desligadas',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Inícios de amigos, pedidos de amizade, reações, planos partilhados e sugestões do Coach. Os lembretes ficam neste telemóvel.',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Inícios de amigos, pedidos de amizade, reações, planos partilhados e sugestões do Coach. Os lembretes ficam neste telemóvel.',
+  "App layout": "Disposição da app",
+  "Classic": "Clássico",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "O Clássico mantém Início, Plano, Começar, Estatísticas e Exercícios. O Novo coloca Atividade ao lado de Início e move Exercícios para o ecrã inicial.",
+  "Crew": "Equipa",
+  "Me": "Eu",
+  "Goals": "Objetivos",
+  "For you": "Para ti",
+  "No activity yet": "Ainda sem atividade",
+  "Your workouts and reached goals show up here.": "Os teus treinos e objetivos alcançados aparecem aqui.",
+  "Reached goals show up here.": "Os objetivos alcançados aparecem aqui.",
+  "{0} friend request": "{0} pedido de amizade",
+  "{0} friend requests": "{0} pedidos de amizade",
+}

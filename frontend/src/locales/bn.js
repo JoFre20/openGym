@@ -3833,4 +3833,17 @@ export default {
   'Could not turn on server notifications': 'সার্ভার নোটিফিকেশন চালু করা যায়নি',
   'Server notifications on': 'সার্ভার নোটিফিকেশন চালু',
   'Server notifications off': 'সার্ভার নোটিফিকেশন বন্ধ',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'বন্ধুদের শুরু, বন্ধুত্বের অনুরোধ, প্রতিক্রিয়া, শেয়ার করা প্ল্যান ও Coach পরামর্শ। রিমাইন্ডার এই ফোনেই থাকে।',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'বন্ধুদের শুরু, বন্ধুত্বের অনুরোধ, প্রতিক্রিয়া, শেয়ার করা প্ল্যান ও Coach পরামর্শ। রিমাইন্ডার এই ফোনেই থাকে।',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": "{0} friend requests",
+}

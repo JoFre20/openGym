@@ -1,0 +1,57 @@
+/* Activity (new layout): a feed, not a second Friends screen. The live strip, feed cards,
+   top sets and reactions keep the classes Social.css already defines; only the filter row,
+   reached goals, plans and friend requests are new. */
+.act-hdr .hdr-actions{gap:6px}
+@media (max-width:430px){
+  .act-hdr .hdr-pill{padding:0 9px}
+  .act-hdr .hdr-pill>span:not(.icon-badge){display:none}
+}
+.act-filters{
+  position:sticky;top:0;z-index:5;margin:0 -14px 2px;padding:9px 14px;
+  background:var(--bg);background:color-mix(in srgb,var(--bg) 94%,transparent);
+  -webkit-backdrop-filter:saturate(180%) blur(10px);backdrop-filter:saturate(180%) blur(10px);
+  overflow-x:auto;flex-wrap:nowrap;scrollbar-width:none;
+}
+.act-filters::-webkit-scrollbar{display:none}
+.act-filter{flex:none;gap:6px}
+.act-filter.on{background:var(--acc-soft);color:var(--acc-ink)}
+.act-count{
+  min-width:17px;height:17px;padding:0 4px;border-radius:99px;
+  display:inline-grid;place-items:center;background:var(--surface-3);color:var(--label-2);
+  font-size:10px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;
+}
+.act-filter.on .act-count{background:var(--acc);color:var(--on-acc)}
+
+.act-for-you{margin-top:18px}
+.act-for-you>.sec{margin:0 2px 8px}
+.act-plan-card{margin:0 0 10px;padding:15px}
+.act-plan-card .social-feed-meta{margin-bottom:12px}
+.act-plan-title{font-size:19px;font-weight:600;line-height:1.18;letter-spacing:-.015em;margin-bottom:5px;overflow-wrap:anywhere}
+.act-plan-card>.btn{width:100%}
+.act-request-card{
+  display:flex;align-items:center;gap:10px;padding:12px 14px;margin:0 0 10px;
+}
+.act-request-copy{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.act-request-copy b{font-size:15px;font-weight:600}
+.act-request-copy span{font-size:12px;color:var(--label-2)}
+
+.act-goal-card{
+  box-shadow:inset 3px 0 0 var(--gold-ink);
+  box-shadow:inset 0 0 0 var(--hair) color-mix(in srgb,var(--gold-ink) 38%,transparent),
+    inset 3px 0 0 var(--gold-ink);
+}
+.act-goal-pill{
+  margin-inline-start:auto;display:inline-flex;align-items:center;gap:4px;flex:none;
+  padding:3px 8px;border-radius:99px;background:var(--surface-2);
+  background:color-mix(in srgb,var(--gold-ink) 15%,transparent);
+  color:var(--gold-ink);font-size:11px;font-weight:700;
+}
+.act-goal-pill .icn{font-size:13px}
+.act-goal-title{font-size:20px;font-weight:600;line-height:1.18;letter-spacing:-.02em;margin:2px 0 3px;overflow-wrap:anywhere}
+.act-goal-detail{font-size:13px;color:var(--label-2);margin-bottom:11px;font-variant-numeric:tabular-nums}
+.act-goal-card .social-reactions{margin-top:2px}
+
+.act-account{padding:26px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.act-account h2{font-size:20px;font-weight:600;letter-spacing:-.02em}
+.act-account p{max-width:320px}
+.act-account .btn{margin-top:8px}

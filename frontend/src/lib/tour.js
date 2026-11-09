@@ -45,7 +45,9 @@ export const STEPS = [
   { id: 'plan-views', route: '/plan', anchor: 'plan-views' },
   { id: 'plan-body', route: '/plan', anchor: 'plan-body', when: c => c.plannedDays, optional: true },
   { id: 'plan-menu', route: '/plan', anchor: 'plan-menu' },
-  { id: 'go-library', route: '/plan', anchor: 'tab-library', go: '/library' },
+  // Classic reaches the library from the Plan screen's tab; the new layout has no Exercise tab,
+  // so the spotlight is the library button in the Start header and the stop goes Home first.
+  { id: 'go-library', route: c => (c.S?.uiMode === 'new' ? '/home' : '/plan'), anchor: 'tab-library', go: '/library' },
   { id: 'lib-search', route: '/library', anchor: 'lib-search' },
   { id: 'lib-filters', route: '/library', anchor: 'lib-filters' },
   { id: 'start', route: '/library', anchor: 'start', intercept: true },

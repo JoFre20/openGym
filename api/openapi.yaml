@@ -3135,7 +3135,7 @@ paths:
     get:
       tags: [social]
       operationId: socialFeed
-      summary: Squad stats and the friends' recent workouts
+      summary: Squad stats, the friends' recent workouts and everyone's reached goals
       description: >-
         Reads only confirmed friends whose `shareWorkouts` is on, from their own state files.
         `squadStats` has one row per confirmed friend: workouts since their own week start
@@ -3143,7 +3143,10 @@ paths:
         across all friends, newest first, with volume, duration, PR exercise ids, up to three
         top sets and the three supported reactions. A friend who turned workout sharing off
         has `workoutsThisWeek: null` and is absent from `feed`; their weight can still appear
-        if they share it.
+        if they share it. `own` holds the caller's own workouts and reached goals, with the
+        reactions friends sent. `milestones` holds friends' reached goals after the same
+        sharing rules: workout sharing for the goal itself, `shareWeight` for a weight goal's
+        numbers. Older clients ignore both new arrays.
       responses:
         '200':
           description: The squad board and activity feed.
@@ -3173,6 +3176,44 @@ paths:
                       "🔥": { count: 2, mine: true }
                       "💪": { count: 0, mine: false }
                       "👑": { count: 0, mine: false }
+                own:
+                  - workoutId: "u_1:own1"
+                    kind: workout
+                    at: 1762000000000
+                    friend: { id: "u_1", name: "Jonas" }
+                    date: "2026-11-01"
+                    name: "Pull Day"
+                    durationSec: 3300
+                    volume: 7600
+                    unit: kg
+                    prs: []
+                    prCount: 0
+                    topSets: []
+                    reactions:
+                      "🔥": { count: 1, mine: false }
+                  - itemId: "u_1:m:weight:78:2026-11-01"
+                    kind: milestone
+                    at: 1762000000000
+                    friend: { id: "u_1", name: "Jonas" }
+                    date: "2026-11-01"
+                    milestone:
+                      id: "weight:78:2026-11-01"
+                      kind: weight_goal
+                      data: { mode: absolute, unit: kg, targetW: 78, current: 77.8, delta: -4.2 }
+                    reactions:
+                      "🔥": { count: 2, mine: false }
+                milestones:
+                  - itemId: "u_2:m:weight:80:2026-10-30"
+                    kind: milestone
+                    at: 1761900000000
+                    friend: { id: "u_2", name: "Ada" }
+                    date: "2026-10-30"
+                    milestone:
+                      id: "weight:80:2026-10-30"
+                      kind: weight_goal
+                      data: { mode: delta, unit: kg, delta: -1.5 }
+                    reactions:
+                      "🔥": { count: 1, mine: true }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
   /api/social/live:
@@ -3214,21 +3255,22 @@ paths:
     post:
       tags: [social]
       operationId: socialReact
-      summary: React to a friend's workout
+      summary: React to a friend's workout or reached goal
       description: >-
-        Stores one reaction per caller per workout; sending a different emoji replaces the
-        previous one. The workout's owner gets a Web Push notification. `workoutId` is the
-        value returned in `feed` (owner id plus the workout's own id). At most 120 reactions
-        an hour per profile.
+        Stores one reaction per caller per item; sending a different emoji replaces the
+        previous one. The owner gets a Web Push notification. `workoutId` is the value returned
+        in `feed` (owner id plus the workout's own id); `itemId` is the value returned in
+        `own` and `milestones` for a reached goal. At most 120 reactions an hour per profile.
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
-              required: [workoutId, emoji]
+              required: [emoji]
               properties:
                 workoutId: { type: string, description: The `workoutId` from `GET /api/social/feed`. }
+                itemId: { type: string, description: The `itemId` of a reached goal from `own` or `milestones`. }
                 emoji: { type: string, enum: ["🔥", "💪", "👑"] }
             example: { workoutId: "u_2:8k2m1", emoji: "🔥" }
       responses:
@@ -5323,6 +5365,8 @@ components:
           description: >-
             Stable id for a reaction: the owner's user id, a colon, then the workout's own id
             (or its date and start when an older workout has no id).
+        kind: { type: string, enum: [workout], description: Present in Activity rows; older clients ignore it. }
+        at: { type: number, description: "ms since epoch, for sorting the Activity feed" }
         friend:
           type: object
           properties:
@@ -5346,6 +5390,37 @@ components:
           items: { $ref: '#/components/schemas/SocialTopSet' }
         reactions: { $ref: '#/components/schemas/SocialReactions' }
 
+    SocialMilestone:
+      type: object
+      description: A reached goal stored in the owner's profile (lib/milestones.js).
+      properties:
+        id: { type: string, description: Deterministic id shared by every device that reached it. }
+        kind: { type: string, enum: [weight_goal, challenge] }
+        data:
+          type: object
+          description: >-
+            For a weight goal: mode (absolute or delta), unit, and the numbers that mode allows.
+            For a challenge: month, challengeId, n and an optional target unit.
+          additionalProperties: true
+
+    SocialMilestoneItem:
+      type: object
+      description: A reached goal as one Activity feed row.
+      properties:
+        itemId:
+          type: string
+          description: Stable id for a reaction, the owner's user id plus `:m:` and the milestone id.
+        kind: { type: string, enum: [milestone] }
+        at: { type: number, description: "ms since epoch" }
+        friend:
+          type: object
+          properties:
+            id: { type: string }
+            name: { type: string }
+        date: { type: string, format: date }
+        milestone: { $ref: '#/components/schemas/SocialMilestone' }
+        reactions: { $ref: '#/components/schemas/SocialReactions' }
+
     SocialFeed:
       type: object
       properties:
@@ -5357,6 +5432,19 @@ components:
           type: array
           description: The last 30 workouts across confirmed friends, newest first.
           items: { $ref: '#/components/schemas/SocialFeedWorkout' }
+        own:
+          type: array
+          description: >-
+            The caller's own Activity rows: workouts and reached goals, with the reactions
+            friends sent. New in 1.4.5; older clients ignore it.
+          items:
+            oneOf:
+              - { $ref: '#/components/schemas/SocialFeedWorkout' }
+              - { $ref: '#/components/schemas/SocialMilestoneItem' }
+        milestones:
+          type: array
+          description: Friends' reached goals after the sharing settings. New in 1.4.5.
+          items: { $ref: '#/components/schemas/SocialMilestoneItem' }
 
     SocialLiveFriend:
       type: object

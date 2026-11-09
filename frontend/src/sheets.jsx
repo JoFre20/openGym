@@ -91,6 +91,7 @@ import { editCompletedSession, editLeftEmpty, editedRecord, editChangesNothing }
 import { stampWorkout } from './lib/sync-merge.js'
 import { hrLabel } from './lib/heart-rate.js'
 import { weeklyWeights } from './lib/bodyweight.js'
+import { recordWeightGoal } from './lib/milestones.js'
 import { workoutText } from './lib/workout-text.js'
 import { workoutCardModel, layoutWorkoutCard, drawWorkoutCard, viewAspect, CARD_FONT } from './lib/workout-card.js'
 import { cardPalette } from './lib/card-draw.js'
@@ -377,6 +378,7 @@ function BwSheet({ required, onDone, close, initial, edit }) {
     update(s => {
       if (editing) editWeighIn(s, edit.d, edit.id, { d: date, at, w: n })
       else addWeighIn(s, { d: date, at, w: n })
+      recordWeightGoal(s)
     })
     close()
     if (onDone) onDone(n); else toast(editing ? t('Weigh-in updated') : t('Weight saved'))

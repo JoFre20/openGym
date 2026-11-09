@@ -82,6 +82,11 @@ flowchart TB
   survive a reload.
 - **Logic in `lib/`.** Anything that decides what you lift next, or reads a logged session back, is
   a pure function with a test beside it. Views stay thin.
+- **Two layouts.** `lib/ui-mode.js` reads `S.uiMode`: Classic keeps Home, Plan, Start, Stats and
+  Exercises; New shows Home, Activity, Start, Plan and Stats. `/social` is the Activity feed in the
+  new layout and the Friends page in Classic; `/crew` is the Friends management screen behind it.
+  `lib/activity.js` assembles the feed and `lib/milestones.js` records reached goals. See
+  [dev/ACTIVITY_FEED.md](dev/ACTIVITY_FEED.md).
 - **Platform switches.** `lib/mobile.js` (`MOBILE`), `lib/channel.js` (APK or store build) and the
   `VITE_DEMO` flag for the demo. Native code is only reached through Capacitor plugins.
 
@@ -146,7 +151,9 @@ changes never cause a state conflict. Profile pictures are small data URLs in th
 profile (re-encoded on the device, capped at 128 KiB on the server); they travel with the name to
 friends and admins and never enter the sync document. A shared plan is a copy of the sender's plan
 bundle with a per-recipient cap; importing it merges new routines on the recipient's device, and
-neither side's state file is written by the social routes. Live progress is a different kind of
+neither side's state file is written by the social routes. Reached goals are read from each
+profile's own `milestones` list and filtered by the same sharing settings; the social routes
+never write them. Live progress is a different kind of
 social data: the running workout never leaves the device as a state document (`PUT /api/data`
 drops `active`), so the app heartbeats `/api/activity` and the server keeps only an in-memory
 row. A friend sees it through `GET /api/social/live` while the athlete's `shareLive` setting is

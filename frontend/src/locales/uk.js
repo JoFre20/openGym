@@ -3751,4 +3751,17 @@ export default {
   'Could not turn on server notifications': 'Не вдалося ввімкнути сповіщення сервера',
   'Server notifications on': 'Сповіщення сервера увімкнено',
   'Server notifications off': 'Сповіщення сервера вимкнено',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Старти друзів, запити в друзі, реакції, спільні плани та підказки Coach. Нагадування залишаються на цьому телефоні.',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Старти друзів, запити в друзі, реакції, спільні плани та підказки Coach. Нагадування залишаються на цьому телефоні.',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": { one: "{0} запит у друзі", few: "{0} запити в друзі", many: "{0} запитів у друзі", other: "{0} запити в друзі" },
+}

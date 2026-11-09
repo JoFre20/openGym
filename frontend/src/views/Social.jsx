@@ -28,12 +28,13 @@ export const SOCIAL_LIVE_MS = 15000
 const RING_R = 22
 const RING_C = 2 * Math.PI * RING_R
 
-function SocialHeader({ nav, me, pending, busy, onRefresh, onAdd }) {
+function SocialHeader({ nav, me, pending, busy, onRefresh, onAdd, crew = false }) {
   const season = useStore(s => activeSeason(s.S))
+  const back = crew ? '/social' : '/home'
   return <div className="hdr social-hdr">
-    <button className="iconbtn" data-back="/home" onClick={() => nav('/home')} aria-label={t('Home')}><Icon name="chevronLeft" /></button>
+    <button className="iconbtn" data-back={back} onClick={() => nav(back)} aria-label={crew ? t('Activity') : t('Home')}><Icon name="chevronLeft" /></button>
     <div style={{ flex: 1, marginInlineStart: 12 }}>
-      <h1>{t('Friends')}{season && <span className="social-season" aria-hidden="true"><SeasonDeco spot="friends" /></span>}</h1>
+      <h1>{crew ? t('Crew') : t('Friends')}{season && <span className="social-season" aria-hidden="true"><SeasonDeco spot="friends" /></span>}</h1>
       <div className="sub">{t('Your squad this week')}</div>
     </div>
     <div className="hdr-actions">
@@ -338,7 +339,7 @@ function SharedPlansSection({ plans, busyId, onOpen, onMenu }) {
   </section>
 }
 
-export default function Social() {
+export default function Social({ crew = false }) {
   const nav = useNavigate()
   const [params] = useSearchParams()
   const linkedCode = friendCodeComplete(params.get('friend')) ? formatFriendCodeInput(params.get('friend')) : ''
@@ -607,7 +608,7 @@ export default function Social() {
   const ready = !!me && !!data
 
   return <div className="narrow social-page">
-    <SocialHeader nav={nav} me={me} pending={pending} busy={loading} onRefresh={() => load()} onAdd={() => openAdd()} />
+    <SocialHeader nav={nav} me={me} pending={pending} busy={loading} onRefresh={() => load()} onAdd={() => openAdd()} crew={crew} />
     {!user
       ? <AccountCard nav={nav} />
       : loading && !ready
@@ -621,14 +622,14 @@ export default function Social() {
                 <Button size="sm" icon="reset" onClick={() => load({ quiet: true })}>{t('Try again')}</Button>
               </div>
             </div>}
-            <LiveSection rows={live} />
+            {!crew && <LiveSection rows={live} />}
             <PrivacyCard settings={me.settings} unit={S.unit === 'lb' ? 'lb' : 'kg'}
               saving={saving} onSave={saveSettings} hasPush={!!me.hasPush} />
             <SquadSection stats={squadStats} friends={me.friends} unit={S.unit === 'lb' ? 'lb' : 'kg'}
               onMenu={openFriendMenu} onAdd={() => openAdd()} />
             <SharedPlansSection plans={plans.received} busyId={planBusy}
               onOpen={openSharedPlan} onMenu={openSharedPlanMenu} />
-            {squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react}
+            {!crew && squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react}
               avatarById={avatarById} />}
           </>}
   </div>

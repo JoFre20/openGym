@@ -107,6 +107,13 @@ const gainedWorkoutMedia = (prev, next) => {
 export const DEF = {
   unit: 'kg', restSec: 90, restPauseSec: 15, sound: true, soundOnSilent: false, vibrateOnSilent: false, timerFlash: false, timedSetOvertime: false, keepAwake: true, lang: 'en',
   theme: 'dark', accent: 'lime', body: 'male', targetW: null,
+  // Which navigation this profile shows (Settings → Look & Home → App layout, lib/ui-mode.js):
+  // 'classic' is the layout every older profile keeps, 'new' puts the Activity feed beside Start.
+  // freshState picks the new one; a profile saved before this setting existed overlays as classic.
+  uiMode: 'classic',
+  // Reached goals shown in the Activity feed (lib/milestones.js): the weight goal and the monthly
+  // challenges today. Synced and merged by id, never backfilled. Absent reads as none.
+  milestones: [],
   // The weekly-rate corridor on the body-weight card (#759, lib/bodyweight.js rateCorridor).
   rateGoal: null,
   bodyweight: [], routines: [], week: {}, dayPlan: {},
@@ -348,6 +355,9 @@ export function freshState() {
   s.lang = detectedLang()
   s.langAuto = true
   s.weighIn = false
+  // A profile started here sees the new navigation until its owner picks Classic in Settings.
+  // A saved profile keeps its own choice (or lacks the key and reads as Classic).
+  s.uiMode = 'new'
   // Exercise animations: Small (v1.3.11), a thumbnail beside the exercise name that a tap opens,
   // so the first set is on screen without scrolling. DEF stays 'full' for a profile saved before.
   s.gifSize = 'mini'

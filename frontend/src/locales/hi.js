@@ -3754,4 +3754,17 @@ export default {
   'Could not turn on server notifications': 'सर्वर सूचनाएं चालू नहीं की जा सकीं',
   'Server notifications on': 'सर्वर सूचनाएं चालू',
   'Server notifications off': 'सर्वर सूचनाएं बंद',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'दोस्तों की शुरुआत, मित्रता अनुरोध, प्रतिक्रियाएं, साझा प्लान और Coach सुझाव। रिमाइंडर इस फोन पर रहते हैं।',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'दोस्तों की शुरुआत, मित्रता अनुरोध, प्रतिक्रियाएं, साझा प्लान और Coach सुझाव। रिमाइंडर इस फोन पर रहते हैं।',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": "{0} friend requests",
+}

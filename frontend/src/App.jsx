@@ -37,6 +37,7 @@ import { installChipDrag } from './lib/hchips.js'
 import { pushCanNavigate, pushRoutePath, syncPushSubscription } from './lib/push.js'
 import { MOBILE, nativePlatform } from './lib/mobile.js'
 import { isOn } from './lib/modules.js'
+import { isNewUI } from './lib/ui-mode.js'
 import { useTour, tourState, openTour, readTour, shouldOffer, resumeAt } from './lib/tour.js'
 import { exitWorkoutEdit, startFlow, beginWorkout, bwSheet } from './sheets.jsx'
 import Icon from './components/Icon.jsx'
@@ -80,6 +81,7 @@ const Admin = lazyView(() => import('./views/Admin.jsx'))
 const CoachChat = lazyView(() => import('./views/CoachChat.jsx'))
 const Measurements = lazyView(() => import('./views/Measurements.jsx'))
 const Social = lazyView(() => import('./views/Social.jsx'))
+const Activity = lazyView(() => import('./views/Activity.jsx'))
 const CoachIntake = lazyView(() => import('./views/CoachIntake.jsx'))
 const CoachSetup = lazyView(() => import('./views/CoachSetup.jsx'))
 const StructuralBalance = lazyView(() => import('./views/StructuralBalance.jsx'))
@@ -104,6 +106,15 @@ const prefetchViews = () => {
   const run = () => { for (const f of views) f().catch(() => {}) }
   if (typeof globalThis.requestIdleCallback === 'function') globalThis.requestIdleCallback(run, { timeout: 4000 })
   else setTimeout(run, 1500)
+}
+
+// /social is the Activity feed in the new layout and the Friends screen in Classic, so every
+// existing friend link and push notification keeps working. /crew is the Friends management
+// screen behind the Activity header, and only exists in the new layout.
+function SocialRoute({ crew = false }) {
+  const S = useStore(s => s.S)
+  if (crew) return isNewUI(S) ? <Social crew /> : <Navigate to="/social" replace />
+  return isNewUI(S) ? <Activity /> : <Social />
 }
 
 // last known scrollY per route, so back-navigation can put the page where it was
@@ -377,7 +388,9 @@ function Shell() {
       <Route path="/structural-balance" element={<StructuralBalance />} />
       <Route path="/progress-photos" element={<ProgressPhotos />} />
       <Route path="/measurements" element={<Measurements />} />
-      <Route path="/social" element={<Social />} />
+      <Route path="/social" element={<SocialRoute />} />
+      <Route path="/crew" element={<SocialRoute crew />} />
+      <Route path="/activity" element={<Navigate to="/social" replace />} />
       {isOn(S, 'body') && <Route path="/progress-photos" element={<ProgressPhotos />} />}
       {isOn(S, 'body') && <Route path="/measurements" element={<Measurements />} />}
       <Route path="/settings" element={<SettingsRoute />} />

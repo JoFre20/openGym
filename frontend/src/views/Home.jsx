@@ -31,6 +31,7 @@ import { WrappedHomeCard } from '../components/WrappedEntry.jsx'
 import RecoveryHint from '../components/RecoveryHint.jsx'
 import { ChallengesCard } from '../components/Challenges.jsx'
 import { isOn } from '../lib/modules.js'
+import { isNewUI } from '../lib/ui-mode.js'
 
 // Home = what to do now + a quick glance. Deep charts & history live in Stats.
 export default function Home() {
@@ -127,6 +128,7 @@ export default function Home() {
   const streak = useMemo(() => streakInfo(S, todayKey), [S.workouts, S.weekStart, todayKey]) // eslint-disable-line react-hooks/exhaustive-deps
   // Settings → Modules (lib/modules.js): what a module switched off hides here.
   const on = id => isOn(S, id)
+  const fresh = isNewUI(S)
   const bwPoints = S.bodyweight.slice(-30).map(b => ({ t: weighInAt(b), y: b.w, d: b.d }))
 
   // today's session shown right under the week strip
@@ -141,12 +143,14 @@ export default function Home() {
       <SeasonDeco spot="header-bats" />
       <div><h1>{user ? t('Hi {0}', user.name) : 'openGym'}</h1><div className="sub">{today.toLocaleDateString(dateLocale(), { weekday: 'long', day: 'numeric', month: 'long' })}</div></div>
       <div className="hdr-actions">
-        {user && <button className="hdr-pill" onClick={() => nav('/social')}
-          aria-label={pendingFriends > 0 ? t('Friends') + ' (' + pendingFriends + ')' : t('Friends')} title={t('Friends')}>
-          <Icon name="people" />
-          <span>{t('Friends')}</span>
-          {pendingFriends > 0 && <span className="icon-badge">{pendingFriends > 9 ? '9+' : pendingFriends}</span>}
-        </button>}
+        {fresh
+          ? <button className="iconbtn" data-tour="tab-library" onClick={() => nav('/library')} aria-label={t('Exercises')} title={t('Exercises')}><Icon name="dumbbell" /></button>
+          : user && <button className="hdr-pill" onClick={() => nav('/social')}
+              aria-label={pendingFriends > 0 ? t('Friends') + ' (' + pendingFriends + ')' : t('Friends')} title={t('Friends')}>
+              <Icon name="people" />
+              <span>{t('Friends')}</span>
+              {pendingFriends > 0 && <span className="icon-badge">{pendingFriends > 9 ? '9+' : pendingFriends}</span>}
+            </button>}
         <button className="iconbtn" data-tour="settings-gear" onClick={() => nav('/settings')} aria-label={trouble ? t('Settings') + ', ' + t('Connection problem') : t('Settings')}><Icon name="gear" />{trouble && <span className="tab-dot" aria-hidden="true" />}</button>
       </div>
     </div>
@@ -211,6 +215,12 @@ export default function Home() {
       </div>}
       <SeasonDeco spot="home-hero" />
     </div>
+
+    {/* The new layout keeps the exercise library close without a tab of its own. */}
+    {fresh && <div className="row" style={{ gap: 8, marginBottom: 12 }}>
+      <Button variant="tinted" icon="dumbbell" style={{ flex: 1 }} onClick={() => nav('/library')}>{t('Exercises')}</Button>
+      <Button variant="tinted" icon="history" style={{ flex: 1 }} onClick={() => nav('/history')}>{t('History')}</Button>
+    </div>}
 
     {/* Monday: Your week; the 1st: Your month (lib/recap.js). Off in Settings → Look & Home. */}
     <RecapHomeCard S={S} />

@@ -67,7 +67,7 @@ const capStamps = m => {
 const OWN_MERGE = new Set([
   '_ts', '_rev', '_wid', '_wids', '_unstamped', '_prior', 'active', 'unit', 'unitSet', 'resetAt', 'resetIds', 'deleted', 'edited', 'undone', 'routineOrder',
   'workouts', 'routines', 'customEx', 'equipProfiles', 'gymCards', 'bodyweight', 'measurements', 'favEx',
-  'exWeights', 'balanceOverrides', 'loadKind', 'plates', 'dbLoad', 'dumbbells', 'stackWeights', 'exUnit', 'dayNotes', 'dayPhotos', 'exMerged',
+  'exWeights', 'balanceOverrides', 'loadKind', 'plates', 'dbLoad', 'dumbbells', 'stackWeights', 'exUnit', 'dayNotes', 'dayPhotos', 'exMerged', 'milestones',
 ]);
 // `modules` (frontend lib/modules.js) per module, as the app stamps it.
 const PER_KEY = new Set(['week', 'dayPlan', 'exNotes', 'barWeights', 'exAliases', 'programmes', 'modules']);
@@ -390,6 +390,44 @@ export function mergeChallenges(a, b) {
   return cleanChallenges(out) || undefined;
 }
 
+// Reached goals (frontend/src/lib/milestones.js): events with deterministic ids, joined by id.
+// They are history, so a writer that does not know the field never removes one.
+const MILESTONE_KINDS = new Set(['weight_goal', 'challenge']);
+const MILESTONE_ID = /^[a-z][a-z0-9:_-]{0,159}$/;
+const MILESTONE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+function cleanMilestoneData(value) {
+  if (!isMap(value)) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (Object.keys(out).length >= 20) break;
+    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(k)) continue;
+    if (typeof v === 'string') out[k] = v.slice(0, 120);
+    else if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+    else if (typeof v === 'boolean') out[k] = v;
+  }
+  return out;
+}
+function cleanMilestone(m) {
+  if (!isMap(m) || !MILESTONE_ID.test(String(m.id ?? '')) || !MILESTONE_KINDS.has(m.kind)) return null;
+  const at = Number(m.at);
+  if (!(at > 0) || !MILESTONE_DAY.test(String(m.d || ''))) return null;
+  return { id: String(m.id), kind: m.kind, at, d: String(m.d), data: cleanMilestoneData(m.data) };
+}
+export function cleanMilestones(v) {
+  if (!Array.isArray(v)) return [];
+  const by = new Map();
+  for (const raw of v) {
+    const m = cleanMilestone(raw);
+    if (!m) continue;
+    const cur = by.get(m.id);
+    if (!cur || m.at >= cur.at) by.set(m.id, m);
+  }
+  return [...by.values()].sort((a, b) => a.at - b.at || a.id.localeCompare(b.id)).slice(-200);
+}
+export function mergeMilestones(a, b) {
+  return cleanMilestones([...list(a), ...list(b)]);
+}
+
 // The Coach's chat, log and Undo snapshots (sync-merge.js mergeCoach): joined with the stored
 // ones rather than replaced, for a writer that does not stamp. It keeps `coach` as one value it read
 // earlier, so its push dropped every line another device had added since (#779). An Undo's log
@@ -620,6 +658,12 @@ export function stampPut(cur, next, { overRead = false, stamped = false, now = D
     }
     if (!stamped && isMap(next.coach) && isMap(cur.coach)) next.coach = mergeCoach(next.coach, cur.coach);
     if (isMap(next.challenges) && isMap(cur.challenges)) next.challenges = mergeChallenges(next.challenges, cur.challenges);
+    // A writer from before reached goals existed does not send the field at all. It must not
+    // silently delete the goals another device wrote; an explicit empty list is still empty.
+    if (!Array.isArray(next.milestones) && Array.isArray(cur.milestones)) next.milestones = clone(cur.milestones);
+    if (Array.isArray(next.milestones) && Array.isArray(cur.milestones)) next.milestones = mergeMilestones(next.milestones, cur.milestones);
+    // The same for the navigation choice: a writer that never heard of it keeps the stored one.
+    if (!('uiMode' in next) && typeof cur.uiMode === 'string') next.uiMode = cur.uiMode;
     if (before != null && content(next) !== before) report.changed = true;
   }
   keepHeld(next, t);

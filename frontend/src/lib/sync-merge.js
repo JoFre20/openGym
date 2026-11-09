@@ -82,6 +82,7 @@ import { sanitizeAccent } from './accent.js'
 import { readDayNote as readNote } from './day-notes.js'
 import { mergeAdvent } from './advent.js'
 import { mergeChallenges } from './challenges.js'
+import { mergeMilestones } from './milestones.js'
 import { mergeDay, dailyModeOf, settleAll } from './weigh-ins.js'
 import { applyExerciseMerges } from './exercise-merge.js'
 
@@ -495,6 +496,7 @@ const bodyweightKey = e => `${e?.d}|${e?.t ?? ''}`
 const RESET_LISTS = {
   workouts: workoutKey, routines: x => x?.id, customEx: x => x?.id, bodyweight: bodyweightKey,
   measurements: bodyweightKey, gymCards: x => x?.id, equipProfiles: x => x?.id, favEx: x => x,
+  milestones: x => x?.id,
 }
 const RESET_MAPS = ['exNotes', 'barWeights', 'exAliases', 'programmes', ...STAMPED_MAPS]
 /** An entry's name in resetIds: a workout's id (or day and start), a weigh-in's day and time, … */
@@ -554,6 +556,7 @@ export function sinceReset(S, at, ids) {
     out.equipProfiles = []
     out.gymCards = []
     out.favEx = []
+    out.milestones = list(S.milestones).filter(m => m && after(m.at))
     out.exNotes = {}
     out.exAliases = {}
     out.programmes = {}
@@ -715,7 +718,7 @@ function applyDeletions(S, deleted) {
 const OWN_MERGE = new Set([
   '_ts', '_rev', '_wid', '_wids', '_unstamped', '_prior', 'active', 'unit', 'unitSet', 'resetAt', 'resetIds', 'deleted', 'edited', 'undone', 'routineOrder',
   'workouts', 'routines', 'customEx', 'equipProfiles', 'gymCards', 'bodyweight', 'measurements', 'favEx',
-  'exWeights', 'balanceOverrides', 'loadKind', 'plates', 'dbLoad', 'dumbbells', 'stackWeights', 'exUnit', 'dayNotes', 'dayPhotos', 'exMerged',
+  'exWeights', 'balanceOverrides', 'loadKind', 'plates', 'dbLoad', 'dumbbells', 'stackWeights', 'exUnit', 'dayNotes', 'dayPhotos', 'exMerged', 'milestones',
 ])
 // Stamped per key instead of whole: one day of the plan, one exercise's note or bar, one programme
 // (lib/programmes.js; the running one, `programme`, is a plain setting).
@@ -986,6 +989,11 @@ export function mergeStates(a0, b0, { prefer } = {}) {
   // The monthly challenges (lib/challenges.js): a badge earned on either device stays earned.
   const challenges = mergeChallenges(n.challenges, o.challenges)
   if (challenges) out.challenges = challenges
+  // Reached goals (lib/milestones.js) are events: both copies' rows, one per deterministic id.
+  const milestones = mergeMilestones(n.milestones, o.milestones)
+  if (milestones.length) out.milestones = milestones; else delete out.milestones
+  // A copy from before the layout setting existed must not hide the other device's choice.
+  if (out.uiMode === undefined) out.uiMode = n.uiMode ?? o.uiMode
   if (deleted) out.deleted = deleted; else delete out.deleted
   out._ts = Math.max(a._ts || 0, b._ts || 0)
   if (resetAt) out.resetAt = resetAt

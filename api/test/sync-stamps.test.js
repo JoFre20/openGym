@@ -414,6 +414,19 @@ test('PUT /api/data: an older app\'s two changes of one setting in a row both la
 
 // #779: an older app keeps `coach` as one value read earlier, so its push dropped every Coach line,
 // log entry and Undo snapshot another device had added since. They are joined with the stored ones.
+test('an unstamped push keeps reached goals another device wrote, one per id', () => {
+  const m = (id, at) => ({ id, kind: 'challenge', at, d: '2026-11-09', data: { n: 14 } });
+  const cur = { ...stored(), milestones: [m('challenge:2026-11:workouts', NOW - 200), m('challenge:2026-11:prs', NOW - 100)] };
+  const next = clone({ ...stored(), milestones: [m('challenge:2026-11:prs', NOW - 100)] });
+  stampPut(cur, next, { overRead: true, stamped: false, now: NOW });
+  assert.deepEqual(next.milestones.map(x => x.id), ['challenge:2026-11:workouts', 'challenge:2026-11:prs']);
+  // A stamped app from before the field existed does not send it either.
+  const older = clone({ ...stored() });
+  delete older.milestones;
+  stampPut(cur, older, { overRead: true, stamped: true, now: NOW });
+  assert.deepEqual(older.milestones.map(x => x.id), ['challenge:2026-11:workouts', 'challenge:2026-11:prs']);
+});
+
 test('an unstamped push keeps the Coach lines another device added, and an Undo stays used', () => {
   const cur = { ...stored(), coach: {
     cadence: 'off',

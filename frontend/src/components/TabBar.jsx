@@ -1,8 +1,11 @@
+import { useSyncExternalStore } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { useStore } from '../store/useStore.js'
 import { effectiveRoutineIds, effectiveRoutines } from '../lib/history.js'
 import { todayISO } from '../lib/format.js'
 import { t } from '../lib/i18n.js'
+import { getSocialPending, subscribeSocialPending } from '../lib/social-badge.js'
+import { isNewUI, parentTab } from '../lib/ui-mode.js'
 import Icon from './Icon.jsx'
 import Elapsed from './Elapsed.jsx'
 import { useConnectionTrouble } from './SyncBanner.jsx'
@@ -12,10 +15,16 @@ import { retapTab } from '../lib/scroll-top.js'
 // render, so React saw a different component type each time and threw the button away and built a
 // fresh one — on a bar that is fixed on screen, and once a second for the whole of a rest. The
 // state it took with it is the DOM node itself: focus, the :active tint, any in-flight transition.
-function Tab({ active, icon, label, onClick, dot, tour }) {
+function Tab({ active, icon, label, onClick, dot, badge = 0, tour }) {
+  const name = badge > 0 ? label + ', ' + badge : dot ? label + ', ' + t('Connection problem') : undefined
   return (
-    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour} aria-label={dot ? label + ', ' + t('Connection problem') : undefined}>
-      <span className="tab-ic"><Icon name={icon} />{dot && <span className="tab-dot" aria-hidden="true" />}</span><span>{label}</span>
+    <button className={active ? 'on' : ''} onClick={onClick} data-tour={tour} aria-label={name}>
+      <span className="tab-ic">
+        <Icon name={icon} />
+        {dot && <span className="tab-dot" aria-hidden="true" />}
+        {badge > 0 && <span className="tab-badge" aria-hidden="true">{badge > 9 ? '9+' : badge}</span>}
+      </span>
+      <span>{label}</span>
     </button>
   )
 }
@@ -26,15 +35,16 @@ export default function TabBar({ onStart }) {
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
   const isGuest = useStore(s => s.isGuest())
+  const pending = useSyncExternalStore(subscribeSocialPending, () => getSocialPending(user?.id), () => 0)
   // With the connection banner switched off, a sync problem shows as a dot on Home, the tab
   // Settings lives under (#369, #330).
   const trouble = useConnectionTrouble()
   if (!user && !isGuest) return null
   const cur = loc.pathname.split('/')[1] || 'home'
   // A screen without a tab of its own lights the tab it is opened from (Muscles from both).
-  const PARENT = { history: 'stats', 'structural-balance': 'stats', 'progress-photos': 'stats', measurements: 'stats', settings: 'home', checkin: 'home', muscles: 'library', social: 'home' }
-  const parent = cur === 'muscles' && loc.state?.from === '/stats' ? 'stats' : PARENT[cur]
+  const parent = parentTab(cur, loc.state, S)
   const on = k => cur === k || parent === k
+  const fresh = isNewUI(S)
 
   // Root tabs are peers, not another level to unwind with Android Back. The tab you are already
   // on takes you to the top of its page instead (lib/scroll-top.js).
@@ -53,10 +63,15 @@ export default function TabBar({ onStart }) {
     nav('/workout')
   }
 
+  const planTab = <Tab active={on('plan')} icon="calendar" label={t('Plan')} onClick={() => switchTab('/plan')} tour="tab-plan" />
+  const statsTab = <Tab active={on('stats')} icon="chart" label={t('Stats')} onClick={() => switchTab('/stats')} tour="tab-stats" />
+  const libraryTab = <Tab active={on('library')} icon="dumbbell" label={t('Exercises')} onClick={() => switchTab('/library')} tour="tab-library" />
+  const activityTab = <Tab active={on('social')} icon="people" label={t('Activity')} badge={pending} onClick={() => switchTab('/social')} tour="tab-activity" />
+
   return (
     <nav id="tabbar">
       <Tab active={on('home')} icon="house" label={t('Home')} dot={trouble} onClick={() => switchTab('/home')} tour="tab-home" />
-      <Tab active={on('plan')} icon="calendar" label={t('Plan')} onClick={() => switchTab('/plan')} tour="tab-plan" />
+      {fresh ? activityTab : planTab}
       {/* On the workout screen itself there is nothing to resume, so the button reads as the
           tab it is and stays lit (#29); anywhere else it brings you back to the exercise you
           were on — the marker is kept in S.active.cur and never moves on its own (#21). The
@@ -70,8 +85,8 @@ export default function TabBar({ onStart }) {
         {running ? <span className="tab-time"><Elapsed start={S.active.start} /></span>
           : <span>{S.active ? (cur === 'workout' ? t('Workout') : S.active.editingWorkoutId ? t('Edit workout') : t('Resume')) : t('Start')}</span>}
       </button>
-      <Tab active={on('stats')} icon="chart" label={t('Stats')} onClick={() => switchTab('/stats')} tour="tab-stats" />
-      <Tab active={on('library')} icon="dumbbell" label={t('Exercises')} onClick={() => switchTab('/library')} tour="tab-library" />
+      {fresh ? planTab : statsTab}
+      {fresh ? statsTab : libraryTab}
     </nav>
   )
 }

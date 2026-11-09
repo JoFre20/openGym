@@ -354,6 +354,122 @@ export function prIdsOf(workout) {
   return [...new Set((Array.isArray(workout?.prs) ? workout.prs : []).filter(id => typeof id === 'string' && id))];
 }
 
+// Reached goals (frontend/src/lib/milestones.js). The server only reads the event list the app
+// writes into each profile; it never invents one. Rows are validated here because this file also
+// feeds every friend's state into another profile's screen.
+const MILESTONE_KINDS = new Set(['weight_goal', 'challenge']);
+const MILESTONE_ID = /^[a-z][a-z0-9:_-]{0,159}$/;
+const MILESTONE_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+function cleanMilestoneData(value) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return {};
+  const out = {};
+  for (const [k, v] of Object.entries(value)) {
+    if (Object.keys(out).length >= 20) break;
+    if (!/^[a-zA-Z][a-zA-Z0-9_]{0,31}$/.test(k)) continue;
+    if (typeof v === 'string') out[k] = v.slice(0, 120);
+    else if (typeof v === 'number' && Number.isFinite(v)) out[k] = v;
+    else if (typeof v === 'boolean') out[k] = v;
+  }
+  return out;
+}
+
+/** The reached goals stored in one state file, safe and newest last. */
+export function milestonesOf(state) {
+  const by = new Map();
+  for (const raw of Array.isArray(state?.milestones) ? state.milestones : []) {
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) continue;
+    if (!MILESTONE_ID.test(String(raw.id ?? '')) || !MILESTONE_KINDS.has(raw.kind)) continue;
+    const at = Number(raw.at);
+    if (!(at > 0) || !MILESTONE_DAY.test(String(raw.d || ''))) continue;
+    const m = { id: String(raw.id), kind: raw.kind, at, d: String(raw.d), data: cleanMilestoneData(raw.data) };
+    const cur = by.get(m.id);
+    if (!cur || m.at >= cur.at) by.set(m.id, m);
+  }
+  return [...by.values()].sort((a, b) => a.at - b.at || a.id.localeCompare(b.id)).slice(-200);
+}
+
+export function feedMilestoneId(ownerId, milestoneId) {
+  return `${ownerId}:m:${milestoneId}`;
+}
+
+export function splitFeedMilestoneId(value) {
+  const text = String(value || '');
+  const at = text.indexOf(':m:');
+  return at > 0 ? [text.slice(0, at), text.slice(at + 3)] : null;
+}
+
+/** Whether a friend may see this goal at all. */
+export function milestoneVisible(profile, milestone) {
+  if (!milestone || !profile || profile.shareWorkouts === false) return false;
+  if (milestone.kind === 'weight_goal') return profile.shareWeight === 'absolute' || profile.shareWeight === 'delta';
+  return true;
+}
+
+/** The goal as the viewer may see it: a weight goal loses its absolute numbers in delta mode. */
+export function milestoneForViewer(profile, milestone) {
+  if (!milestoneVisible(profile, milestone)) return null;
+  const data = milestone.data || {};
+  if (milestone.kind !== 'weight_goal') {
+    return { id: milestone.id, kind: milestone.kind, data };
+  }
+  const unit = data.unit === 'lb' ? 'lb' : 'kg';
+  const w = num(data.w), from = num(data.from);
+  const delta = w > 0 && from > 0 ? Math.round((w - from) * 10) / 10 : null;
+  const mode = profile?.shareWeight === 'absolute' ? 'absolute' : 'delta';
+  if (mode === 'delta') return { id: milestone.id, kind: milestone.kind, data: { mode, unit, delta } };
+  return {
+    id: milestone.id,
+    kind: milestone.kind,
+    data: { mode, unit, targetW: num(data.targetW), current: w, delta },
+  };
+}
+
+/** The owner's own goal, with the full numbers their privacy setting hides from friends. */
+function ownMilestone(milestone) {
+  if (milestone.kind !== 'weight_goal') return { id: milestone.id, kind: milestone.kind, data: milestone.data };
+  const w = num(milestone.data?.w), from = num(milestone.data?.from);
+  return {
+    id: milestone.id,
+    kind: milestone.kind,
+    data: {
+      mode: 'absolute',
+      unit: milestone.data?.unit === 'lb' ? 'lb' : 'kg',
+      targetW: num(milestone.data?.targetW),
+      current: w,
+      delta: w > 0 && from > 0 ? Math.round((w - from) * 10) / 10 : null,
+    },
+  };
+}
+
+/** One friend's reached goals as feed rows, privacy applied. */
+export function milestoneItems(social, ownerId, state, user, viewerId, { own = false, limit = 20 } = {}) {
+  if (!state || !user) return [];
+  const profile = social?.profiles?.[ownerId] || null;
+  const rows = [];
+  for (const milestone of milestonesOf(state)) {
+    const data = own ? ownMilestone(milestone) : milestoneForViewer(profile, milestone);
+    if (!data) continue;
+    const itemId = feedMilestoneId(ownerId, milestone.id);
+    rows.push({
+      itemId,
+      kind: 'milestone',
+      friend: { id: ownerId, name: user.name || '' },
+      date: milestone.d,
+      at: milestone.at,
+      milestone: data,
+      reactions: reactionSummary(social, itemId, viewerId),
+    });
+  }
+  return rows.sort((a, b) => b.at - a.at).slice(0, Math.max(0, limit));
+}
+
+export function findMilestone(state, ownerId, publicId) {
+  const split = splitFeedMilestoneId(publicId);
+  if (!split || split[0] !== ownerId) return null;
+  return milestonesOf(state).find(m => m.id === split[1]) || null;
+}
+
 export function weightProgressOf(state, mode, { today = null } = {}) {
   if (!SOCIAL_SHARE_WEIGHT.includes(mode) || mode === 'none') return null;
   const entries = (Array.isArray(state?.bodyweight) ? state.bodyweight : [])
@@ -410,11 +526,11 @@ export function reactionSummary(social, workoutId, viewerId) {
   return out;
 }
 
-export function feedItems(social, friendIds, userById, stateById, viewerId, { today = null, limit = 30 } = {}) {
+export function feedItems(social, friendIds, userById, stateById, viewerId, { today = null, limit = 30, skipShare = false } = {}) {
   const rows = [];
   for (const id of friendIds) {
     const profile = social?.profiles?.[id] || {};
-    if (profile.shareWorkouts === false) continue;
+    if (!skipShare && profile.shareWorkouts === false) continue;
     const state = stateById(id);
     if (!state) continue;
     const friend = userById(id);
@@ -427,6 +543,8 @@ export function feedItems(social, friendIds, userById, stateById, viewerId, { to
       const prs = prIdsOf(workout);
       rows.push({
         workoutId: publicId,
+        kind: 'workout',
+        at: workoutAtOf(workout),
         friend: { id, name: friend.name },
         date: workoutDayOf(workout),
         name: typeof workout.name === 'string' ? workout.name : '',

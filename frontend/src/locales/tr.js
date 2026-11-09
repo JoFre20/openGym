@@ -3754,4 +3754,17 @@ export default {
   'Could not turn on server notifications': 'Sunucu bildirimleri açılamadı',
   'Server notifications on': 'Sunucu bildirimleri açık',
   'Server notifications off': 'Sunucu bildirimleri kapalı',
-  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Arkadaş başlangıçları, arkadaşlık istekleri, tepkiler, paylaşılan planlar ve Coach önerileri. Hatırlatıcılar bu telefonda kalır.',}
+  'Friend starts, friend requests, reactions, shared plans and Coach suggestions. Reminders stay on this phone.': 'Arkadaş başlangıçları, arkadaşlık istekleri, tepkiler, paylaşılan planlar ve Coach önerileri. Hatırlatıcılar bu telefonda kalır.',
+  "App layout": "App layout",
+  "Classic": "Classic",
+  "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.": "Classic keeps Home, Plan, Start, Stats and Exercises. New puts Activity beside Start and moves Exercises to the Start screen.",
+  "Crew": "Crew",
+  "Me": "Me",
+  "Goals": "Goals",
+  "For you": "For you",
+  "No activity yet": "No activity yet",
+  "Your workouts and reached goals show up here.": "Your workouts and reached goals show up here.",
+  "Reached goals show up here.": "Reached goals show up here.",
+  "{0} friend request": "{0} friend request",
+  "{0} friend requests": "{0} friend requests",
+}

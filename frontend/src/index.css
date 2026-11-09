@@ -652,6 +652,13 @@ h4.sec{
   background:var(--orange);box-shadow:0 0 0 2px var(--bg-el);pointer-events:none;
 }
 .iconbtn .tab-dot{top:5px;right:5px;box-shadow:0 0 0 2px var(--bg)}
+/* The Activity tab's count of friend requests and shared plans (lib/social-badge.js). */
+.tab-badge{
+  position:absolute;top:-4px;inset-inline-end:-9px;min-width:16px;height:16px;padding:0 4px;
+  display:grid;place-items:center;border-radius:99px;background:var(--acc);color:var(--on-acc);
+  font-size:9px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;
+  box-shadow:0 0 0 2px var(--bg-el);pointer-events:none;
+}
 #tabbar button.start{margin-top:-24px}
 #tabbar button.start .cir{
   width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--on-acc);

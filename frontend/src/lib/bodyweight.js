@@ -3,6 +3,7 @@
 // following is the week's mean — the one a single weigh-in on the card cannot give you.
 import { isoOf, weekKey } from './format.js'
 import { addWeighIn, readingsOf, readingAt, timeOf } from './weigh-ins.js'
+import { recordWeightGoal } from './milestones.js'
 
 /**
  * The weigh-ins grouped into weeks, newest week first. Each week carries its mean, how many
@@ -51,7 +52,9 @@ export function weighInAt(b) {
 export function logWeighIn(s, w, at = Date.now()) {
   const n = Math.round(Number(w) * 10) / 10
   if (!(n > 0)) return false
-  return !!addWeighIn(s, { d: isoOf(new Date(at)), at: timeOf(at), w: n, t: at })
+  const added = !!addWeighIn(s, { d: isoOf(new Date(at)), at: timeOf(at), w: n, t: at })
+  if (added) recordWeightGoal(s)
+  return added
 }
 
 // ---- Weekly rate (#759) ----------------------------------------------------------------------
