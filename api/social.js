@@ -33,7 +33,12 @@ export function normalizeSocial(raw) {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return social;
   if (raw.profiles && typeof raw.profiles === 'object' && !Array.isArray(raw.profiles)) {
     for (const [uid, profile] of Object.entries(raw.profiles)) {
-      if (profile && typeof profile === 'object' && !Array.isArray(profile)) social.profiles[uid] = { ...profile };
+      if (!profile || typeof profile !== 'object' || Array.isArray(profile)) continue;
+      const next = { ...profile };
+      if (Array.isArray(profile.closeFriends)) {
+        next.closeFriends = [...new Set(profile.closeFriends.filter(id => typeof id === 'string' && id))].slice(0, 500);
+      }
+      social.profiles[uid] = next;
     }
   }
   if (Array.isArray(raw.friendships)) {
@@ -233,6 +238,30 @@ export function acceptedFriendIds(social, uid) {
   return (social?.friendships || [])
     .filter(f => f.status === 'accepted' && (f.from === uid || f.to === uid))
     .map(f => (f.from === uid ? f.to : f.from));
+}
+
+/** The caller's own close-friend list, limited to friendships that still exist. */
+export function closeFriendIds(social, uid) {
+  const accepted = new Set(acceptedFriendIds(social, uid));
+  const list = social?.profiles?.[uid]?.closeFriends;
+  if (!Array.isArray(list)) return [];
+  return [...new Set(list.filter(id => typeof id === 'string' && accepted.has(id)))];
+}
+
+/**
+ * Mark one accepted friend as close, or take the mark away. The list belongs to `uid`: it says
+ * whose sensitive live details `uid` may see, never the reverse. A friendship that is gone is
+ * left out again by closeFriendIds, so a stale id can never grant anything.
+ */
+export function setCloseFriend(social, uid, friendId, close, { now = Date.now() } = {}) {
+  const id = typeof friendId === 'string' ? friendId.trim() : '';
+  if (!id || !acceptedFriendIds(social, uid).includes(id)) return null;
+  const { profile } = ensureProfile(social, uid, { now });
+  const next = new Set(closeFriendIds(social, uid));
+  if (close) next.add(id); else next.delete(id);
+  profile.closeFriends = [...next].sort().slice(0, 500);
+  profile.updatedAt = now;
+  return profile.closeFriends;
 }
 
 export function pendingFriendships(social, uid) {

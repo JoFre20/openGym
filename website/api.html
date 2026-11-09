@@ -248,7 +248,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <p class="api-facts">
     <span>OpenAPI 3.1.0</span>
     <span>openGym v1.4.3</span>
-    <span>116 endpoints</span>
+    <span>117 endpoints</span>
     <span>AGPL-3.0-or-later</span>
   </p>
 
@@ -2435,7 +2435,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">Update what friends may see</span>
   </summary>
   <div class="ep-body">
-<p>Updates any of the caller's social settings. <code>shareWorkouts</code> hides the caller's workouts from the squad board and the activity feed. <code>shareWeight</code> is <code>none</code> (no weight), <code>absolute</code> (the latest weigh-in and its trend) or <code>delta</code> (the trend only, never the number). <code>shareLive</code> lets confirmed friends follow the running workout; <code>notifyFriends</code> sends a start notification while it is on; <code>startTone</code> picks the message pool; <code>friendStartAlerts</code> is the recipient-side opt-in. Missing fields are left as they are. Turning <code>shareLive</code> off does not clear <code>notifyFriends</code>, so turning it back on resumes the old choice.</p>
+<p>Updates any of the caller's social settings. <code>shareWorkouts</code> hides the caller's workouts from the squad board and the activity feed. <code>shareWeight</code> is <code>none</code> (no weight), <code>absolute</code> (the latest weigh-in and its trend) or <code>delta</code> (the trend only, never the number). <code>shareLive</code> lets confirmed friends follow the running workout; only close friends see its sensitive details, and <code>notifyFriends</code> sends a start notification to close friends while it is on; <code>startTone</code> picks the message pool; <code>friendStartAlerts</code> is the recipient-side opt-in. Missing fields are left as they are. Turning <code>shareLive</code> off does not clear <code>notifyFriends</code>, so turning it back on resumes the old choice.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 <p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
@@ -2601,6 +2601,59 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   </div>
 </details>
 
+<details class="ep" id="op-socialFriendClose">
+  <summary>
+    <span class="m post">POST</span>
+    <span class="ep-path"><code>/api/social/friends/close</code></span>
+    <span class="ep-chev" aria-hidden="true"></span>
+    <span class="ep-sum">Mark a friend as close, or take the mark away</span>
+  </summary>
+  <div class="ep-body">
+<p>The close-friend list is personal and one-sided. Marking a friend lets them see the sensitive part of the caller's live workout: the current exercise, set progress and the finish estimate. Every accepted friend still sees that the caller is training live. Only close friends can receive the caller's start notifications.</p>
+    <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
+
+<p class="ep-h">Request body <span class="p-hint">(JSON)</span></p><div class="ptab">
+  <div class="prow">
+    <span class="p-name">friendId<em class="p-req" title="required">required</em></span>
+    <span class="p-type">string</span>
+    <span class="p-desc">The friend's user id from <code>GET /api/social/me</code>.</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">close<em class="p-req" title="required">required</em></span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc"></span>
+  </div>
+</div>
+<pre><code>{
+  &quot;friendId&quot;: &quot;u_2&quot;,
+  &quot;close&quot;: true
+}</code></pre>
+    <p class="ep-h">Responses</p>
+    <div class="ptab">
+  <div class="prow rrow">
+    <span class="r-code s2">200</span>
+    <span class="p-desc">Saved. <code>closeFriends</code> is the caller's full, cleaned list.<span class="r-sig">{ ok: always true, friendId: string, close: boolean, closeFriends: string[] }</span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">400</span>
+    <span class="p-desc">Missing friend id, or <code>close</code> is not a boolean.</span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">401</span>
+    <span class="p-desc">No session, expired/revoked session, or a disabled account.<span class="r-sig"><code>{&quot;error&quot;:&quot;not signed in&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">404</span>
+    <span class="p-desc">That profile is not one of the caller's accepted friends.<span class="r-sig"><code>{&quot;error&quot;:&quot;no such friend&quot;}</code></span></span>
+  </div>
+  <div class="prow rrow">
+    <span class="r-code s4">429</span>
+    <span class="p-desc">Paused by the sign-in throttle (see <i>Throttling</i> in the description). The request was not looked at; try again after <code>Retry-After</code> seconds.<span class="r-sig"><code>{&quot;error&quot;:&quot;too many attempts, try again later&quot;}</code></span></span>
+  </div>
+    </div>
+  </div>
+</details>
+
 <details class="ep" id="op-socialFeed">
   <summary>
     <span class="m get">GET</span>
@@ -2635,7 +2688,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="ep-sum">Confirmed friends who are training and sharing it live</span>
   </summary>
   <div class="ep-body">
-<p>Reads the in-memory workout heartbeats, never a state file. A row appears only for an accepted friend whose <code>shareLive</code> is on; it disappears when the workout ends, the app closes, the athlete turns sharing off, or the heartbeat expires. <code>etaAt</code> and <code>leftSec</code> come from the athlete's own pace calculation; both are null when the heartbeat carried no estimate. Nothing here is persisted.</p>
+<p>Reads the in-memory workout heartbeats, never a state file. A row appears only for an accepted friend whose <code>shareLive</code> is on; it disappears when the workout ends, the app closes, the athlete turns sharing off, or the heartbeat expires. Every accepted friend sees that the athlete is live. The current exercise, set progress, <code>etaAt</code> and <code>leftSec</code> are only present when the athlete marked the caller as a close friend; otherwise the row carries <code>limited: true</code> and only the workout name and elapsed time. Nothing here is persisted.</p>
     <p class="ep-auth"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><span>Requires a session: the cookie set at sign-in, or <code>Authorization: Bearer &lt;token&gt;</code> from mobile-app pairing.</span></p>
 
 
@@ -5735,7 +5788,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow">
     <span class="p-name">notifyFriends<em class="p-req" title="required">required</em></span>
     <span class="p-type">boolean</span>
-    <span class="p-desc">Send a start notification to friends who enabled <code>friendStartAlerts</code>. Only effective while <code>shareLive</code> is on.</span>
+    <span class="p-desc">Send a start notification to close friends who enabled <code>friendStartAlerts</code>. Only effective while <code>shareLive</code> is on.</span>
   </div>
   <div class="prow">
     <span class="p-name">startTone<em class="p-req" title="required">required</em></span>
@@ -5745,7 +5798,7 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
   <div class="prow">
     <span class="p-name">friendStartAlerts<em class="p-req" title="required">required</em></span>
     <span class="p-type">boolean</span>
-    <span class="p-desc">Receive a push when a confirmed friend starts a workout they share live. Off by default.</span>
+    <span class="p-desc">Receive a push when a close friend starts a workout they share live. A friend who did not mark the caller as close never sends one. Off by default.</span>
   </div>
 </div>
   </div>
@@ -5784,6 +5837,11 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">since</span>
     <span class="p-type">number</span>
     <span class="p-desc">When the friendship was accepted</span>
+  </div>
+  <div class="prow">
+    <span class="p-name">close</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">The caller's own one-sided mark. Close friends see the caller's sensitive live details and can receive the caller's start notifications.</span>
   </div>
 </div>
   </div>
@@ -6417,6 +6475,11 @@ main.api-main .lead { color: var(--fg-2); max-width: 58ch; margin: 14px 0 0; fon
     <span class="p-name">friend</span>
     <span class="p-type"><a href="#schema-SocialLiveFriend">SocialLiveFriend</a></span>
     <span class="p-desc"></span>
+  </div>
+  <div class="prow">
+    <span class="p-name">limited</span>
+    <span class="p-type">boolean</span>
+    <span class="p-desc">Present and true when the caller is not a close friend of the athlete. The exercise, set progress, ETA and seconds left are then absent.</span>
   </div>
   <div class="prow">
     <span class="p-name">workoutId</span>

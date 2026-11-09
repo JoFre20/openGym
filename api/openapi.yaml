@@ -2966,8 +2966,9 @@ paths:
         workouts from the squad board and the activity feed. `shareWeight` is `none` (no
         weight), `absolute` (the latest weigh-in and its trend) or `delta` (the trend only,
         never the number). `shareLive` lets confirmed friends follow the running workout;
-        `notifyFriends` sends a start notification while it is on; `startTone` picks the
-        message pool; `friendStartAlerts` is the recipient-side opt-in. Missing fields are
+        only close friends see its sensitive details, and `notifyFriends` sends a start
+        notification to close friends while it is on; `startTone` picks the message pool;
+        `friendStartAlerts` is the recipient-side opt-in. Missing fields are
         left as they are. Turning `shareLive` off does not clear `notifyFriends`, so turning
         it back on resumes the old choice.
       requestBody:
@@ -3131,6 +3132,56 @@ paths:
               schema: { $ref: '#/components/schemas/Error' }
               example: { error: "this request is no longer pending", code: "not-pending" }
 
+  /api/social/friends/close:
+    post:
+      tags: [social]
+      operationId: socialFriendClose
+      summary: Mark a friend as close, or take the mark away
+      description: >-
+        The close-friend list is personal and one-sided. Marking a friend lets them see the
+        sensitive part of the caller's live workout: the current exercise, set progress and the
+        finish estimate. Every accepted friend still sees that the caller is training live.
+        Only close friends can receive the caller's start notifications.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [friendId, close]
+              properties:
+                friendId: { type: string, description: The friend's user id from `GET /api/social/me`. }
+                close: { type: boolean }
+            example: { friendId: "u_2", close: true }
+      responses:
+        '200':
+          description: Saved. `closeFriends` is the caller's full, cleaned list.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean, const: true }
+                  friendId: { type: string }
+                  close: { type: boolean }
+                  closeFriends:
+                    type: array
+                    items: { type: string }
+              example: { ok: true, friendId: "u_2", close: true, closeFriends: ["u_2"] }
+        '400':
+          description: Missing friend id, or `close` is not a boolean.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404':
+          description: That profile is not one of the caller's accepted friends.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "no such friend", code: "friend-not-found" }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/social/feed:
     get:
       tags: [social]
@@ -3224,9 +3275,11 @@ paths:
       description: >-
         Reads the in-memory workout heartbeats, never a state file. A row appears only for
         an accepted friend whose `shareLive` is on; it disappears when the workout ends,
-        the app closes, the athlete turns sharing off, or the heartbeat expires. `etaAt`
-        and `leftSec` come from the athlete's own pace calculation; both are null when the
-        heartbeat carried no estimate. Nothing here is persisted.
+        the app closes, the athlete turns sharing off, or the heartbeat expires. Every
+        accepted friend sees that the athlete is live. The current exercise, set progress,
+        `etaAt` and `leftSec` are only present when the athlete marked the caller as a close
+        friend; otherwise the row carries `limited: true` and only the workout name and
+        elapsed time. Nothing here is persisted.
       responses:
         '200':
           description: The friends training right now, newest start first.
@@ -5211,7 +5264,7 @@ components:
         notifyFriends:
           type: boolean
           description: >-
-            Send a start notification to friends who enabled `friendStartAlerts`. Only
+            Send a start notification to close friends who enabled `friendStartAlerts`. Only
             effective while `shareLive` is on.
         startTone:
           type: string
@@ -5220,8 +5273,8 @@ components:
         friendStartAlerts:
           type: boolean
           description: >-
-            Receive a push when a confirmed friend starts a workout they share live.
-            Off by default.
+            Receive a push when a close friend starts a workout they share live. A friend who
+            did not mark the caller as close never sends one. Off by default.
 
     SocialFriend:
       type: object
@@ -5231,6 +5284,11 @@ components:
         name: { type: string }
         avatar: { $ref: '#/components/schemas/AvatarDataUrl' }
         since: { type: number, description: When the friendship was accepted, ms since epoch. }
+        close:
+          type: boolean
+          description: >-
+            The caller's own one-sided mark. Close friends see the caller's sensitive live
+            details and can receive the caller's start notifications.
 
     SocialPending:
       type: object
@@ -5457,6 +5515,11 @@ components:
       type: object
       properties:
         friend: { $ref: '#/components/schemas/SocialLiveFriend' }
+        limited:
+          type: boolean
+          description: >-
+            Present and true when the caller is not a close friend of the athlete. The
+            exercise, set progress, ETA and seconds left are then absent.
         workoutId:
           oneOf: [{ type: string }, { type: 'null' }]
           description: The running workout's own id, when the client sent one.

@@ -1,7 +1,7 @@
 // Live workout start notifications. Kept out of server.js so the two decisions that must be
 // right (is this a fresh start worth announcing, and who wants it) can be tested without a
 // running server or a push service.
-import { acceptedFriendIds } from './social.js';
+import { acceptedFriendIds, closeFriendIds } from './social.js';
 
 export const START_NOTIFY_FRESH_MS = 2 * 60 * 1000;
 export const START_NOTIFY_COOLDOWN_MS = 30 * 60 * 1000;
@@ -31,10 +31,12 @@ export function startNotifyDue(profile, { key, startedAt, now = Date.now() } = {
   return true;
 }
 
-/** Accepted friends who asked for start alerts and can still receive a push. */
+/** Close friends who asked for start alerts and can still receive a push. */
 export function friendStartRecipients(social, senderId, hasPush = () => true) {
+  const close = new Set(closeFriendIds(social, senderId));
   return acceptedFriendIds(social, senderId).filter(id => {
     const profile = social?.profiles?.[id];
-    return profile?.friendStartAlerts === true && (typeof hasPush !== 'function' || hasPush(id));
+    return close.has(id) && profile?.friendStartAlerts === true
+      && (typeof hasPush !== 'function' || hasPush(id));
   });
 }

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
@@ -10,9 +10,10 @@ import { fmtDate, fmtDur, fmtNum, fmtVol, exerciseNameText } from '../lib/format
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import { challengeTitle, monthLabel } from '../lib/challenge-copy.js'
 import { convertBodyWeight } from '../lib/units.js'
-import { getSharedPlan, reactToWorkout, removeSharedPlan, socialError, socialFeed, socialLive, socialMe, socialPlans } from '../lib/api.js'
+import { getSharedPlan, reactToWorkout, removeSharedPlan, socialError, socialFeed, socialMe, socialPlans } from '../lib/api.js'
 import { parsePlan } from '../lib/plan-share.js'
 import { activityCounts, filterActivity, mergeActivity, ownActivity, topSetName } from '../lib/activity.js'
+import { getLiveRows, refreshLiveBadge, subscribeLive } from '../lib/live-badge.js'
 import { formatFriendCodeInput, friendCodeComplete } from '../lib/social-view.js'
 import { noteSocialPending } from '../lib/social-badge.js'
 import { planImportSheet } from '../sheets.jsx'
@@ -23,7 +24,6 @@ import './Activity.css'
 
 const REACTIONS = ['🔥', '💪', '👑']
 export const ACTIVITY_REFRESH_MS = 30000
-export const ACTIVITY_LIVE_MS = 15000
 
 const FILTERS = [
   ['all', 'All'],
@@ -38,6 +38,7 @@ function liveExerciseName(row) {
 }
 
 function LiveCard({ row }) {
+  const limited = row.limited === true
   const done = Math.max(0, Number(row.setsDone) || 0)
   const total = Math.max(0, Number(row.setsTotal) || 0)
   const pct = total ? Math.min(100, done / total * 100) : 0
@@ -57,14 +58,18 @@ function LiveCard({ row }) {
       <span className="social-live-pill"><Icon name="dot" />{t('Live')}</span>
     </div>
     <div className="social-live-workout">{row.name || t('Workout')}</div>
-    {ex && <div className="social-live-ex">{ex}</div>}
-    <div className="social-live-progress"><i style={{ width: pct + '%' }} /></div>
-    <div className="social-live-meta">
-      <span>{t('{0} sets', done + '/' + total)}</span>
-      {left != null && left > 0 && <span>{t('{0} left', fmtDur(Math.max(60000, left * 1000)))}</span>}
-      {left === 0 && <span>{t('Finished')}</span>}
-      {finish && <span>{t('Done around {0}', finish)}</span>}
-    </div>
+    {limited
+      ? <div className="social-live-limited"><Icon name="lock" />{t('Only close friends see the details')}</div>
+      : <>
+        {ex && <div className="social-live-ex">{ex}</div>}
+        <div className="social-live-progress"><i style={{ width: pct + '%' }} /></div>
+        <div className="social-live-meta">
+          <span>{t('{0} sets', done + '/' + total)}</span>
+          {left != null && left > 0 && <span>{t('{0} left', fmtDur(Math.max(60000, left * 1000)))}</span>}
+          {left === 0 && <span>{t('Finished')}</span>}
+          {finish && <span>{t('Done around {0}', finish)}</span>}
+        </div>
+      </>}
   </div>
 }
 
@@ -206,10 +211,12 @@ export default function Activity() {
   const S = useStore(s => s.S)
   const user = useStore(s => s.user)
   const toast = useUI(s => s.toast)
+  const userId = user?.id || ''
+  // The tab bar owns the polling; this screen only reads the shared rows and can force a refresh.
+  const live = useSyncExternalStore(subscribeLive, () => getLiveRows(userId), () => getLiveRows(userId))
   const linkedCode = friendCodeComplete(params.get('friend')) ? formatFriendCodeInput(params.get('friend')) : ''
   const [me, setMe] = useState(null)
   const [data, setData] = useState(null)
-  const [live, setLive] = useState([])
   const [plans, setPlans] = useState([])
   const [loading, setLoading] = useState(!!user)
   const [error, setError] = useState(null)
@@ -219,13 +226,11 @@ export default function Activity() {
   const [reactionOverrides, setReactionOverrides] = useState({})
   const alive = useRef(true)
   const lastLoaded = useRef(0)
-  const liveBusy = useRef(false)
   const openedLink = useRef('')
-  const userId = user?.id || ''
 
   const load = useCallback(async ({ quiet = false } = {}) => {
     if (!userId) {
-      setMe(null); setData(null); setLive([]); setPlans([]); setError(null); setLoading(false)
+      setMe(null); setData(null); setPlans([]); setError(null); setLoading(false)
       return
     }
     if (!quiet) setLoading(true)
@@ -248,28 +253,12 @@ export default function Activity() {
     if (alive.current && nextPlans) setPlans(nextPlans.received || [])
   }, [userId])
 
-  const refreshLive = useCallback(async () => {
-    if (!userId || liveBusy.current || document.visibilityState === 'hidden') return
-    liveBusy.current = true
-    try {
-      const next = await socialLive()
-      if (alive.current) setLive(Array.isArray(next?.live) ? next.live : [])
-    } catch { /* the live strip is additive */ }
-    finally { liveBusy.current = false }
-  }, [userId])
-
   useEffect(() => {
     alive.current = true
     load()
-    refreshLive()
+    if (userId) refreshLiveBadge(userId)
     return () => { alive.current = false }
-  }, [load, refreshLive])
-
-  useEffect(() => {
-    if (!userId) return undefined
-    const iv = setInterval(refreshLive, ACTIVITY_LIVE_MS)
-    return () => clearInterval(iv)
-  }, [userId, refreshLive])
+  }, [load, userId])
 
   const refreshIfStale = useCallback(() => {
     if (!userId || document.visibilityState === 'hidden') return
@@ -277,14 +266,17 @@ export default function Activity() {
     load({ quiet: true })
   }, [userId, load])
   useEffect(() => {
-    const onFocus = () => { refreshIfStale(); refreshLive() }
+    const onFocus = () => {
+      refreshIfStale()
+      if (userId) refreshLiveBadge(userId)
+    }
     document.addEventListener('visibilitychange', onFocus)
     window.addEventListener('focus', onFocus)
     return () => {
       document.removeEventListener('visibilitychange', onFocus)
       window.removeEventListener('focus', onFocus)
     }
-  }, [refreshIfStale, refreshLive])
+  }, [refreshIfStale, userId])
 
   const openAdd = useCallback((initialCode = '') => {
     if (!me) return
@@ -372,7 +364,7 @@ export default function Activity() {
           {pending > 0 && <span className="icon-badge">{pending > 9 ? '9+' : pending}</span>}
         </button>
         <button className="iconbtn" disabled={!me} onClick={() => openAdd()} aria-label={t('Add friend')} title={t('Add friend')}><Icon name="plus" /></button>
-        <button className="iconbtn" disabled={!userId || loading} onClick={() => { load(); refreshLive() }} aria-label={t('Sync now')} title={t('Sync now')}><Icon name="reset" /></button>
+        <button className="iconbtn" disabled={!userId || loading} onClick={() => { load(); if (userId) refreshLiveBadge(userId, { force: true }) }} aria-label={t('Sync now')} title={t('Sync now')}><Icon name="reset" /></button>
       </div>
     </div>
 
@@ -393,14 +385,15 @@ export default function Activity() {
     {!ready && <div className="empty">{t('Loading…')}</div>}
 
     {ready && <>
+      {/* Live stays above the filters: switching to Goals or Me must not hide who is training now. */}
+      <LiveSection rows={live} />
+
       <div className="chips act-filters" role="tablist" aria-label={t('Activity')}>
         {FILTERS.map(([key]) => <button type="button" key={key} role="tab" aria-selected={filter === key}
           className={'chip act-filter' + (filter === key ? ' on' : '')} onClick={() => setFilter(key)}>
           {filterLabel(key)}{counts[key] > 0 && <span className="act-count">{counts[key]}</span>}
         </button>)}
       </div>
-
-      <LiveSection rows={live} />
 
       {(plans.length > 0 || incoming.length > 0) && <section className="act-for-you">
         <h4 className="sec">{t('For you')}</h4>

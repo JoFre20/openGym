@@ -1,7 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  acceptedFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial, ensureProfile, feedItems,
+  acceptedFriendIds, closeFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial,
+  ensureProfile, feedItems, setCloseFriend,
   feedMilestoneId, feedWorkoutId, findMilestone, findPlanShare, findWorkout, formatFriendCode,
   friendCodeFromBytes, friendCodeValid, friendshipBetween, generateFriendCode, milestoneForViewer,
   milestoneItems, milestonesOf, normalizeFriendCode, normalizeSocial, pendingFriendships,
@@ -61,6 +62,26 @@ test('friendships are found in either direction', () => {
   pending.acceptedAt = 2;
   assert.deepEqual(acceptedFriendIds(social, 'a'), ['b']);
   assert.deepEqual(acceptedFriendIds(social, 'b'), ['a']);
+});
+
+test('close friends are a personal list of accepted friends', () => {
+  const social = emptySocial();
+  ensureProfile(social, 'a');
+  ensureProfile(social, 'b');
+  ensureProfile(social, 'c');
+  social.friendships.push(
+    { id: 'f1', from: 'a', to: 'b', status: 'accepted' },
+    { id: 'f2', from: 'a', to: 'c', status: 'pending' },
+  );
+  assert.deepEqual(closeFriendIds(social, 'a'), []);
+  assert.deepEqual(setCloseFriend(social, 'a', 'b', true), ['b']);
+  assert.deepEqual(closeFriendIds(social, 'a'), ['b']);
+  assert.deepEqual(closeFriendIds(social, 'b'), [], 'the mark is one-sided');
+  assert.equal(setCloseFriend(social, 'a', 'c', true), null, 'a pending friend is not close');
+  assert.equal(setCloseFriend(social, 'a', 'nobody', true), null);
+  assert.deepEqual(setCloseFriend(social, 'a', 'b', false), []);
+  social.friendships = [];
+  assert.deepEqual(closeFriendIds(social, 'a'), [], 'a removed friendship grants nothing');
 });
 
 test('weeks start on Monday by default and on Sunday when asked', () => {

@@ -659,6 +659,21 @@ h4.sec{
   font-size:9px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums;
   box-shadow:0 0 0 2px var(--bg-el);pointer-events:none;
 }
+/* A friend is training live (lib/live-badge.js): a red dot that pulses on the Activity tab, and
+   on the Home tab in Classic where the Friends screen is opened from. Kept on the other side of
+   the icon from the request badge and the connection dot so the three can coexist. */
+.tab-live-dot{
+  position:absolute;top:-2px;inset-inline-start:-8px;width:8px;height:8px;border-radius:50%;
+  background:var(--red);box-shadow:0 0 0 2px var(--bg-el);pointer-events:none;
+}
+.tab-live-dot::after{
+  content:'';position:absolute;inset:-3px;border-radius:50%;border:2px solid var(--red);
+  animation:tab-live-ping 1.8s var(--ease) infinite;
+}
+@keyframes tab-live-ping{
+  0%{transform:scale(.65);opacity:.9}
+  70%,100%{transform:scale(1.9);opacity:0}
+}
 #tabbar button.start{margin-top:-24px}
 #tabbar button.start .cir{
   width:52px;height:52px;border-radius:50%;background:var(--acc);color:var(--on-acc);

@@ -10,13 +10,14 @@ import { EXIDX } from '../lib/exercises.js'
 import { exCount, fmtDate, fmtDur, fmtNum, fmtVol, isoOf, routineCount, exerciseNameText } from '../lib/format.js'
 import { t, tn, dateLocale } from '../lib/i18n.js'
 import {
-  getSharedPlan, reactToWorkout, removeSharedPlan, respondToFriendRequest, saveSocialSettings,
+  getSharedPlan, reactToWorkout, removeSharedPlan, respondToFriendRequest, saveSocialSettings, setCloseFriend,
   socialError, socialFeed, socialLive, socialMe, socialPlans,
 } from '../lib/api.js'
 import { parsePlan } from '../lib/plan-share.js'
 import { activeSeason } from '../lib/seasonal.js'
 import { formatFriendCodeInput, friendCodeComplete, ringProgress, socialWeightView } from '../lib/social-view.js'
 import { noteSocialPending } from '../lib/social-badge.js'
+import { noteLiveRows } from '../lib/live-badge.js'
 import { confirmSheet, menuSheet, planImportSheet } from '../sheets.jsx'
 import { useUI } from '../store/useUI.js'
 import { useStore } from '../store/useStore.js'
@@ -76,6 +77,7 @@ function liveExerciseName(row) {
 }
 
 function LiveCard({ row }) {
+  const limited = row.limited === true
   const done = Math.max(0, Number(row.setsDone) || 0)
   const total = Math.max(0, Number(row.setsTotal) || 0)
   const pct = total ? Math.min(100, done / total * 100) : 0
@@ -95,14 +97,18 @@ function LiveCard({ row }) {
       <span className="social-live-pill"><Icon name="dot" />{t('Live')}</span>
     </div>
     <div className="social-live-workout">{row.name || t('Workout')}</div>
-    {ex && <div className="social-live-ex">{ex}</div>}
-    <div className="social-live-progress"><i style={{ width: pct + '%' }} /></div>
-    <div className="social-live-meta">
-      <span>{t('{0} sets', done + '/' + total)}</span>
-      {left != null && left > 0 && <span>{t('{0} left', fmtDur(Math.max(60000, left * 1000)))}</span>}
-      {left === 0 && <span>{t('Finished')}</span>}
-      {finish && <span>{t('Done around {0}', finish)}</span>}
-    </div>
+    {limited
+      ? <div className="social-live-limited"><Icon name="lock" />{t('Only close friends see the details')}</div>
+      : <>
+        {ex && <div className="social-live-ex">{ex}</div>}
+        <div className="social-live-progress"><i style={{ width: pct + '%' }} /></div>
+        <div className="social-live-meta">
+          <span>{t('{0} sets', done + '/' + total)}</span>
+          {left != null && left > 0 && <span>{t('{0} left', fmtDur(Math.max(60000, left * 1000)))}</span>}
+          {left === 0 && <span>{t('Finished')}</span>}
+          {finish && <span>{t('Done around {0}', finish)}</span>}
+        </div>
+      </>}
   </div>
 }
 
@@ -147,12 +153,13 @@ function PrivacyCard({ settings, unit, saving, onSave, hasPush }) {
     </Section>
     <Section title={t('Live training')}>
       <Row icon="dot" iconTint="var(--green)" title={t('Share live workout')}
-        subtitle={t('Friends can follow your workout live.')}>
+        subtitle={t('Friends can follow your workout live. Close friends see your details.')}>
         <Switch aria-label={t('Share live workout')} checked={shareLive} disabled={saving}
           onChange={v => change({ shareLive: v, ...(v ? {} : { notifyFriends: false }) })} />
       </Row>
-      <Row icon="bell" iconTint="var(--orange)" title={t('Tell friends when I start')}>
-        <Switch aria-label={t('Tell friends when I start')} checked={notifyFriends}
+      <Row icon="bell" iconTint="var(--orange)" title={t('Tell close friends when I start')}
+        subtitle={t('Only close friends get this notification.')}>
+        <Switch aria-label={t('Tell close friends when I start')} checked={notifyFriends}
           disabled={saving || !shareLive} onChange={v => change({ notifyFriends: v })} />
       </Row>
       {shareLive && notifyFriends && <SelectRow icon="chat" iconTint="var(--blue)" title={t('Start message tone')}
@@ -165,7 +172,7 @@ function PrivacyCard({ settings, unit, saving, onSave, hasPush }) {
       <Row icon="bell" iconTint="var(--teal)" title={t('Friend workout alerts')}
         subtitle={local.friendStartAlerts && !hasPush
           ? t('Turn on push notifications in Settings to get these alerts.')
-          : t('Get a notification when a friend starts training.')}>
+          : t('Get a notification when a close friend starts training.')}>
         <Switch aria-label={t('Friend workout alerts')} checked={local.friendStartAlerts === true}
           disabled={saving} onChange={v => change({ friendStartAlerts: v })} />
       </Row>
@@ -207,7 +214,10 @@ function SquadCard({ stat, friendship, unit, onMenu }) {
   return <div className="social-friend" role="listitem">
     <Avatar name={stat.name} avatar={stat.avatar} size="md" />
     <div className="social-friend-main">
-      <div className="social-friend-name">{stat.name}</div>
+      <div className="social-friend-name">
+        {stat.name}
+        {friendship?.close && <span className="social-close-star" role="img" aria-label={t('Close friend')}><Icon name="starFill" /></span>}
+      </div>
       {count != null && <div className="social-friend-meta">
         {tn('{0} workout', '{0} workouts', count)}
       </div>}
@@ -393,7 +403,9 @@ export default function Social({ crew = false }) {
     liveBusy.current = true
     try {
       const next = await socialLive()
-      if (alive.current) setLive(Array.isArray(next?.live) ? next.live : [])
+      const rows = Array.isArray(next?.live) ? next.live : []
+      if (alive.current) setLive(rows)
+      noteLiveRows(userId, rows)
     } catch { /* the live strip is additive: a failure leaves the squad and feed alone */ }
     finally { liveBusy.current = false }
   }, [userId])
@@ -584,10 +596,28 @@ export default function Social({ crew = false }) {
     })
   }
 
+  const setFriendClose = async (stat, close) => {
+    try {
+      await setCloseFriend(stat.id, close)
+      if (!alive.current) return
+      setMe(current => current ? {
+        ...current,
+        friends: (current.friends || []).map(row => row.id === stat.id ? { ...row, close } : row),
+      } : current)
+      toast(close ? t('Close friend added') : t('Close friend removed'))
+    } catch (e) {
+      toast(socialError(e))
+    }
+  }
+
   const openFriendMenu = (stat, friend) => {
     menuSheet({
       title: stat.name,
       items: [{
+        icon: friend.close ? 'starFill' : 'star',
+        label: friend.close ? t('Remove close friend') : t('Make close friend'),
+        onClick: () => setFriendClose(stat, !friend.close),
+      }, {
         icon: 'trash', label: t('Remove friend'), danger: true,
         onClick: () => confirmSheet({
           title: t('Remove {0}?', stat.name),

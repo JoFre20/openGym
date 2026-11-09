@@ -72,6 +72,13 @@ const heartbeat = (h, body = {}) => call(h, 'u2', '/api/activity', {
 test('a friend sees a live row only while the athlete shares it, and the start is announced once', async t => {
   const h = await startServer(t);
   await befriend(h, 'u1', 'u2');
+  const close = await call(h, 'u2', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u1', close: true },
+  });
+  assert.equal(close.status, 200);
+  assert.deepEqual(close.body.closeFriends, ['u1']);
+  const meAfterClose = await call(h, 'u2', '/api/social/me');
+  assert.equal(meAfterClose.body.friends.find(row => row.id === 'u1').close, true);
   const settings = await call(h, 'u2', '/api/social/settings', {
     method: 'PUT',
     body: { shareLive: true, notifyFriends: true, startTone: 'drill', friendStartAlerts: true },
@@ -106,6 +113,22 @@ test('a friend sees a live row only while the athlete shares it, and the start i
   assert.ok(row.etaAt >= before + 1500 * 1000 - 1000, 'the ETA is stored from the server now');
   assert.ok(row.leftSec > 1490 && row.leftSec <= 1500, 'the row carries seconds left');
 
+  // Not close any more: the friend still sees the live row, but not the sensitive details.
+  await call(h, 'u2', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u1', close: false },
+  });
+  await heartbeat(h, { startedAt });
+  const limited = (await call(h, 'u1', '/api/social/live')).body.live[0];
+  assert.equal(limited.limited, true);
+  assert.equal(limited.name, 'Push Day');
+  assert.equal(limited.startedAt, startedAt);
+  for (const field of ['exerciseId', 'exName', 'exIdx', 'exTotal', 'setsDone', 'setsTotal', 'etaAt', 'leftSec']) {
+    assert.equal(field in limited, false, field + ' is close-friend only');
+  }
+  await call(h, 'u2', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u1', close: true },
+  });
+
   const social = readSocial(h);
   assert.equal(social.profiles.u2.lastStartNotify.id, 'w1');
   const firstNotifyAt = social.profiles.u2.lastStartNotify.at;
@@ -130,6 +153,9 @@ test('a friend sees a live row only while the athlete shares it, and the start i
 test('an old or missing start is not announced, and an oversized ETA is dropped', async t => {
   const h = await startServer(t);
   await befriend(h, 'u1', 'u2');
+  await call(h, 'u2', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u1', close: true },
+  });
   await call(h, 'u2', '/api/social/settings', {
     method: 'PUT', body: { shareLive: true, notifyFriends: true },
   });
@@ -146,6 +172,32 @@ test('an old or missing start is not announced, and an oversized ETA is dropped'
   const badBool = await call(h, 'u2', '/api/social/settings', { method: 'PUT', body: { shareLive: 'yes' } });
   assert.equal(badBool.status, 400);
   assert.equal(badBool.body.code, 'invalid-share-live');
+});
+
+test('the close-friend list accepts only accepted friends and a boolean choice', async t => {
+  const h = await startServer(t);
+  await befriend(h, 'u1', 'u2');
+  const missing = await call(h, 'u1', '/api/social/friends/close', { method: 'POST', body: {} });
+  assert.equal(missing.status, 400);
+  assert.equal(missing.body.code, 'friend-required');
+  const bad = await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: 'yes' },
+  });
+  assert.equal(bad.status, 400);
+  assert.equal(bad.body.code, 'invalid-close');
+  const stranger = await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u3', close: true },
+  });
+  assert.equal(stranger.status, 404);
+  assert.equal(stranger.body.code, 'friend-not-found');
+  const added = await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: true },
+  });
+  assert.deepEqual(added.body.closeFriends, ['u2']);
+  const removed = await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: false },
+  });
+  assert.deepEqual(removed.body.closeFriends, []);
 });
 
 test('the live route asks for a session and leaves the admin presence shape alone', async t => {

@@ -28,6 +28,7 @@ vi.mock('../lib/api.js', async importOriginal => ({
 import { bindUI } from '../components/ui.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
+import { _resetLiveBadge } from '../lib/live-badge.js'
 import Activity from './Activity.jsx'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -98,6 +99,7 @@ beforeEach(() => {
   localStorage.clear()
   document.body.innerHTML = ''
   useUI.setState({ sheets: [], toastMsg: '', toastAction: null, timer: null, work: null })
+  _resetLiveBadge()
   useStore.setState({
     S: { ...clone(DEF), unit: 'kg', workouts: [], milestones: [] },
     user: { id: 'u1', name: 'Jonas' }, ready: true,
@@ -125,6 +127,42 @@ describe('Activity', () => {
     expect(host.textContent).toContain('Weight goal')
     expect(host.textContent).toMatch(/77[.,]8 kg/)
     expect(labels(host)).toEqual(['All4', 'Friends2', 'Me2', 'Goals2'])
+  })
+
+  it('keeps live rows above the filters', async () => {
+    mocks.socialLive.mockResolvedValue({
+      now: Date.now(),
+      live: [{
+        friend: { id: 'u2', name: 'Ben' }, workoutId: 'w1', name: 'Push Day',
+        exerciseId: '0025', exName: 'Bench Press', exIdx: 2, exTotal: 5,
+        setsDone: 3, setsTotal: 12, startedAt: Date.now() - 60000, updatedAt: Date.now(),
+        etaAt: Date.now() + 900000, leftSec: 900,
+      }],
+    })
+    const host = render(<Activity />)
+    await flush()
+    await flush()
+    expect(host.textContent).toContain('Live now')
+    const order = [...host.querySelectorAll('.social-live, .act-filters')].map(el => el.className)
+    expect(order[0]).toContain('social-live')
+    expect(order[1]).toContain('act-filters')
+  })
+
+  it('shows a limited live card without the close-friend details', async () => {
+    mocks.socialLive.mockResolvedValue({
+      now: Date.now(),
+      live: [{
+        friend: { id: 'u2', name: 'Ben' }, workoutId: 'w1', name: 'Push Day',
+        startedAt: Date.now() - 60000, updatedAt: Date.now(), limited: true,
+      }],
+    })
+    const host = render(<Activity />)
+    await flush()
+    await flush()
+    const card = host.querySelector('.social-live-card')
+    expect(card.textContent).toContain('Only close friends see the details')
+    expect(card.textContent).not.toContain('sets')
+    expect(card.textContent).not.toContain('Done around')
   })
 
   it('reacts to a friend card and updates its count', async () => {

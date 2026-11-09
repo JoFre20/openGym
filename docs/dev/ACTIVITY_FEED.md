@@ -18,6 +18,32 @@ push URLs (`#/social?friend=CODE`) keep working in both.
 The exercise library has no tab in the new layout. Its Start header button, the quick link
 under today's card and the `/library` route all lead there.
 
+## The live dot
+
+`frontend/src/lib/live-badge.js` keeps the last `GET /api/social/live` answer for the signed-in
+profile; `use-live-badge.js` polls it every 15 seconds while the tab bar is on screen. The tab
+bar shows a red pulsing dot on the Activity tab in the new layout and on the Home tab in Classic,
+where the Friends screen is opened from. The live rows are also what the Activity screen's live
+strip renders, so both surfaces agree without a second source.
+
+Live rows are pinned above the Activity filters: switching to Goals, Me or Friends never hides
+who is training right now. The same order holds on the Classic Friends page.
+
+## Close friends
+
+`social.profiles[uid].closeFriends` is a personal, one-sided list of accepted friend ids. It says
+whose live details `uid` may see. It is never mutual: marking Ada as close does not let Ada see
+more of my workout unless I am on her list too.
+
+- Every accepted friend with `shareLive` on sees that the athlete is training live, the workout
+  name and the elapsed time.
+- Only close friends also see the current exercise, set progress, ETA and seconds left. Other
+  friends get `limited: true` and the reduced live card.
+- Start notifications go only to close friends who also have `friendStartAlerts` enabled.
+- The Crew screen's friend menu marks and unmarks a close friend; the flag lives in
+  `social.json`, not in the synced profile state.
+- A removed friendship is filtered out of the close list, so a stale id never grants anything.
+
 ## Feed items
 
 `frontend/src/lib/activity.js` builds the caller's own rows locally and normalises the server's

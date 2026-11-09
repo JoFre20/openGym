@@ -2551,6 +2551,16 @@ export const PT_BR_OVERRIDES = {
   "Reached goals show up here.": "Os objetivos alcançados aparecem aqui.",
   "{0} friend request": "{0} pedido de amizade",
   "{0} friend requests": "{0} pedidos de amizade",
+  "Make close friend": "Marcar como amigo próximo",
+  "Remove close friend": "Remover dos amigos próximos",
+  "Close friend": "Amigo próximo",
+  "Close friend added": "Adicionado aos amigos próximos",
+  "Close friend removed": "Removido dos amigos próximos",
+  "Only close friends see the details": "Somente amigos próximos veem os detalhes",
+  "Tell close friends when I start": "Avisar amigos próximos quando eu começar",
+  "Only close friends get this notification.": "Somente amigos próximos recebem esta notificação.",
+  "Friends can follow your workout live. Close friends see your details.": "Os amigos podem acompanhar seu treino ao vivo. Amigos próximos veem os detalhes.",
+  "Get a notification when a close friend starts training.": "Receba uma notificação quando um amigo próximo começar a treinar.",
 
 }
 

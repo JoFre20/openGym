@@ -7,11 +7,17 @@ import { createRoot } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import TabBar from './TabBar.jsx'
 import { DEF, useStore } from '../store/useStore.js'
+import { _resetLiveBadge } from '../lib/live-badge.js'
 
 const where = vi.hoisted(() => ({ loc: { pathname: '/home' } }))
+const liveApi = vi.hoisted(() => ({ socialLive: vi.fn() }))
 vi.mock('react-router-dom', () => ({
   useNavigate: () => () => {},
   useLocation: () => where.loc,
+}))
+vi.mock('../lib/api.js', async importOriginal => ({
+  ...(await importOriginal()),
+  socialLive: liveApi.socialLive,
 }))
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -22,7 +28,9 @@ beforeEach(() => {
   const store = useStore.getState()
   originalS = store.S
   originalUser = store.user
-  useStore.setState({ S: JSON.parse(JSON.stringify(DEF)), user: { id: 1, name: 'test' } })
+  useStore.setState({ S: JSON.parse(JSON.stringify(DEF)), user: { id: 1, name: 'test' }, ready: false })
+  _resetLiveBadge()
+  liveApi.socialLive.mockReset().mockResolvedValue({ live: [] })
   host = document.createElement('div')
   document.body.appendChild(host)
   root = createRoot(host)
@@ -162,5 +170,23 @@ describe('the new layout tab bar', () => {
     where.loc = { pathname: '/library' }
     act(() => { root.render(<TabBar onStart={() => {}} />) })
     expect(lit()).toEqual(['Home'])
+  })
+})
+
+describe('the live dot', () => {
+  const flush = () => act(async () => { await Promise.resolve(); await Promise.resolve() })
+  const dots = () => tabs().map(tab => !!tab.querySelector('.tab-live-dot'))
+
+  it('appears on Activity in the new layout and on Home in Classic', async () => {
+    liveApi.socialLive.mockResolvedValue({ live: [{ friend: { id: 'u2', name: 'Ben' }, updatedAt: 1 }] })
+    useStore.setState({ S: { ...JSON.parse(JSON.stringify(DEF)), uiMode: 'new' }, ready: true })
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    await flush()
+    expect(dots()).toEqual([false, true, false, false, false])
+    expect(tabs()[1].getAttribute('aria-label')).toContain('Live')
+
+    useStore.setState({ S: { ...useStore.getState().S, uiMode: 'classic' } })
+    act(() => { root.render(<TabBar onStart={() => {}} />) })
+    expect(dots()).toEqual([true, false, false, false, false])
   })
 })

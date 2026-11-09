@@ -43,6 +43,7 @@ test('recipients are accepted friends who opted in and can still receive a push'
   social.profiles.a.friendStartAlerts = true;
   social.profiles.b.friendStartAlerts = false;
   social.profiles.c.friendStartAlerts = true;
+  social.profiles.me.closeFriends = ['a'];
   social.friendships.push(
     { id: 'f1', from: 'me', to: 'a', status: 'accepted' },
     { id: 'f2', from: 'b', to: 'me', status: 'accepted' },
@@ -51,5 +52,10 @@ test('recipients are accepted friends who opted in and can still receive a push'
   );
   const withPush = new Set(['a', 'b', 'c', 'd']);
   assert.deepEqual(friendStartRecipients(social, 'me', id => withPush.has(id)), ['a']);
+  // b is accepted and opted in, but not close: live stays visible, its details and push do not.
+  social.profiles.b.friendStartAlerts = true;
+  assert.deepEqual(friendStartRecipients(social, 'me', id => withPush.has(id)), ['a']);
+  social.profiles.me.closeFriends = ['a', 'b'];
+  assert.deepEqual(friendStartRecipients(social, 'me', id => withPush.has(id)), ['a', 'b']);
   assert.deepEqual(friendStartRecipients(social, 'me', () => false), []);
 });

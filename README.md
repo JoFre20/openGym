@@ -112,7 +112,9 @@ if you want to try it before installing anything.
 - Share a plan as a small file, print it as a PDF, or send it to a friend from the squad screen.
 - A friends and squad screen: friend codes, profile pictures, privacy controls, a weekly squad board, one-tap reactions and plans shared between friends. Friends can follow a workout live with a finish-time estimate, and opt in to a start notification when you share one.
 - An Activity feed with your own and your friends' workouts, live sessions, reached weight and
-  monthly goals, and reactions. Settings → Look & Home switches between the new layout and Classic.
+  monthly goals, and reactions. Close friends see live details like the current exercise, set
+  progress and finish estimate; everyone else still sees that a friend is training.
+  Settings → Look & Home switches between the new layout and Classic.
 - Optional admin dashboard with invite-only signup and an activity log.
 - 20 languages, including right-to-left Arabic and Traditional Chinese. Exercise names and
   instructions are translated for most of them.

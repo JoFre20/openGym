@@ -44,12 +44,13 @@ import { createIntegrations } from './integrations/index.js';
 import { integrationRoutes } from './integrations/routes.js';
 import { excusedOn, nudgeFor, nudgeWindowOpen, toneOf } from './nudge.js';
 import {
-  acceptedFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial, ensureProfile, feedItems,
-  feedWorkoutId, findMilestone, findPlanShare, findWorkout, friendCodeValid, friendshipBetween,
-  milestoneForViewer, milestoneItems, normalizeSocial,
+  acceptedFriendIds, closeFriendIds, dropPlanSharesBetween, dropPlanSharesForUser, emptySocial,
+  ensureProfile, feedItems, feedWorkoutId, findMilestone, findPlanShare, findWorkout, friendCodeValid,
+  friendshipBetween, milestoneForViewer, milestoneItems, normalizeSocial,
   pendingFriendships, planShareProblem, planShareSummary, PLAN_SHARE_MAX_FRIENDS, profileByCode,
-  reactionSummary, receivedPlanShares, sentPlanShares, SOCIAL_EMOJI, SOCIAL_SHARE_WEIGHT,
-  SOCIAL_START_TONES, splitFeedMilestoneId, splitFeedWorkoutId, squadStats, trimPlanShares, weekStartISO
+  reactionSummary, receivedPlanShares, sentPlanShares, setCloseFriend, SOCIAL_EMOJI,
+  SOCIAL_SHARE_WEIGHT, SOCIAL_START_TONES, splitFeedMilestoneId, splitFeedWorkoutId, squadStats,
+  trimPlanShares, weekStartISO
 } from './social.js';
 import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
 import {
@@ -283,8 +284,12 @@ function socialPendingRow(friendship, viewerId) {
   };
 }
 function socialFriends(uid) {
+  const close = new Set(closeFriendIds(social, uid));
   return acceptedFriendIds(social, uid)
-    .map(friendId => socialFriendRow(friendshipBetween(social, uid, friendId), uid))
+    .map(friendId => {
+      const row = socialFriendRow(friendshipBetween(social, uid, friendId), uid);
+      return row ? { ...row, close: close.has(friendId) } : null;
+    })
     .filter(Boolean);
 }
 // One row of the plan inbox or outbox. The summary is read from the snapshot itself, so it can
@@ -2179,6 +2184,7 @@ setInterval(() => {
 const PUSH_TESTS = createWindow({ max: 10, windowMs: 600000 });
 const REST_TIMER_SETS = createWindow({ max: 60, windowMs: 60000 });
 const SOCIAL_REQUESTS = createWindow({ max: 20, windowMs: 3600000 });
+const SOCIAL_CLOSE = createWindow({ max: 120, windowMs: 3600000 });
 const SOCIAL_REACTIONS = createWindow({ max: 120, windowMs: 3600000 });
 const SOCIAL_PLAN_SHARES = createWindow({ max: 20, windowMs: 3600000 });
 // A picture is small but lands in social.json on every change; a handful an hour is plenty for
@@ -2186,7 +2192,7 @@ const SOCIAL_PLAN_SHARES = createWindow({ max: 20, windowMs: 3600000 });
 const SOCIAL_AVATARS = createWindow({ max: 20, windowMs: 3600000 });
 setInterval(() => {
   PUSH_TESTS.sweep(); REST_TIMER_SETS.sweep(); SOCIAL_REQUESTS.sweep();
-  SOCIAL_REACTIONS.sweep(); SOCIAL_PLAN_SHARES.sweep(); SOCIAL_AVATARS.sweep();
+  SOCIAL_CLOSE.sweep(); SOCIAL_REACTIONS.sweep(); SOCIAL_PLAN_SHARES.sweep(); SOCIAL_AVATARS.sweep();
 }, 600000).unref();
 function pushThrottled(res, win, user) {
   const wait = win.take(user.id);
@@ -3226,6 +3232,24 @@ const routes = {
     json(res, 200, { ok: true });
   },
 
+  // Which friends may see the sensitive part of a live workout. The list is personal and
+  // one-sided: marking Ada as close lets Ada see my ETA, exercise and set progress, not the
+  // other way round. Live rows themselves stay visible to every accepted friend.
+  'POST /api/social/friends/close': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const body = await readBody(req);
+    const friendId = text(body.friendId).trim();
+    if (!friendId) return json(res, 400, { error: 'friendId required', code: 'friend-required' });
+    if (typeof body.close !== 'boolean') return json(res, 400, { error: 'close must be true or false', code: 'invalid-close' });
+    if (pushThrottled(res, SOCIAL_CLOSE, user)) return;
+    ensureSocialProfile(user.id);
+    const close = setCloseFriend(social, user.id, friendId, body.close);
+    if (!close) return json(res, 404, { error: 'no such friend', code: 'friend-not-found' });
+    saveSocial();
+    json(res, 200, { ok: true, friendId, close: body.close, closeFriends: close });
+  },
+
   'GET /api/social/feed': async (req, res) => {
     const user = readSession(req);
     if (!user) return json(res, 401, { error: 'not signed in' });
@@ -3274,9 +3298,19 @@ const routes = {
       const row = socialPresence(id, now);
       if (!row) continue;
       const avatar = socialAvatarOf(id);
+      // The sender's list decides whether this viewer is close. Everyone sees that the friend
+      // is training; only that list's close friends see the sensitive details.
+      const close = closeFriendIds(social, id).includes(user.id);
+      const visible = close ? row : {
+        workoutId: row.workoutId,
+        name: row.name,
+        startedAt: row.startedAt,
+        updatedAt: row.updatedAt,
+        limited: true,
+      };
       live.push({
         friend: { id, name: friend.name, ...(avatar ? { avatar } : {}) },
-        ...row,
+        ...visible,
       });
     }
     live.sort((a, b) => b.startedAt - a.startedAt);

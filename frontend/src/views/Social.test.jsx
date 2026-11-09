@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   saveSocialSettings: vi.fn(),
   sendFriendRequest: vi.fn(),
   respondToFriendRequest: vi.fn(),
+  setCloseFriend: vi.fn(),
   reactToWorkout: vi.fn(),
 }))
 
@@ -28,6 +29,7 @@ vi.mock('../lib/api.js', async importOriginal => ({
   saveSocialSettings: mocks.saveSocialSettings,
   sendFriendRequest: mocks.sendFriendRequest,
   respondToFriendRequest: mocks.respondToFriendRequest,
+  setCloseFriend: mocks.setCloseFriend,
   reactToWorkout: mocks.reactToWorkout,
 }))
 
@@ -131,6 +133,7 @@ beforeEach(() => {
   mocks.saveSocialSettings.mockReset()
   mocks.sendFriendRequest.mockReset()
   mocks.respondToFriendRequest.mockReset()
+  mocks.setCloseFriend.mockReset()
   mocks.reactToWorkout.mockReset()
 })
 afterEach(() => {
@@ -221,7 +224,7 @@ describe('Friends & squad', () => {
     await flush()
     expect(mocks.saveSocialSettings).toHaveBeenLastCalledWith({ ...ME.settings, shareLive: true })
 
-    act(() => host.querySelector('button[role="switch"][aria-label="Tell friends when I start"]').click())
+    act(() => host.querySelector('button[role="switch"][aria-label="Tell close friends when I start"]').click())
     await flush()
     expect(mocks.saveSocialSettings).toHaveBeenLastCalledWith({ ...ME.settings, shareLive: true, notifyFriends: true })
 
@@ -254,6 +257,23 @@ describe('Friends & squad', () => {
     expect(host.textContent).toContain('15 min left')
     expect(host.textContent).toContain('Done around')
     expect(host.querySelector('.social-live-card img').getAttribute('src')).toBe(AVATAR)
+  })
+
+  it('shows a limited live card when the athlete is not a close friend', async () => {
+    mocks.socialLive.mockResolvedValue({
+      now: Date.now(),
+      live: [{
+        friend: { id: 'u2', name: 'Ben', avatar: AVATAR },
+        workoutId: 'w1', name: 'Push Day', startedAt: Date.now() - 60000,
+        updatedAt: Date.now(), limited: true,
+      }],
+    })
+    const host = render(<Social />)
+    await flush()
+    const card = host.querySelector('.social-live-card')
+    expect(card.textContent).toContain('Only close friends see the details')
+    expect(card.textContent).not.toContain('Done around')
+    expect(card.textContent).not.toContain('sets')
   })
 
   it('copies the code, sends a request and accepts an incoming one', async () => {
@@ -317,6 +337,21 @@ describe('Friends & squad', () => {
     await flush()
     expect(writeText).toHaveBeenCalledWith('https://gym.example/#/social?friend=A7X-92B')
     expect(useUI.getState().toastMsg).toBe('Copied')
+  })
+
+  it('marks a friend as close from the card menu', async () => {
+    mocks.setCloseFriend.mockResolvedValue({ ok: true, close: true })
+    const host = render(<Social />)
+    await flush()
+
+    act(() => host.querySelector('.social-friend .social-more').click())
+    const sheet = topSheet()
+    const makeClose = [...sheet.querySelectorAll('.menu-item')].find(row => row.textContent.trim() === 'Make close friend')
+    act(() => makeClose.click())
+    await flush()
+    expect(mocks.setCloseFriend).toHaveBeenCalledWith('u2', true)
+    expect(host.querySelector('.social-close-star')).not.toBeNull()
+    expect(useUI.getState().toastMsg).toBe('Close friend added')
   })
 
   it('removes a friend from the card menu after confirming', async () => {
