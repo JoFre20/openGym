@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
+import { activityExerciseSheet } from '../components/ActivityExerciseSheet.jsx'
 import { Button, Row, Section, Segmented, SelectRow, Switch } from '../components/ui.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import Elapsed from '../components/Elapsed.jsx'
@@ -263,7 +264,7 @@ function topSetName(set) {
   return known ? exerciseNameText(known) : (set.name || t('Exercise'))
 }
 
-function FeedCard({ item, busy, onReact, avatar }) {
+function FeedCard({ item, busy, onReact, avatar, canInspect, onInspect }) {
   const duration = item.durationSec >= 60 ? fmtDur(item.durationSec * 1000) : null
   const title = item.name || t('Workout')
   return <div className="card social-feed-card">
@@ -282,10 +283,16 @@ function FeedCard({ item, busy, onReact, avatar }) {
     {item.prCount > 0 && <div className="social-pr"><Icon name="trophy" />{tn('{0} PR', '{0} PRs', item.prCount)}</div>}
     {item.topSets?.length > 0 && <div className="social-top-sets">
       <div className="social-top-title">{t('Top sets')}</div>
-      {item.topSets.map((set, i) => <div className="social-top-set" key={set.exerciseId + ':' + i}>
-        <span>{topSetName(set)}</span>
-        <b>{fmtNum(set.weight)} {item.unit} × {set.reps}</b>
-      </div>)}
+      {item.topSets.map((set, i) => {
+        const name = topSetName(set)
+        const value = <><span>{name}</span><b>{fmtNum(set.weight)} {item.unit} × {set.reps}</b></>
+        return canInspect && set.exerciseId
+          ? <button type="button" className="social-top-set act-ex-open" key={set.exerciseId + ':' + i}
+              onClick={() => onInspect(set.exerciseId)} aria-label={t('Exercise stats') + ' ' + name}>
+              {value}<Icon name="chevronRight" className="act-ex-chev" />
+            </button>
+          : <div className="social-top-set" key={set.exerciseId + ':' + i}>{value}</div>
+      })}
     </div>}
     <div className="social-reactions" role="group" aria-label={t('Reactions')}>
       {REACTIONS.map(emoji => {
@@ -301,12 +308,13 @@ function FeedCard({ item, busy, onReact, avatar }) {
   </div>
 }
 
-function FeedSection({ feed, busyId, onReact, avatarById }) {
+function FeedSection({ feed, busyId, onReact, avatarById, canInspect, onInspect }) {
   return <section className="social-feed-section">
     <h4 className="sec">{t('Activity')}</h4>
     {feed.length
       ? <div className="social-feed">{feed.map(item => <FeedCard key={item.workoutId} item={item}
-        avatar={avatarById.get(item.friend.id)} busy={busyId === item.workoutId} onReact={onReact} />)}</div>
+        avatar={avatarById.get(item.friend.id)} busy={busyId === item.workoutId} onReact={onReact}
+        canInspect={canInspect(item)} onInspect={exerciseId => onInspect(item, exerciseId)} />)}</div>
       : <div className="card social-empty social-feed-empty">
         <div className="social-empty-ico"><Icon name="flame" /></div>
         <div className="muted small">{t('When your friends train, their workouts show up here.')}</div>
@@ -634,6 +642,14 @@ export default function Social({ crew = false }) {
   // A feed carries the same friend on every workout, so the picture travels once in squadStats
   // and the cards look it up by id instead of repeating the data URL up to thirty times.
   const avatarById = new Map(squadStats.filter(row => row.avatar).map(row => [row.id, row.avatar]))
+  const closeIds = new Set((me?.friends || []).filter(row => row.close).map(row => String(row.id)))
+  const canInspectFeed = item => closeIds.has(String(item.friend?.id))
+  const inspectFeed = (item, exerciseId) => activityExerciseSheet({
+    id: item.workoutId,
+    owner: { id: item.friend.id, name: item.friend.name },
+    workout: { name: item.name, unit: item.unit },
+    date: item.date,
+  }, exerciseId)
   const pending = (me?.pending || []).filter(row => row.direction === 'incoming').length
   const ready = !!me && !!data
 
@@ -660,7 +676,7 @@ export default function Social({ crew = false }) {
             <SharedPlansSection plans={plans.received} busyId={planBusy}
               onOpen={openSharedPlan} onMenu={openSharedPlanMenu} />
             {!crew && squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react}
-              avatarById={avatarById} />}
+              avatarById={avatarById} canInspect={canInspectFeed} onInspect={inspectFeed} />}
           </>}
   </div>
 }

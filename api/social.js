@@ -383,6 +383,92 @@ export function prIdsOf(workout) {
   return [...new Set((Array.isArray(workout?.prs) ? workout.prs : []).filter(id => typeof id === 'string' && id))];
 }
 
+const DETAIL_SET_FIELDS = ['w', 'r', 'sec', 'min', 'speed', 'km', 'dist', 'type', 'done', 'at', 'rir', 'rpe'];
+const DETAIL_EX_FIELDS = ['n', 'bp', 'muscleWeights', 'primaries', 'secondaries', 'muscleGroups'];
+const isObject = v => !!v && typeof v === 'object' && !Array.isArray(v);
+
+function cleanDetailSet(set) {
+  if (!isObject(set)) return null;
+  const out = {};
+  for (const key of DETAIL_SET_FIELDS) {
+    if (set[key] !== undefined && typeof set[key] !== 'object') out[key] = set[key];
+  }
+  if (isObject(set.sides)) {
+    const L = cleanDetailSet(set.sides.L), R = cleanDetailSet(set.sides.R);
+    if (L || R) out.sides = { ...(L ? { L } : {}), ...(R ? { R } : {}) };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+const setDone = set => !!set && (set.done === true
+  || (isSideSet(set) && (set.sides?.L?.done === true || set.sides?.R?.done === true)));
+
+const setHasValue = set => !!set && (
+  num(set.w) > 0 || num(set.r) > 0 || num(set.sec) > 0 || num(set.min) > 0 || num(set.km) > 0
+  || (isObject(set.sides) && (setHasValue(set.sides.L) || setHasValue(set.sides.R)))
+);
+
+function cleanExerciseSnapshot(entry) {
+  const ex = isObject(entry?.exercise) ? entry.exercise : isObject(entry?.ex) ? entry.ex : null;
+  if (!ex) return null;
+  const out = {};
+  for (const key of DETAIL_EX_FIELDS) {
+    if (ex[key] === undefined) continue;
+    if (key === 'n' || key === 'bp') {
+      if (typeof ex[key] === 'string') out[key] = ex[key].slice(0, 160);
+    } else if (Array.isArray(ex[key])) {
+      out[key] = ex[key].filter(v => typeof v === 'string').slice(0, 40);
+    } else if (isObject(ex[key])) {
+      out[key] = Object.fromEntries(Object.entries(ex[key]).filter(([, v]) => Number.isFinite(Number(v))).slice(0, 40));
+    }
+  }
+  return Object.keys(out).length ? out : null;
+}
+
+/**
+ * The detail behind one workout card, for the owner or a close friend. The server hands over the
+ * completed work sets and the exercise snapshot the workout already carries; the client turns
+ * that into muscle groups and per-set stats. Warm-ups and uncompleted rows never leave.
+ */
+export function workoutDetailOf(state, workout, { maxEntries = 100, maxSets = 50 } = {}) {
+  const customNames = new Map((Array.isArray(state?.customEx) ? state.customEx : [])
+    .filter(ex => ex && ex.id != null && typeof ex.n === 'string')
+    .map(ex => [String(ex.id), ex.n]));
+  const entries = [];
+  for (const entry of Array.isArray(workout?.entries) ? workout.entries : []) {
+    if (!isObject(entry) || entry.id == null) continue;
+    const sets = (Array.isArray(entry.sets) ? entry.sets : [])
+      .filter(set => setDone(set) && !isWarmup(set) && setHasValue(set))
+      .slice(0, maxSets)
+      .map(cleanDetailSet)
+      .filter(Boolean);
+    if (!sets.length) continue;
+    const snapshot = cleanExerciseSnapshot(entry);
+    const name = customNames.get(String(entry.id)) || snapshot?.n || '';
+    entries.push({
+      id: String(entry.id),
+      ...(name ? { name } : {}),
+      ...(snapshot ? { exercise: snapshot } : {}),
+      sets,
+    });
+    if (entries.length >= maxEntries) break;
+  }
+  const prs = prIdsOf(workout);
+  return {
+    workoutId: workoutKey(workout),
+    name: typeof workout?.name === 'string' ? workout.name : '',
+    date: workoutDayOf(workout),
+    start: Number(workout?.start) || 0,
+    end: Number(workout?.end) || 0,
+    durationSec: workoutDurationSec(workout),
+    volume: workoutVolumeOf(workout),
+    unit: state?.unit === 'lb' ? 'lb' : 'kg',
+    prs,
+    prCount: prs.length,
+    entries,
+  };
+}
+
 // Reached goals (frontend/src/lib/milestones.js). The server only reads the event list the app
 // writes into each profile; it never invents one. Rows are validated here because this file also
 // feeds every friend's state into another profile's screen.

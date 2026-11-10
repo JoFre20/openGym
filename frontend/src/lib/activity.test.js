@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   activityCounts, filterActivity, mergeActivity, normaliseActivity, ownActivity, sortActivity, topSetsOf,
+  workoutDetailFromLocal,
 } from './activity.js'
 
 const at = (d, h = 12) => new Date(`${d}T${String(h).padStart(2, '0')}:00:00`).getTime()
@@ -27,6 +28,24 @@ describe('the local activity feed', () => {
     expect(rows[0].workout.topSets).toEqual([{ exerciseId: '0025', weight: 80, reps: 5 }])
     expect(rows[1].milestone.kind).toBe('weight_goal')
     expect(rows[1].milestone.data).toMatchObject({ mode: 'absolute', current: 77.8, targetW: 78 })
+  })
+
+  it('builds the same detail locally for a guest or an offline own workout', () => {
+    const detail = workoutDetailFromLocal({
+      unit: 'kg',
+      customEx: [{ id: 'c1', n: 'My sled push' }],
+    }, {
+      id: 'w1', d: '2026-11-09', name: 'Push', start: 1, end: 2, prs: ['0025'],
+      entries: [
+        { id: '0025', sets: [{ w: 80, r: 5, done: true }, { w: 40, r: 10, done: true, phase: 'warmup' }] },
+        { id: 'c1', exercise: { n: 'My sled push', muscleWeights: { chest: 1 } }, sets: [{ w: 40, r: 8, done: true }] },
+        { id: 'empty', sets: [{ w: 0, r: 0, done: true }] },
+      ],
+    })
+    expect(detail.entries.map(entry => entry.id)).toEqual(['0025', 'c1'])
+    expect(detail.entries[0].sets).toEqual([{ w: 80, r: 5, done: true }])
+    expect(detail.entries[1]).toMatchObject({ name: 'My sled push', exercise: { n: 'My sled push' } })
+    expect(detail.volume).toBe(720)
   })
 
   it('reads top sets from completed work sets only', () => {
@@ -77,6 +96,11 @@ describe('filters and counts', () => {
     expect(filterActivity(rows, 'goals').every(row => row.kind === 'milestone')).toBe(true)
     expect(filterActivity(rows, 'all')).toHaveLength(rows.length)
     expect(activityCounts(rows)).toEqual({ all: 4, friends: 1, me: 3, goals: 1 })
+  })
+
+  it('counts only what is newer than the last visit', () => {
+    expect(activityCounts(rows, { since: at('2026-11-09') })).toEqual({ all: 1, friends: 0, me: 1, goals: 0 })
+    expect(activityCounts(rows, { since: at('2026-11-10') })).toEqual({ all: 0, friends: 0, me: 0, goals: 0 })
   })
 
   it('keeps the newest when the same id arrives twice and sorts by time', () => {

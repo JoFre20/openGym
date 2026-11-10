@@ -29,6 +29,14 @@ strip renders, so both surfaces agree without a second source.
 Live rows are pinned above the Activity filters: switching to Goals, Me or Friends never hides
 who is training right now. The same order holds on the Classic Friends page.
 
+## Unread filter numbers
+
+The numbers beside the filters are not feed totals. `frontend/src/lib/activity-seen.js` keeps a
+local, per-profile `lastSeenAt`; the chips count only items newer than that mark. The mark is
+written when Activity is left or the app goes to the background, so the numbers stay readable
+during a visit and are gone on the next one. A profile that has never opened Activity has no
+mark and therefore shows no numbers on its first visit.
+
 ## Close friends
 
 `social.profiles[uid].closeFriends` is a personal, one-sided list of accepted friend ids. It says
@@ -43,6 +51,14 @@ more of my workout unless I am on her list too.
 - The Crew screen's friend menu marks and unmarks a close friend; the flag lives in
   `social.json`, not in the synced profile state.
 - A removed friendship is filtered out of the close list, so a stale id never grants anything.
+
+## Workout details
+
+The top-set rows of a workout card are tappable when the viewer is the owner or a close friend.
+`GET /api/social/workout?workoutId=...` returns the completed work sets and exercise snapshots
+for that one workout. The sheet derives muscle groups, set/repetition/volume totals and the list
+of sets on the device; warm-ups and uncompleted rows are filtered out on the server. A normal
+friend gets `not-close`, and `shareWorkouts: false` blocks even a close friend.
 
 ## Feed items
 

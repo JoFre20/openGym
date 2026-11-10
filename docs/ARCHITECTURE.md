@@ -155,7 +155,8 @@ neither side's state file is written by the social routes. Reached goals are rea
 profile's own `milestones` list and filtered by the same sharing settings; the social routes
 never write them. Close friends are a personal list in `social.json`: every accepted friend sees
 that a workout is live, while the exercise, set progress and ETA are only sent to the athletes on
-that list. Live progress is a different kind of
+that list. The detailed sets behind a workout card come from `GET /api/social/workout`, again
+only for the owner or a close friend. Live progress is a different kind of
 social data: the running workout never leaves the device as a state document (`PUT /api/data`
 drops `active`), so the app heartbeats `/api/activity` and the server keeps only an in-memory
 row. A friend sees it through `GET /api/social/live` while the athlete's `shareLive` setting is

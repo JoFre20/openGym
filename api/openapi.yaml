@@ -3267,6 +3267,53 @@ paths:
                       "🔥": { count: 1, mine: true }
         '401': { $ref: '#/components/responses/Unauthorized' }
 
+  /api/social/workout:
+    get:
+      tags: [social]
+      operationId: socialWorkout
+      summary: The detailed exercises and sets behind one workout card
+      description: >-
+        Returns the completed work sets and the exercise snapshots needed for muscle groups and
+        per-exercise stats. The owner always sees their own workout. A friend needs
+        `shareWorkouts` and must be on the owner's close-friend list; otherwise the route answers
+        `not-close`. Warm-up and uncompleted sets never leave the server.
+      parameters:
+        - name: workoutId
+          in: query
+          required: true
+          schema: { type: string }
+          description: The `workoutId` from `GET /api/social/feed` or `own`.
+      responses:
+        '200':
+          description: The workout detail.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  workout: { $ref: '#/components/schemas/SocialWorkoutDetail' }
+        '400':
+          description: Missing workout id.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "workoutId required", code: "workout-required" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403':
+          description: Workout sharing is off, or the caller is not a close friend.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              examples:
+                close: { value: { error: "only close friends see the details", code: "not-close" } }
+                sharing: { value: { error: "that friend does not share workouts", code: "not-shared" } }
+        '404':
+          description: No such workout for that owner.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+              example: { error: "workout not found", code: "workout-not-found" }
+
   /api/social/live:
     get:
       tags: [social]
@@ -5503,6 +5550,71 @@ components:
           type: array
           description: Friends' reached goals after the sharing settings. New in 1.4.5.
           items: { $ref: '#/components/schemas/SocialMilestoneItem' }
+
+    SocialWorkoutSet:
+      type: object
+      description: One completed work set; warm-ups and uncompleted rows are not returned.
+      properties:
+        w: { type: number }
+        r: { type: integer }
+        sec: { type: integer }
+        min: { type: number }
+        speed: { type: number }
+        km: { type: number }
+        dist: { type: number }
+        type: { type: string }
+        done: { type: boolean }
+        at: { type: string }
+        rir: { type: number }
+        rpe: { type: number }
+        sides:
+          type: object
+          properties:
+            L: { $ref: '#/components/schemas/SocialWorkoutSide' }
+            R: { $ref: '#/components/schemas/SocialWorkoutSide' }
+
+    SocialWorkoutSide:
+      type: object
+      description: One limb of a unilateral set.
+      properties:
+        w: { type: number }
+        r: { type: integer }
+        sec: { type: integer }
+        min: { type: number }
+        speed: { type: number }
+        done: { type: boolean }
+
+    SocialWorkoutEntry:
+      type: object
+      properties:
+        id: { type: string, description: Exercise id in the catalogue or the owner's custom id. }
+        name: { type: string, description: Present for a custom exercise or a stored snapshot. }
+        exercise:
+          type: object
+          description: The exercise snapshot stored with the workout, when there is one.
+          additionalProperties: true
+        sets:
+          type: array
+          items: { $ref: '#/components/schemas/SocialWorkoutSet' }
+
+    SocialWorkoutDetail:
+      type: object
+      properties:
+        workoutId: { type: string }
+        name: { type: string }
+        date: { type: string, format: date }
+        start: { type: number }
+        end: { type: number }
+        durationSec: { type: integer }
+        volume: { type: integer, description: Work-set volume in the owner's unit. }
+        unit: { type: string, enum: [kg, lb] }
+        prs:
+          type: array
+          items: { type: string }
+        prCount: { type: integer }
+        entries:
+          type: array
+          items: { $ref: '#/components/schemas/SocialWorkoutEntry' }
 
     SocialLiveFriend:
       type: object

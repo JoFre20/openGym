@@ -50,7 +50,7 @@ import {
   pendingFriendships, planShareProblem, planShareSummary, PLAN_SHARE_MAX_FRIENDS, profileByCode,
   reactionSummary, receivedPlanShares, sentPlanShares, setCloseFriend, SOCIAL_EMOJI,
   SOCIAL_SHARE_WEIGHT, SOCIAL_START_TONES, splitFeedMilestoneId, splitFeedWorkoutId, squadStats,
-  trimPlanShares, weekStartISO
+  trimPlanShares, weekStartISO, workoutDetailOf
 } from './social.js';
 import { friendStartRecipients, liveStartKey, startNotifyDue } from './live-start.js';
 import {
@@ -3248,6 +3248,34 @@ const routes = {
     if (!close) return json(res, 404, { error: 'no such friend', code: 'friend-not-found' });
     saveSocial();
     json(res, 200, { ok: true, friendId, close: body.close, closeFriends: close });
+  },
+
+  // The detail behind one workout card. The owner always sees it; a friend only when the owner
+  // put them on the close-friend list, and never when workout sharing is off. This is the gate
+  // for the exercise, set and muscle stats the Activity card can open.
+  'GET /api/social/workout': async (req, res) => {
+    const user = readSession(req);
+    if (!user) return json(res, 401, { error: 'not signed in' });
+    const value = new URL(req.url, 'http://x').searchParams.get('workoutId') || '';
+    const split = splitFeedWorkoutId(value);
+    if (!split) return json(res, 400, { error: 'workoutId required', code: 'workout-required' });
+    const ownerId = split[0];
+    const owner = socialUserById(ownerId);
+    if (!owner) return json(res, 404, { error: 'workout not found', code: 'workout-not-found' });
+    if (ownerId !== user.id) {
+      const profile = social.profiles[ownerId];
+      if (!profile || profile.shareWorkouts === false) {
+        return json(res, 403, { error: 'that friend does not share workouts', code: 'not-shared' });
+      }
+      if (!closeFriendIds(social, ownerId).includes(user.id)) {
+        return json(res, 403, { error: 'only close friends see the details', code: 'not-close' });
+      }
+    }
+    const state = readState(ownerId);
+    if (!state) return json(res, 404, { error: 'workout not found', code: 'workout-not-found' });
+    const workout = findWorkout(state, ownerId, value);
+    if (!workout) return json(res, 404, { error: 'workout not found', code: 'workout-not-found' });
+    json(res, 200, { workout: workoutDetailOf(state, workout) });
   },
 
   'GET /api/social/feed': async (req, res) => {

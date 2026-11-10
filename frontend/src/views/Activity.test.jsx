@@ -29,6 +29,7 @@ import { bindUI } from '../components/ui.jsx'
 import { DEF, useStore } from '../store/useStore.js'
 import { useUI } from '../store/useUI.js'
 import { _resetLiveBadge } from '../lib/live-badge.js'
+import { markActivitySeen } from '../lib/activity-seen.js'
 import Activity from './Activity.jsx'
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true
@@ -58,7 +59,7 @@ const FEED = {
     workoutId: 'u1:w2', kind: 'workout', at: new Date('2026-11-08T17:00:00').getTime(),
     friend: { id: 'u1', name: 'Jonas' }, date: '2026-11-08', name: 'Pull Day',
     start: 1, end: 2, durationSec: 3000, volume: 7000, unit: 'kg',
-    prs: [], prCount: 0, topSets: [], reactions: {},
+    prs: [], prCount: 0, topSets: [{ exerciseId: '0025', weight: 80, reps: 5 }], reactions: {},
   }, {
     itemId: 'u1:m:weight:78:2026-11-08', kind: 'milestone', at: new Date('2026-11-08T08:00:00').getTime(),
     friend: { id: 'u1', name: 'Jonas' }, date: '2026-11-08',
@@ -126,7 +127,28 @@ describe('Activity', () => {
     expect(host.textContent).toContain('Push Day')
     expect(host.textContent).toContain('Weight goal')
     expect(host.textContent).toMatch(/77[.,]8 kg/)
-    expect(labels(host)).toEqual(['All4', 'Friends2', 'Me2', 'Goals2'])
+    expect(labels(host)).toEqual(['All', 'Friends', 'Me', 'Goals'])
+  })
+
+  it('shows only what is new since the last visit', async () => {
+    markActivitySeen('u1', new Date('2026-11-07T12:00:00').getTime())
+    const host = render(<Activity />)
+    await flush()
+    expect(labels(host)).toEqual(['All3', 'Friends1', 'Me2', 'Goals1'])
+  })
+
+  it('clears the unread numbers when the screen is left', async () => {
+    markActivitySeen('u1', new Date('2026-11-07T12:00:00').getTime())
+    const first = render(<Activity />)
+    await flush()
+    expect(labels(first)).toContain('All3')
+
+    const mountedFirst = mounted.pop()
+    act(() => { mountedFirst.root.unmount(); mountedFirst.host.remove() })
+
+    const again = render(<Activity />)
+    await flush()
+    expect(labels(again)).toEqual(['All', 'Friends', 'Me', 'Goals'])
   })
 
   it('keeps live rows above the filters', async () => {
@@ -165,6 +187,22 @@ describe('Activity', () => {
     expect(card.textContent).not.toContain('Done around')
   })
 
+  it('offers exercise stats on own workouts, and on a friend only when close', async () => {
+    const host = render(<Activity />)
+    await flush()
+    const cards = () => [...host.querySelectorAll('.social-feed-card')]
+    const own = cards().find(card => card.textContent.includes('Pull Day'))
+    const friend = cards().find(card => card.textContent.includes('Push Day'))
+    expect(own.querySelector('button.act-ex-open')).not.toBeNull()
+    expect(friend.querySelector('button.act-ex-open')).toBeNull()
+
+    mocks.socialMe.mockResolvedValue({ ...ME, friends: [{ ...ME.friends[0], close: true }] })
+    const closeHost = render(<Activity />)
+    await flush()
+    const closeFriend = [...closeHost.querySelectorAll('.social-feed-card')].find(card => card.textContent.includes('Push Day'))
+    expect(closeFriend.querySelector('button.act-ex-open')).not.toBeNull()
+  })
+
   it('reacts to a friend card and updates its count', async () => {
     mocks.reactToWorkout.mockResolvedValue({
       ok: true, reactions: { '🔥': { count: 2, mine: true }, '💪': { count: 0, mine: false }, '👑': { count: 0, mine: false } },
@@ -181,10 +219,10 @@ describe('Activity', () => {
   it('filters to goals and to the caller', async () => {
     const host = render(<Activity />)
     await flush()
-    clickLabel(host, 'Goals2')
+    clickLabel(host, 'Goals')
     expect(host.textContent).toContain('Weight goal')
     expect(host.textContent).not.toContain('Pull Day')
-    clickLabel(host, 'Me2')
+    clickLabel(host, 'Me')
     expect(host.textContent).toContain('Pull Day')
     expect(host.textContent).not.toContain('Push Day')
   })

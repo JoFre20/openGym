@@ -8,7 +8,7 @@ import {
   milestoneItems, milestonesOf, normalizeFriendCode, normalizeSocial, pendingFriendships,
   planShareProblem, planShareSummary, PLAN_SHARE_MAX_BYTES, profileByCode, reactionSummary,
   receivedPlanShares, sentPlanShares, squadStats, topSetsOf, trimPlanShares, weekKeyOf,
-  weightProgressOf, workoutDurationSec, workoutVolumeOf
+  weightProgressOf, workoutDetailOf, workoutDurationSec, workoutVolumeOf
 } from '../social.js';
 
 const DAY = 86400000;
@@ -124,6 +124,37 @@ test('workout summary reads volume, duration, top sets and PR ids', () => {
   ]);
   assert.equal(findWorkout({ workouts: [workout] }, 'u1', feedWorkoutId('u1', workout)), workout);
   assert.equal(findWorkout({ workouts: [workout] }, 'u2', feedWorkoutId('u1', workout)), null);
+});
+
+test('workout detail carries completed work sets, an exercise snapshot and PR ids', () => {
+  const state = {
+    unit: 'lb',
+    customEx: [{ id: 'c1', n: 'My sled push' }],
+    workouts: [{
+      id: 'w1', d: today, name: 'Push Day', start: 1000, end: 181000, vol: 900, prs: ['a', 'a'],
+      entries: [
+        { id: 'a', sets: [
+          { w: 100, r: 5, done: true },
+          { w: 80, r: 10, done: true, phase: 'warmup' },
+          { w: 200, r: 10, done: false },
+        ] },
+        { id: 'c1', name: 'My sled push', exercise: { n: 'My sled push', muscleWeights: { chest: 1 } }, sets: [
+          { w: 40, r: 8, done: true },
+        ] },
+        { id: 'b', sets: [{ w: 0, r: 0, done: true }] },
+      ],
+    }],
+  };
+  const detail = workoutDetailOf(state, state.workouts[0]);
+  assert.equal(detail.workoutId, 'w1');
+  assert.equal(detail.unit, 'lb');
+  assert.equal(detail.durationSec, 180);
+  assert.equal(detail.volume, 900);
+  assert.deepEqual(detail.prs, ['a']);
+  assert.equal(detail.entries.length, 2);
+  assert.deepEqual(detail.entries[0].sets, [{ w: 100, r: 5, done: true }]);
+  assert.deepEqual(detail.entries[1].exercise, { n: 'My sled push', muscleWeights: { chest: 1 } });
+  assert.equal(detail.entries[1].name, 'My sled push');
 });
 
 test('the feed carries the name of a friend custom exercise in its top sets', () => {

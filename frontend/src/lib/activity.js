@@ -48,6 +48,66 @@ const ownerOf = (friend, user, me = false) => ({
 
 const workoutIdOf = (ownerId, workout) => `${ownerId}:${workout?.id != null ? workout.id : `${workout?.d || ''}|${workout?.start ?? ''}`}`
 
+const detailSetValue = set => !!set && (
+  num(set.w) > 0 || num(set.r) > 0 || num(set.sec) > 0 || num(set.min) > 0 || num(set.km) > 0
+  || (isMap(set.sides) && (detailSetValue(set.sides.L) || detailSetValue(set.sides.R)))
+)
+
+const cleanLocalSet = set => {
+  if (!isMap(set)) return null
+  const out = {}
+  for (const key of ['w', 'r', 'sec', 'min', 'speed', 'km', 'dist', 'type', 'done', 'at', 'rir', 'rpe']) {
+    if (set[key] !== undefined && typeof set[key] !== 'object') out[key] = set[key]
+  }
+  if (isMap(set.sides)) {
+    const L = cleanLocalSet(set.sides.L), R = cleanLocalSet(set.sides.R)
+    if (L || R) out.sides = { ...(L ? { L } : {}), ...(R ? { R } : {}) }
+  }
+  return Object.keys(out).length ? out : null
+}
+
+/**
+ * The detail of one of the caller's own workouts, for the guest or offline copy that has no
+ * server to ask. The shape is the same as GET /api/social/workout; the sheet renders either.
+ */
+export function workoutDetailFromLocal(S, workout) {
+  if (!isMap(workout)) return null
+  const custom = new Map(list(S?.customEx).filter(ex => ex?.id != null && typeof ex.n === 'string').map(ex => [String(ex.id), ex.n]))
+  const entries = []
+  for (const entry of list(workout.entries)) {
+    if (!isMap(entry) || entry.id == null) continue
+    const sets = list(entry.sets)
+      .filter(set => isMap(set) && !isWarmupRow(set) && (set.done === true || (isSideSet(set) && (set.sides.L?.done || set.sides.R?.done))) && detailSetValue(set))
+      .slice(0, 50)
+      .map(cleanLocalSet)
+      .filter(Boolean)
+    if (!sets.length) continue
+    const snapshot = isMap(entry.exercise) ? entry.exercise : isMap(entry.ex) ? entry.ex : null
+    const name = custom.get(String(entry.id)) || (typeof snapshot?.n === 'string' ? snapshot.n : '')
+    entries.push({
+      id: String(entry.id),
+      ...(name ? { name } : {}),
+      ...(snapshot ? { exercise: clone(snapshot) } : {}),
+      sets,
+    })
+    if (entries.length >= 100) break
+  }
+  const prs = [...new Set(list(workout.prs).filter(id => typeof id === 'string' && id))]
+  return {
+    workoutId: workout?.id != null ? String(workout.id) : `${workout?.d || ''}|${workout?.start ?? ''}`,
+    name: typeof workout.name === 'string' ? workout.name : '',
+    date: workoutDay(workout) || '',
+    start: num(workout.start),
+    end: num(workout.end),
+    durationSec: num(workout.end) > num(workout.start) ? Math.round((num(workout.end) - num(workout.start)) / 1000) : 0,
+    volume: workoutVolume(workout),
+    unit: S?.unit === 'lb' ? 'lb' : 'kg',
+    prs,
+    prCount: prs.length,
+    entries,
+  }
+}
+
 function localWorkoutItem(S, workout, user) {
   if (!isMap(workout)) return null
   const at = num(workout.end) || num(workout.start) || workoutAt(workout)
@@ -64,6 +124,7 @@ function localWorkoutItem(S, workout, user) {
     kind: 'workout',
     at,
     date: workoutDay(workout) || isoOf(new Date(at)),
+    source: workout,
     owner: ownerOf(null, user, true),
     workout: {
       name: typeof workout.name === 'string' ? workout.name : '',
@@ -197,9 +258,10 @@ export function filterActivity(items, filter = 'all') {
   return rows
 }
 
-/** One number per filter, for the little counts beside the chips. */
-export function activityCounts(items) {
-  const rows = list(items)
+/** One number per filter, for the little counts beside the chips. With `since`, only items newer
+ *  than that moment count: the numbers are what arrived since the last visit, not feed totals. */
+export function activityCounts(items, { since = 0 } = {}) {
+  const rows = list(items).filter(item => (Number(item.at) || 0) > (Number(since) || 0))
   return {
     all: rows.length,
     friends: rows.filter(item => !item.owner?.me).length,

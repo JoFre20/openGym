@@ -3797,4 +3797,8 @@ export default {
   "Only close friends get this notification.": "Nur enge Freunde erhalten diese Benachrichtigung.",
   "Friends can follow your workout live. Close friends see your details.": "Freunde können dein Training live verfolgen. Enge Freunde sehen die Details.",
   "Get a notification when a close friend starts training.": "Erhalte eine Benachrichtigung, wenn ein enger Freund mit dem Training beginnt.",
+  "Exercise stats": "Übungsstatistik",
+  "In this workout": "In dieser Einheit",
+  "Muscle groups in this workout": "Muskelgruppen in dieser Einheit",
+  "No sets in this workout.": "Keine Sätze in dieser Einheit.",
 }

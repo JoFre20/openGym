@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   getSharedPlan, reactToWorkout, removeSharedPlan, respondToFriendRequest, saveSocialSettings,
-  sendFriendRequest, sharePlanWithFriends, socialError, socialFeed, socialLive, socialMe, socialPlans
+  sendFriendRequest, sharePlanWithFriends, socialError, socialFeed, socialLive, socialMe, socialPlans, socialWorkout
 } from './api.js'
 import de from '../locales/de.js'
 import { _setLangState } from './i18n-core.js'
@@ -30,6 +30,10 @@ describe('social API', () => {
     answer({ now: 1, live: [] })
     expect(await socialLive()).toEqual({ now: 1, live: [] })
     expect(fetch.mock.calls[0][0]).toMatch(/\/api\/social\/live$/)
+
+    answer({ workout: { workoutId: 'w1' } })
+    expect(await socialWorkout('u2:w/1')).toEqual({ workout: { workoutId: 'w1' } })
+    expect(fetch.mock.calls[0][0]).toMatch(/\/api\/social\/workout\?workoutId=u2%3Aw%2F1$/)
   })
 
   it('writes settings, requests and reactions with JSON bodies', async () => {
@@ -87,6 +91,7 @@ describe('socialError', () => {
     expect(socialError(refused('friend-not-found'))).toBe(de['That friend is no longer in your squad.'])
     expect(socialError(refused('plan-too-large'))).toBe(de['This plan is too big to share.'])
     expect(socialError(refused('share-not-found'))).toBe(de['That shared plan is no longer available.'])
+    expect(socialError(refused('not-close'))).toBe(de['Only close friends see the details'])
     expect(socialError(refused('locked'))).toBe(de['Too many requests. Try again later.'])
   })
 

@@ -2561,6 +2561,10 @@ export const PT_BR_OVERRIDES = {
   "Only close friends get this notification.": "Somente amigos próximos recebem esta notificação.",
   "Friends can follow your workout live. Close friends see your details.": "Os amigos podem acompanhar seu treino ao vivo. Amigos próximos veem os detalhes.",
   "Get a notification when a close friend starts training.": "Receba uma notificação quando um amigo próximo começar a treinar.",
+  "Exercise stats": "Estatísticas do exercício",
+  "In this workout": "Neste treino",
+  "Muscle groups in this workout": "Grupos musculares neste treino",
+  "No sets in this workout.": "Nenhuma série neste treino.",
 
 }
 

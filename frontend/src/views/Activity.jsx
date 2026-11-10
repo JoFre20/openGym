@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Elapsed from '../components/Elapsed.jsx'
+import { activityExerciseSheet } from '../components/ActivityExerciseSheet.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { EXIDX } from '../lib/exercises.js'
@@ -12,7 +13,8 @@ import { challengeTitle, monthLabel } from '../lib/challenge-copy.js'
 import { convertBodyWeight } from '../lib/units.js'
 import { getSharedPlan, reactToWorkout, removeSharedPlan, socialError, socialFeed, socialMe, socialPlans } from '../lib/api.js'
 import { parsePlan } from '../lib/plan-share.js'
-import { activityCounts, filterActivity, mergeActivity, ownActivity, topSetName } from '../lib/activity.js'
+import { activityCounts, filterActivity, mergeActivity, ownActivity, topSetName, workoutDetailFromLocal } from '../lib/activity.js'
+import { markActivitySeen, readActivitySeen } from '../lib/activity-seen.js'
 import { getLiveRows, refreshLiveBadge, subscribeLive } from '../lib/live-badge.js'
 import { formatFriendCodeInput, friendCodeComplete } from '../lib/social-view.js'
 import { noteSocialPending } from '../lib/social-badge.js'
@@ -156,7 +158,7 @@ function GoalCard({ item, avatar, reactions, onReact, busy }) {
   </div>
 }
 
-function WorkoutCard({ item, avatar, reactions, onReact, busy }) {
+function WorkoutCard({ item, avatar, reactions, onReact, busy, canInspect, onInspect }) {
   const w = item.workout || {}
   const duration = w.durationSec >= 60 ? fmtDur(w.durationSec * 1000) : null
   return <div className="card social-feed-card">
@@ -175,10 +177,16 @@ function WorkoutCard({ item, avatar, reactions, onReact, busy }) {
     {w.prCount > 0 && <div className="social-pr"><Icon name="trophy" />{tn('{0} PR', '{0} PRs', w.prCount)}</div>}
     {w.topSets?.length > 0 && <div className="social-top-sets">
       <div className="social-top-title">{t('Top sets')}</div>
-      {w.topSets.map((set, i) => <div className="social-top-set" key={set.exerciseId + ':' + i}>
-        <span>{topSetName(set)}</span>
-        <b>{fmtNum(set.weight)} {w.unit || 'kg'} × {set.reps}</b>
-      </div>)}
+      {w.topSets.map((set, i) => {
+        const name = topSetName(set)
+        const value = <><span>{name}</span><b>{fmtNum(set.weight)} {w.unit || 'kg'} × {set.reps}</b></>
+        return canInspect && set.exerciseId
+          ? <button type="button" className="social-top-set act-ex-open" key={set.exerciseId + ':' + i}
+              onClick={() => onInspect(set.exerciseId)} aria-label={t('Exercise stats') + ' ' + name}>
+              {value}<Icon name="chevronRight" className="act-ex-chev" />
+            </button>
+          : <div className="social-top-set" key={set.exerciseId + ':' + i}>{value}</div>
+      })}
     </div>}
     <Reactions item={item} reactions={reactions} onReact={onReact} busy={busy} />
   </div>
@@ -215,6 +223,7 @@ export default function Activity() {
   // The tab bar owns the polling; this screen only reads the shared rows and can force a refresh.
   const live = useSyncExternalStore(subscribeLive, () => getLiveRows(userId), () => getLiveRows(userId))
   const linkedCode = friendCodeComplete(params.get('friend')) ? formatFriendCodeInput(params.get('friend')) : ''
+  const [seenAt, setSeenAt] = useState(() => readActivitySeen(userId))
   const [me, setMe] = useState(null)
   const [data, setData] = useState(null)
   const [plans, setPlans] = useState([])
@@ -259,6 +268,25 @@ export default function Activity() {
     if (userId) refreshLiveBadge(userId)
     return () => { alive.current = false }
   }, [load, userId])
+
+  // The filter numbers are "new since the last visit". Read the mark for this profile, and write
+  // it when the screen is left or the app goes to the background: the badges stay readable during
+  // this visit and are gone the next time Activity opens.
+  useEffect(() => { setSeenAt(readActivitySeen(userId)) }, [userId])
+  useEffect(() => {
+    const mark = (refresh = false) => {
+      if (!userId) return
+      const at = Date.now()
+      markActivitySeen(userId, at)
+      if (refresh) setSeenAt(at)
+    }
+    const onVisibility = () => { if (document.visibilityState === 'hidden') mark(true) }
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      mark()
+    }
+  }, [userId])
 
   const refreshIfStale = useCallback(() => {
     if (!userId || document.visibilityState === 'hidden') return
@@ -340,7 +368,21 @@ export default function Activity() {
     if (me?.avatar) map.set(String(userId), me.avatar)
     return map
   }, [data, me, userId])
-  const counts = activityCounts(items)
+  const closeIds = useMemo(
+    () => new Set((me?.friends || []).filter(row => row.close).map(row => String(row.id))),
+    [me],
+  )
+  const canInspect = item => !!item.owner?.me || closeIds.has(String(item.owner?.id))
+  const inspect = (item, exerciseId) => {
+    // The owner's own copy can describe itself even with no server and no network. A close
+    // friend's workout comes from GET /api/social/workout.
+    const own = item.owner?.me ? S.workouts.find(w => {
+      const id = w?.id != null ? String(w.id) : `${w?.d || ''}|${w?.start ?? ''}`
+      return `${userId ? String(userId) : 'me'}:${id}` === item.id
+    }) : null
+    activityExerciseSheet(item, exerciseId, own ? workoutDetailFromLocal(S, own) : null)
+  }
+  const counts = activityCounts(items, { since: seenAt ?? Date.now() })
   const shown = filterActivity(items, filter)
   const incoming = (me?.pending || []).filter(row => row.direction === 'incoming')
   const pending = incoming.length + (Number(me?.planShares) || 0)
@@ -391,7 +433,7 @@ export default function Activity() {
       <div className="chips act-filters" role="tablist" aria-label={t('Activity')}>
         {FILTERS.map(([key]) => <button type="button" key={key} role="tab" aria-selected={filter === key}
           className={'chip act-filter' + (filter === key ? ' on' : '')} onClick={() => setFilter(key)}>
-          {filterLabel(key)}{counts[key] > 0 && <span className="act-count">{counts[key]}</span>}
+          {filterLabel(key)}{counts[key] > 0 && <span className="act-count">{counts[key] > 9 ? '9+' : counts[key]}</span>}
         </button>)}
       </div>
 
@@ -413,7 +455,9 @@ export default function Activity() {
           ? <div className="social-feed">
             {shown.map(item => item.kind === 'milestone'
               ? <GoalCard key={item.id} item={item} avatar={avatars.get(item.owner.id)} reactions={reactionOverrides[item.id] || item.reactions} onReact={react} busy={busy === item.id} />
-              : <WorkoutCard key={item.id} item={item} avatar={avatars.get(item.owner.id)} reactions={reactionOverrides[item.id] || item.reactions} onReact={react} busy={busy === item.id} />)}
+              : <WorkoutCard key={item.id} item={item} avatar={avatars.get(item.owner.id)} canInspect={canInspect(item)}
+                  onInspect={exerciseId => inspect(item, exerciseId)}
+                  reactions={reactionOverrides[item.id] || item.reactions} onReact={react} busy={busy === item.id} />)}
           </div>
           : <div className="card social-empty social-feed-empty">
             <div className="social-empty-ico"><Icon name={filter === 'goals' ? 'target' : 'flame'} /></div>

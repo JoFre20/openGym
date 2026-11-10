@@ -441,6 +441,7 @@ export async function passwordResetRedeem(name, code, next) {
 export const socialMe = () => api('/api/social/me')
 export const socialFeed = () => api('/api/social/feed')
 export const socialLive = () => api('/api/social/live')
+export const socialWorkout = workoutId => api('/api/social/workout?workoutId=' + encodeURIComponent(workoutId))
 export const saveSocialSettings = settings => api('/api/social/settings', { method: 'PUT', body: JSON.stringify(settings) })
 export const sendFriendRequest = friendCode => post('/api/social/friends/request', { friendCode })
 export const respondToFriendRequest = (requestId, action) => post('/api/social/friends/respond', { requestId, action })
@@ -467,6 +468,7 @@ export function socialError(e) {
     case 'plan-too-large': return t('This plan is too big to share.')
     case 'plan-invalid': return t('Couldn’t read that plan.')
     case 'share-not-found': return t('That shared plan is no longer available.')
+    case 'not-close': return t('Only close friends see the details')
     case 'not-friends':
     case 'not-shared':
     case 'workout-not-found':

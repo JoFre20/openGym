@@ -405,3 +405,46 @@ test('a plan snapshot travels through the friends inbox and never touches a stat
   assert.equal(readSocial(h).planShares.length, 0, 'ending a friendship removes unread snapshots both ways');
   assert.equal(fs.readFileSync(path.join(h.dataDir, 'state-u2.json'), 'utf8'), beforeState);
 });
+
+test('workout detail is for the owner or a close friend, and never leaks sets when sharing is off', async t => {
+  const workout = {
+    id: 'w1', d: TODAY, name: 'Push Day', start: Date.parse(TODAY + 'T08:00:00Z'), end: Date.parse(TODAY + 'T09:00:00Z'),
+    vol: 800, prs: ['0025'], entries: [
+      { id: '0025', sets: [{ w: 80, r: 5, done: true }, { w: 40, r: 10, done: true, phase: 'warmup' }] }
+    ]
+  };
+  const h = await startServer(t, { u1: { unit: 'kg', workouts: [workout] } });
+  await befriend(h, 'u2', 'u1');
+  const close = await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: true }
+  });
+  assert.equal(close.status, 200);
+
+  const own = await call(h, 'u1', '/api/social/workout?workoutId=u1:w1');
+  assert.equal(own.status, 200);
+  assert.equal(own.body.workout.entries[0].sets.length, 1, 'the warm-up is not returned');
+  const friend = await call(h, 'u2', '/api/social/workout?workoutId=u1:w1');
+  assert.equal(friend.status, 200);
+  assert.equal(friend.body.workout.name, 'Push Day');
+
+  await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: false }
+  });
+  const notClose = await call(h, 'u2', '/api/social/workout?workoutId=u1:w1');
+  assert.equal(notClose.status, 403);
+  assert.equal(notClose.body.code, 'not-close');
+
+  await call(h, 'u1', '/api/social/friends/close', {
+    method: 'POST', body: { friendId: 'u2', close: true }
+  });
+  await call(h, 'u1', '/api/social/settings', {
+    method: 'PUT', body: { shareWorkouts: false }
+  });
+  const hidden = await call(h, 'u2', '/api/social/workout?workoutId=u1:w1');
+  assert.equal(hidden.status, 403);
+  assert.equal(hidden.body.code, 'not-shared');
+
+  const missing = await call(h, 'u1', '/api/social/workout?workoutId=u1:nope');
+  assert.equal(missing.status, 404);
+  assert.equal(missing.body.code, 'workout-not-found');
+});
