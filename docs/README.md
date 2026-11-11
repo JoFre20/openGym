@@ -60,6 +60,7 @@ Design notes for specific features, kept next to the code they describe:
 | [Combine routines](dev/COMBINE_ROUTINES.md) | Spec for running more than one routine in a session |
 | [Fatigue and sets](dev/FATIGUE_SETS_MODEL.md) | How hard sets feed the fatigue map and its recovery time per muscle |
 | [Activity feed](dev/ACTIVITY_FEED.md) | The new layout, the feed, reached goals and their privacy rules |
+| [Motion rep counting](dev/REP_TRACKING.md) | How a reference rep becomes a template, how the detector works, and the iPhone / Watch sensor split |
 
 ## Still stuck?
 

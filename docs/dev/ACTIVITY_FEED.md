@@ -54,9 +54,13 @@ more of my workout unless I am on her list too.
 
 ## Workout details
 
-The top-set rows of a workout card are tappable when the viewer is the owner or a close friend.
+The workout title of a card is tappable when the viewer is the owner or a close friend. It opens
+the same summary layout as the finish screen: trophy, duration, volume, sets, PRs, the body map
+of what was trained, and the owner's photos and videos when the workout is local. The top-set
+rows open the per-exercise sheet instead.
+
 `GET /api/social/workout?workoutId=...` returns the completed work sets and exercise snapshots
-for that one workout. The sheet derives muscle groups, set/repetition/volume totals and the list
+for that one workout. The sheets derive muscle groups, set/repetition/volume totals and the list
 of sets on the device; warm-ups and uncompleted rows are filtered out on the server. A normal
 friend gets `not-close`, and `shareWorkouts: false` blocks even a close friend.
 

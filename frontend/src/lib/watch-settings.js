@@ -84,4 +84,13 @@ export function writeWatchStatus(ev, storage = globalThis.localStorage) {
 }
 
 /** The choices as the watch reads them (WatchCore Model.swift WatchSettings); `health` is the phone's Apple Health switch. */
-export const settingsForWatch = (p = readWatchPrefs(), health = false) => ({ health: !!health, restHaptics: p.restHaptics, crown: p.crown, show: { ...p.show } })
+export const settingsForWatch = (p = readWatchPrefs(), health = false, motion = null) => ({
+  health: !!health, restHaptics: p.restHaptics, crown: p.crown, show: { ...p.show },
+  // The watch's own motion tracker follows the phone's mode, inactivity window and calibration
+  // habit. Absent on an older phone; the watch then keeps its defaults.
+  ...(motion ? {
+    repMotionMode: ['auto', 'confirm', 'manual'].includes(motion.mode) ? motion.mode : 'auto',
+    repMotionSetEndSec: Number(motion.setEndSec) > 0 ? Number(motion.setEndSec) : 6,
+    repMotionCalibReps: Number(motion.calibReps) === 1 ? 1 : 3,
+  } : {}),
+})

@@ -25,6 +25,12 @@ describe('the choices', () => {
     localStorage.setItem('gym_watch_v1', JSON.stringify({ health: true }))
     expect(settingsForWatch().health).toBe(false)
     expect(settingsForWatch(readWatchPrefs(), true).health).toBe(true)
+    expect(settingsForWatch(readWatchPrefs(), false, { mode: 'confirm', setEndSec: 10, calibReps: 1 })).toMatchObject({
+      repMotionMode: 'confirm', repMotionSetEndSec: 10, repMotionCalibReps: 1,
+    })
+    expect(settingsForWatch(readWatchPrefs(), false, { mode: 'weird', setEndSec: 0, calibReps: 9 })).toMatchObject({
+      repMotionMode: 'auto', repMotionSetEndSec: 6, repMotionCalibReps: 3,
+    })
     expect(localStorage.getItem('gym_state_v1')).toBeNull()
   })
 })

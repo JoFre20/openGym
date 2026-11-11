@@ -194,13 +194,16 @@ describe('Activity', () => {
     const own = cards().find(card => card.textContent.includes('Pull Day'))
     const friend = cards().find(card => card.textContent.includes('Push Day'))
     expect(own.querySelector('button.act-ex-open')).not.toBeNull()
+    expect(own.querySelector('button.act-workout-open')).not.toBeNull()
     expect(friend.querySelector('button.act-ex-open')).toBeNull()
+    expect(friend.querySelector('button.act-workout-open')).toBeNull()
 
     mocks.socialMe.mockResolvedValue({ ...ME, friends: [{ ...ME.friends[0], close: true }] })
     const closeHost = render(<Activity />)
     await flush()
     const closeFriend = [...closeHost.querySelectorAll('.social-feed-card')].find(card => card.textContent.includes('Push Day'))
     expect(closeFriend.querySelector('button.act-ex-open')).not.toBeNull()
+    expect(closeFriend.querySelector('button.act-workout-open')).not.toBeNull()
   })
 
   it('reacts to a friend card and updates its count', async () => {

@@ -24,6 +24,8 @@ import Media from '../components/Media.jsx'
 import WorkoutScrollAnchor from '../components/WorkoutScrollAnchor.jsx'
 import WorkoutChips from '../components/WorkoutChips.jsx'
 import { filmSetSheet, SetVideoBadge, ActiveSetVideo } from '../components/SetVideo.jsx'
+import { repTrackerSheet } from '../components/RepTrackerSheet.jsx'
+import { useRepMotionSupport } from '../lib/use-rep-support.js'
 import { setVideoOf, filmTarget } from '../lib/set-videos.js'
 import { fmtClip } from '../lib/media-refs.js'
 import { supersetMeta } from '../lib/superset-meta.js'
@@ -139,7 +141,7 @@ const RTL_LETTER = /[֐-ࣿיִ-﷿ﹰ-﻿]/
 // enough to turn over, far shorter than the rest the set earns once both sides are held.
 const SWITCH_SIDES_SEC = 10
 
-function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSide, onField, onAddSet, onRemoveSet, onAddWarmup, onKeepWarmups, onAskCoach, onRemoveSetAt, onCopySetAt, onStartTimed, onPairPrev, onPairNext, onSetRowRef, onProgressionSettings, onRest, onNoProg, routineUpdate, onSwap, onSwapBackup, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onRemoveExercise, busy }) {
+function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSide, onField, onAddSet, onRemoveSet, onAddWarmup, onKeepWarmups, onAskCoach, onRemoveSetAt, onCopySetAt, onStartTimed, onPairPrev, onPairNext, onSetRowRef, onProgressionSettings, onRest, onNoProg, routineUpdate, onSwap, onSwapBackup, onMoveUp, onMoveDown, canMoveUp, canMoveDown, onRemoveExercise, onRepTracker, busy }) {
   // The block reads the state as its exercise sees it (lib/ex-unit.js): in the exercise's own
   // weight unit when it has one (#657), so its rows, steppers, plates, owned weights, "last time"
   // and records all speak that unit. Every change goes through inEntryUnit or the parent's
@@ -586,6 +588,14 @@ function ExerciseBlock({ entryIdx, compact, dense, editing, onToggle, onToggleSi
             : { icon: 'camera', label: t('Film this set'), sub: t('Check your form later'), onClick: () => filmSet(i) },
           // A word about this one set (lib/set-notes.js), kept with the workout.
           { icon: 'note', label: noteHere ? t('Edit note') : t('Note'), sub: noteHere || t('A word about this set'), onClick: () => setNoteSheet(entryIdx, spanStart, warm ? t('Warm-up') : t('Set {0}', setNumOf(s, i))) },
+          // Count this set from the phone's or the Watch's motion. Only in the native iPhone app:
+          // onRepTracker is absent everywhere else, so the web and Android never show the row.
+          !warm && mode === 'reps' && !s.done && onRepTracker && {
+            icon: 'waveform',
+            label: t('Count reps by movement'),
+            sub: t('iPhone or Apple Watch'),
+            onClick: () => onRepTracker(i, isSideSet(s) ? (s.sides?.L?.done ? 'R' : 'L') : undefined),
+          },
         ] },
         { more: [{ items: [
           // A warm-up logged as a work set (or the other way round) changes phase here. Reps sets
@@ -1073,6 +1083,9 @@ function ActiveWorkout() {
   const update = useStore(s => s.update)
   // Whether "Ask the Coach" is on the exercise menu (lib/use-coach-gate.js).
   const coachGate = useCoachGate()
+  // Native iPhone motion counting. On the web and Android this stays false and the set menu never
+  // offers the action.
+  const repMotion = useRepMotionSupport()
   // Only what this screen shows of the two timers: the whole UI store here re-rendered every card
   // of the workout once a second while a rest or a hold counted down (`left` changes each tick).
   const liveRest = useUI(s => s.startRest)
@@ -1583,6 +1596,7 @@ function ActiveWorkout() {
     onStartTimed: (i, onFocusProgress) => startTimed(idx, i, onFocusProgress),
     onProgressionSettings: editing ? null : () => openProgressionSettings(idx),
     onRest: editing ? null : () => openExerciseRest(idx),
+    onRepTracker: editing || !repMotion.iphone ? null : (i, side) => openRepTracker(idx, i, side),
     onNoProg: routineKeepsOut(A.entries[idx]) ? null : on => setNoProg(idx, on),
     routineUpdate: routineUpdateFor(idx),
   })
@@ -2148,6 +2162,46 @@ function ActiveWorkout() {
       confirmText: t('Fix it'),
       cancelText: t('Log as typed'),
       onCancel: () => toggle(idx, i, side, opts),
+    })
+  }
+  // Motion counting ends in the same place as a tap on the row's check: the repetitions are written
+  // to the set, then toggle runs the rest timer, superset flow and finish prompt. Only the native
+  // iPhone app offers this, so the web and Android have no path to it.
+  const openRepTracker = (idx, i, side) => {
+    const live = useStore.getState().S
+    const active = live.active
+    const en = active?.entries?.[idx]
+    const row = en?.sets?.[i]
+    if (!active || active.editingWorkoutId || !en || !row || row.done) return
+    if (side && row.sides?.[side]?.done) return
+    const activeId = active.id
+    const entryId = en.id
+    const setNumber = setNumberAt(en.sets, i)
+    const label = side
+      ? t('Set {0} ({1})', setNumber, side === 'L' ? t('Left') : t('Right'))
+      : t('Set {0}', setNumber)
+    repTrackerSheet({
+      exerciseId: entryId,
+      exerciseName: exerciseNameText(exOr(entryId)),
+      setLabel: label,
+      side,
+      onDone: reps => {
+        const state = useStore.getState().S
+        const a = state.active
+        if (!a || a.id !== activeId || a.editingWorkoutId) return
+        const e = a.entries?.[idx]
+        if (!e || e.id !== entryId) return
+        const current = e.sets?.[i]
+        if (!current || (side ? current.sides?.[side]?.done : current.done)) return
+        const count = Math.max(1, Math.round(Number(reps) || 0))
+        mutEntry(idx, entry => {
+          if (!entry.sets?.[i]) return
+          if (side) entry.sets[i] = setSideField(entry.sets[i], side, 'r', count)
+          else entry.sets[i].r = count
+        })
+        toggle(idx, i, side)
+        useUI.getState().toast(t('Set saved: {0} reps', count))
+      },
     })
   }
   // The Apple Watch ticks sets through this same toggle (lib/watch-sync.js): the weight and reps it

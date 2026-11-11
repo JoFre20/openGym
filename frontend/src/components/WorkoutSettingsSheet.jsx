@@ -9,6 +9,7 @@ import { MOBILE } from '../lib/mobile.js'
 import { closeThenNav } from '../lib/nav.js'
 import { REST_MAX, fmtRest } from '../lib/duration.js'
 import { durationSheet } from './DurationWheel.jsx'
+import { RepMotionSettings } from './RepMotionSettings.jsx'
 import { Section, Row, Switch, Segmented, Button } from './ui.jsx'
 
 // The settings people touch at the gym, without leaving the workout (v1.3.11, opened from the
@@ -76,6 +77,7 @@ export function WorkoutSettings({ close }) {
           value={gif} onChange={v => update(s => { s.gifSize = v })} />
       </Row>
     </Section>
+    <RepMotionSettings />
     <Section>
       <Row icon="gear" iconTint="var(--grey)" title={t('All settings')} accessory="chevron" onClick={allSettings} />
     </Section>

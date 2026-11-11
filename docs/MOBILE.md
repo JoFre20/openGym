@@ -357,6 +357,61 @@ Worth checking on a real iPhone on iOS 26 with AirPods Pro 3: buds in from the s
 mid-workout; taken out and put back; the screen locked across rests; with the watch app in use (one
 workout in Apple Health, the watch's).
 
+### Motion rep counting (iPhone app only)
+
+A set can count its own repetitions from movement instead of a tap. The feature is only in the
+native iPhone app: the web build, the PWA and Android do not show its set-menu row or settings.
+There is no `DeviceMotionEvent` fallback, because a browser cannot promise a continuous 50 Hz
+signal while the page is locked in a pocket.
+
+- **Calibration.** Open a reps set's menu, choose **Count reps by movement**, and record one or
+  three clean reference repetitions. The phone learns the dominant 3D axis (PCA by power
+  iteration), the two peak directions, duration and a noise floor, and stores the template on that
+  device, per exercise and per sensor. It is not part of the synced profile or a backup.
+- **Counting.** The detector projects acceleration onto the learned axis, smooths it, and uses two
+  opposite thresholds plus a neutral zone. The thresholds sit below the calibrated peaks, so a
+  fatigued set still counts. A minimum and maximum repetition duration reject bumps and partial
+  reps.
+- **Set end.** Settings → Workout → Motion rep counting picks **Automatic** (after the quiet
+  window the reps are written to the set and the normal tick path starts the rest), **Confirm**
+  (the counter stops and waits for the user) or **Manual**. The quiet window is 4, 6, 10 or 15
+  seconds.
+- **The Watch as a pure sensor.** With a paired, installed and reachable Watch, the tracker can
+  choose **Apple Watch** instead of **iPhone**. The Watch starts CoreMotion, sends five-sample
+  batches over WatchConnectivity with sequence numbers, and shows only a small **Sensor active**
+  screen. Counting stays on the iPhone: one detector, one calibration per sensor. Use it with the
+  Watch on a wrist or strapped to a machine. If the Watch app is not reachable, the source shows
+  as unavailable and cannot start; a data gap pauses the count and never silently logs a set.
+- **Watch alone.** The current reps set page also has a small waveform button. It opens the same
+  calibration/counting flow on the Watch itself, with no phone needed. The Watch keeps its own
+  calibration per exercise in `UserDefaults` and follows the phone's mode, inactivity window and
+  calibration habit when a snapshot has arrived. Finishing sends the normal `setDone` event, so
+  the phone gets the set and its rest exactly as if it had been ticked on the wrist. Background
+  operation follows the same Apple Health rule as the sensor mode.
+- **Apple Health and the Watch sensor.** For background sensing, enable Apple Health: the existing
+  workout session keeps the Watch app alive with the wrist down. Without Apple Health the Watch
+  app must stay frontmost; the tracker says so and links to Apple Health settings. The iPhone also
+  has to stay on the workout screen, which normally keeps its screen awake. Locking it pauses the
+  stream rather than counting from stale samples.
+- **watchOS limitation.** CoreMotion keeps running with the wrist down only while a workout
+  session keeps the app alive. With Apple Health on, the existing workout session does that. With
+  it off, the Watch sensor works while the Watch app is frontmost; the iPhone notices the stream
+  stop and pauses. No HealthKit session is started secretly.
+- **iPhone sensor.** `ios/App/App/MotionPlugin.swift` reads `CMDeviceMotion.userAcceleration` at
+  50 Hz, converts CoreMotion's g to m/s² and batches five samples before crossing the Capacitor
+  bridge. It stops on background. `NSMotionUsageDescription` says what the data is for. Nothing
+  leaves the phone: no motion sample, template or count is sent to the server.
+- **Keep the iPhone app open.** The workout screen already keeps the screen awake; locking the
+  phone or switching apps pauses the stream rather than letting the set-end timer run on stale
+  samples. With the Watch as the sensor, the Watch does not count on its own in this mode; its
+  own tracker is the separate **Watch alone** flow above.
+
+The detector and calibration live in `frontend/src/lib/rep-core.js` with tests beside it;
+storage is `frontend/src/lib/rep-templates.js`; the two native sources and their contracts are in
+`frontend/src/lib/motion-source.js`. The protocol additions to WatchConnectivity are
+`startMotion` / `stopMotion` on `WatchBridgePlugin.swift` and `motionSamples` / `motionState` in
+`Watch/MotionSensor.swift`.
+
 ### Animation quality and the animation packs (store apps)
 
 Settings → Workout → **Animation quality**, in the store apps only (the web and a self-hosted

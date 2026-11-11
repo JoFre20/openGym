@@ -2439,7 +2439,10 @@ button.mchip{border:none;font:inherit;font-size:var(--fs-caption);cursor:pointer
 .center .tiles.fin{grid-template-columns:repeat(6,1fr)}
 .tiles.fin .tile{grid-column:span 3;min-width:0}
 .tiles.fin .tile.wide{grid-column:span 4}
-.tiles.fin .tile.narrow{grid-column:span 2}
+/* `.narrow` is also the desktop page column (max-width + auto margins). On a tile those auto
+   margins stop the grid item stretching, so it shrinks to its label and sits centred in its two
+   columns. The tile is not a page column: keep it full-width and flush to the grid edge. */
+.tiles.fin .tile.narrow{grid-column:span 2;max-width:none;margin:0}
 
 /* Stats → exercise progress, one row per workout: the date on one line in its own column, the sets
    flush to the end. With both spans free to wrap, "Fri 16 / Oct" broke in two and every set column

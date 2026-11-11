@@ -1,6 +1,8 @@
 /* The exercise sheet behind a tappable top-set row. It is deliberately compact: the card already
    carries the headline stats, this sheet answers "what did the exercise actually do". */
 .act-ex-sheet{display:flex;flex-direction:column;gap:2px}
+.act-ex-sheet .fin-x{height:0}
+.act-ex-sheet .fin-x .iconbtn{margin:-4px -4px 0 0}
 .act-ex-sub{line-height:1.35;margin-bottom:6px;overflow-wrap:anywhere}
 .act-ex-title{
   font-size:22px;font-weight:600;line-height:1.15;letter-spacing:-.02em;margin:8px 0 2px;

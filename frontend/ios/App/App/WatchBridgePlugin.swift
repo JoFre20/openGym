@@ -52,6 +52,8 @@ public class WatchBridgePlugin: CAPPlugin, CAPBridgedPlugin, WCSessionDelegate {
         CAPPluginMethod(name: "sendClips", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openOnWatch", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "dropClips", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "startMotion", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "stopMotion", returnType: CAPPluginReturnPromise),
     ]
 
     private let queue = DispatchQueue(label: "ch.opengym.watch-events")
@@ -157,6 +159,55 @@ public class WatchBridgePlugin: CAPPlugin, CAPBridgedPlugin, WCSessionDelegate {
         }
         clipQueue.async { self.clipsSent = [:] }
         call.resolve()
+    }
+
+    /* ---------- the Watch as a motion sensor (frontend lib/motion-source.js) ---------- */
+
+    /// Ask the Watch app to start CoreMotion and stream samples back. Only while it is reachable:
+    /// a sensor command is live work, not something to deliver half an hour later.
+    @objc func startMotion(_ call: CAPPluginCall) {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated,
+              WCSession.default.isPaired, WCSession.default.isWatchAppInstalled,
+              WCSession.default.isReachable else {
+            call.resolve(["ok": false, "code": "watch_unreachable"])
+            return
+        }
+        let payload: [String: Any] = [
+            "motionStart": [
+                "hz": min(100, max(10, call.getDouble("hz") ?? 50)),
+                "batchSize": min(20, max(1, Int(call.getDouble("batchSize") ?? 5))),
+            ],
+        ]
+        WCSession.default.sendMessage(payload, replyHandler: { reply in
+            call.resolve(["ok": reply["ok"] as? Bool ?? false, "code": reply["code"] as? String ?? ""])
+        }, errorHandler: { _ in
+            call.resolve(["ok": false, "code": "watch_unreachable"])
+        })
+    }
+
+    /// Stop the Watch sensor. Best effort: the Watch also stops when its app goes away.
+    @objc func stopMotion(_ call: CAPPluginCall) {
+        guard WCSession.isSupported(), WCSession.default.activationState == .activated,
+              WCSession.default.isReachable else {
+            call.resolve(["ok": true])
+            return
+        }
+        WCSession.default.sendMessage(["motionStop": true], replyHandler: { _ in
+            call.resolve(["ok": true])
+        }, errorHandler: { _ in
+            call.resolve(["ok": false])
+        })
+    }
+
+    /// Samples and state updates from the Watch. Not queued: a live count that arrives late is
+    /// worse than a gap the page can notice by its sequence number.
+    private func forwardMotion(_ message: [String: Any]) {
+        if let samples = message["motionSamples"] as? [String: Any] {
+            DispatchQueue.main.async { self.notifyListeners("motionSamples", data: samples) }
+        }
+        if let state = message["motionState"] as? [String: Any] {
+            DispatchQueue.main.async { self.notifyListeners("motionState", data: state) }
+        }
     }
 
     /// The phone's GIF cache (Caches/watch-clips): the most recently used few dozen are kept.
@@ -280,12 +331,23 @@ public class WatchBridgePlugin: CAPPlugin, CAPBridgedPlugin, WCSessionDelegate {
     /// Before it ends a workout as forgotten, the watch asks whether it goes on here (its copy may
     /// be stale): the answer is the workout this phone runs and when it was last used in it.
     public func session(_ session: WCSession, didReceiveMessage message: [String: Any], replyHandler: @escaping ([String: Any]) -> Void) {
+        if message["motionSamples"] != nil || message["motionState"] != nil {
+            forwardMotion(message)
+            replyHandler(["ok": true])
+            return
+        }
         guard message["idleCheck"] != nil else { replyHandler([:]); return }
         let d = UserDefaults.standard
         var answer: [String: Any] = [:]
         if let wid = d.string(forKey: WatchBridgePlugin.idleWidKey) { answer["wid"] = wid }
         if d.object(forKey: WatchBridgePlugin.idleActiveAtKey) != nil { answer["activeAt"] = d.double(forKey: WatchBridgePlugin.idleActiveAtKey) }
         replyHandler(answer)
+    }
+
+    /// The Watch sends sample batches without a reply handler: a lost live batch is noticed by the
+    /// sequence number, while a reply to every batch would cost more than the samples.
+    public func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
+        forwardMotion(message)
     }
 
     /* ---------- the watch's side ---------- */

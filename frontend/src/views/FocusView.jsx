@@ -118,6 +118,7 @@ export default function FocusView({
   entryIdx, unit, onToggle, onToggleSide, onField, onMutateSet, onStartTimed,
   onAddSet, onAddWarmup, onRemoveSetAt, onProgressionSettings, onSwap, onRemoveExercise,
   onNoProg, busy, onSelectEntry, onAdvanceUnit, onPairPrev, onPairNext, onUnpair, pointerEpoch,
+  onRepTracker,
 }) {
   // In the exercise's own weight unit when it has one (#657); the parent stores every change back.
   const live = useStore(state => state.S)
@@ -285,6 +286,12 @@ export default function FocusView({
         !isWarmupRow(set) && mode === 'cardio' && { icon: 'gauge', label: t('How hard it felt'), sub: set.rpe != null ? t(EFFORT.rpe.hd) + ' ' + fmtNum(set.rpe) : t('Not rated yet'), onClick: () => effortPickerSheet('rpe', set.rpe ?? null, value => onField(setIdx, 'rpe', value), { cardio: true }) },
         { icon: 'arrowDown', label: t('Add drop set'), onClick: () => onMutateSet(setIdx, row => addDropTo(row, entry.target)) },
         { icon: 'bolt', label: t('Add burst'), onClick: () => onMutateSet(setIdx, row => addBurstTo(row, entry.target?.intensifier?.type === 'restpause' ? entry.target.intensifier.restSec : (S.restPauseSec || 15))) },
+        !isWarmupRow(set) && mode === 'reps' && !set.done && onRepTracker && {
+          icon: 'waveform',
+          label: t('Count reps by movement'),
+          sub: t('iPhone or Apple Watch'),
+          onClick: () => onRepTracker(setIdx, isSideSet(set) ? (set.sides?.L?.done ? 'R' : 'L') : undefined),
+        },
       ] },
       { more: [{ items: [
         { icon: 'flame', label: isWarmupRow(set) ? t('Mark as work set') : t('Mark as warm-up'), onClick: () => onMutateSet(setIdx, toggleWarmup) },

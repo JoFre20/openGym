@@ -110,6 +110,8 @@
 	</array>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
+	<key>NSMotionUsageDescription</key>
+	<string>Used to count your repetitions from how your iPhone moves during a set. The motion data stays on this phone.</string>
 	<key>NSHealthShareUsageDescription</key>
 	<string>Used to show your heart rate while you train, measured by your Apple Watch or by AirPods that track it, and, when you switch it on, to add the heart rate your watch saved and weigh-ins from other apps to your log.</string>
 	<key>NSHealthUpdateUsageDescription</key>

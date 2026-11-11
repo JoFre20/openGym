@@ -74,6 +74,11 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
 
     /// Apple Health: the workout session, its heart rate, and the switch (WorkoutManager).
     let health = WorkoutManager()
+    /// The Watch as a pure motion sensor for the iPhone. No counting here.
+    let motion = MotionSensor()
+    @Published private(set) var motionActive = false
+    @Published private(set) var motionError: String?
+    @Published var showMotionSensor = false
     /// The running workout's animations, by exercise id, from the phone.
     @Published private(set) var clips: [String: ClipFrames] = [:]
     /// What happened to the animations, newest last (the hidden debug screen).
@@ -88,6 +93,16 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
     private var effortFor: String?
     /// The scale the phone's profile logs, when it logs one ("rpe" / "rir"): the set page offers it.
     var effortKind: String? { Effort.notches(state.settings.effort) != nil ? state.settings.effort : nil }
+    /// Motion rep settings from the phone, with defaults for a watch that has not heard them.
+    var repMotionMode: String {
+        let m = state.settings.repMotionMode
+        return m == "confirm" || m == "manual" ? m! : "auto"
+    }
+    var repMotionSetEndSec: Double {
+        let sec = state.settings.repMotionSetEndSec ?? 6
+        return sec > 0 ? sec : 6
+    }
+    var repMotionCalibReps: Int { state.settings.repMotionCalibReps == 1 ? 1 : 3 }
     /// A hold running: when it ends, and when it started.
     @Published private(set) var holdEndsAt: Date?
     @Published private(set) var holdStartedAt: Date?
@@ -168,6 +183,15 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
             }
         }
         health.onStatus = { [weak self] in self?.sendStatus() }
+        motion.onState = { [weak self] state, reason in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.motionActive = state == "started"
+                if state == "started" { self.motionError = nil; self.showMotionSensor = true }
+                else if state == "error" { self.motionError = reason }
+                else { self.motionError = nil }
+            }
+        }
         let center = UNUserNotificationCenter.current()
         center.delegate = self
         if !isDemo { center.requestAuthorization(options: [.alert, .sound]) { _, _ in } }
@@ -413,12 +437,13 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
 
     /// The set up next, done: the numbers on the screen (a hold's seconds as it lasted, one side of
     /// a per-side set, nothing for cardio), then where SessionCore.next says, with a rest when due.
-    func completeSet(sec heldFor: Double? = nil) {
+    func completeSet(sec heldFor: Double? = nil, fromTracker: Bool = false) {
         guard let w = workout, let e = entry, let si = setIndex else { return }
         // A double tap on Done (a sweaty finger) is one set, not this one and the next.
         if heldFor == nil, let last = lastTick, Date().timeIntervalSince(last) < 0.7 { return }
-        // In a superset the page flips to the partner: a slower second tap would log its set.
-        if heldFor == nil, !touchAllowed { return }
+        // In a superset the page flips to the partner: a slower second tap would log its set. The
+        // local motion tracker set the page itself, so it does not use this tap guard.
+        if heldFor == nil, !fromTracker, !touchAllowed { return }
         lastTick = Date()
         ackRestOver()
         let ei = entryIndex
@@ -462,6 +487,75 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
         loadTargets()
         // A hold with no rest after it (the other side, or the rest timer off): the next one counts in.
         if heldFor != nil && !rested { autoHoldIfDue() }
+    }
+
+    /// The iPhone asked this Watch to be its motion sensor. No session is changed here; the
+    /// samples go back over WatchConnectivity and the phone counts them.
+    @discardableResult
+    func startMotionSensor(hz: Double, batchSize: Int) -> Bool {
+        let ok = motion.start(hz: hz, batchSize: batchSize)
+        if !ok {
+            DispatchQueue.main.async {
+                self.motionActive = false
+                self.motionError = "unavailable"
+                self.showMotionSensor = true
+            }
+        }
+        return ok
+    }
+
+    func stopMotionSensor() {
+        motion.stop()
+        DispatchQueue.main.async {
+            self.motionActive = false
+            self.showMotionSensor = false
+            self.motionError = nil
+        }
+    }
+
+    /* ---------- the Watch's own motion tracker ---------- */
+
+    private static let repTemplatesKey = "watchRepTemplates"
+
+    func repTemplate(for exerciseId: String) -> RepTemplate? {
+        guard let data = UserDefaults.standard.data(forKey: SessionStore.repTemplatesKey),
+              let all = try? JSONDecoder().decode([String: RepTemplate].self, from: data) else { return nil }
+        guard let t = all[exerciseId], RepCore.valid(t) else { return nil }
+        return t
+    }
+
+    func saveRepTemplate(_ template: RepTemplate) {
+        var all: [String: RepTemplate] = [:]
+        if let data = UserDefaults.standard.data(forKey: SessionStore.repTemplatesKey),
+           let decoded = try? JSONDecoder().decode([String: RepTemplate].self, from: data) { all = decoded }
+        all[template.exerciseId] = template
+        if let data = try? JSONEncoder().encode(all) {
+            UserDefaults.standard.set(data, forKey: SessionStore.repTemplatesKey)
+        }
+    }
+
+    func deleteRepTemplate(for exerciseId: String) {
+        guard let data = UserDefaults.standard.data(forKey: SessionStore.repTemplatesKey),
+              var all = try? JSONDecoder().decode([String: RepTemplate].self, from: data) else { return }
+        all.removeValue(forKey: exerciseId)
+        if let data = try? JSONEncoder().encode(all) {
+            UserDefaults.standard.set(data, forKey: SessionStore.repTemplatesKey)
+        }
+    }
+
+    /// The local tracker finished a set. The captured indexes make it safe even if the page moved
+    /// while the sheet was open; completeSet then sends the normal setDone event and starts rest.
+    @discardableResult
+    func completeMotionSet(reps: Double, exerciseId: String, entryIdx: Int, setIdx: Int) -> Bool {
+        guard let w = workout, w.entries.indices.contains(entryIdx),
+              w.entries[entryIdx].id == exerciseId,
+              w.entries[entryIdx].sets.indices.contains(setIdx),
+              !w.entries[entryIdx].sets[setIdx].done else { return false }
+        state.entryIndex = entryIdx
+        picked[entryIdx] = setIdx
+        self.reps = reps
+        completeSet(fromTracker: true)
+        return true
     }
 
     /// A set ticked on the phone while this watch runs the session: the watch has the sensor, so
@@ -1052,6 +1146,25 @@ final class SessionStore: NSObject, ObservableObject, WCSessionDelegate, UNUserN
 
     func session(_ session: WCSession, didReceiveMessage message: [String: Any]) {
         if let json = message["snapshot"] as? String { apply(json: json) }
+    }
+
+    /// The phone's live controls. These come with a reply handler while the Watch is reachable:
+    /// a sensor command that could not start must fail at once, not silently later.
+    func session(_ session: WCSession, didReceiveMessage message: [String: Any],
+                 replyHandler: @escaping ([String: Any]) -> Void) {
+        if let start = message["motionStart"] as? [String: Any] {
+            let hz = (start["hz"] as? NSNumber)?.doubleValue ?? 50
+            let batch = (start["batchSize"] as? NSNumber)?.intValue ?? 5
+            let ok = startMotionSensor(hz: hz, batchSize: batch)
+            replyHandler(ok ? ["ok": true] : ["ok": false, "code": "unavailable"])
+            return
+        }
+        if message["motionStop"] != nil {
+            stopMotionSensor()
+            replyHandler(["ok": true])
+            return
+        }
+        replyHandler([:])
     }
 
     /* ---------- the demo the CI screenshots show (text only; a synthetic clip at most) ---------- */

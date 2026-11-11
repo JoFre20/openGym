@@ -26,11 +26,14 @@
 		38EC18DBD5B81F5B1BAD6957 /* fr.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 59DE635C788798372BBE3758 /* fr.lproj */; };
 		3ABB38E39AD93CEFC2DDBF06 /* tr.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 0001E3A2986D5021EE4639D2 /* tr.lproj */; };
 		3B77DAD84F32F4558F07C188 /* fr.lproj in Resources */ = {isa = PBXBuildFile; fileRef = DE5A67704EFB942E578B3731 /* fr.lproj */; };
+		3C0028CDFACA7ED492971ECA /* RepCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2CC628B24FB70F797366FD3 /* RepCore.swift */; };
 		3EE79F3D3E6A5D6D75715FCA /* WidgetViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500000000000000000009 /* WidgetViews.swift */; };
 		3F402D6726BC425F6F0EC95C /* ru.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 9592881BC8008E76096EFFA5 /* ru.lproj */; };
+		41909294755DEAAE2F5FD7A4 /* MotionPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87D2D473AAD8A675D36EF8D7 /* MotionPlugin.swift */; };
 		41AD97EA0C522E7998465A0E /* LiveActivityWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4972D771A609A84DBB8EED7 /* LiveActivityWidget.swift */; };
 		467C85A0CA0BFC12A9531209 /* hu.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 0CF6207FA0FC6DF79AECCCC9 /* hu.lproj */; };
 		4BAA5141AA64AF9C49EE16F9 /* pl.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 41430270680459EB2CB9305A /* pl.lproj */; };
+		4BF5D7E8270DB665FE30E5A4 /* MotionSensor.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDF649340B228B88D4F6360C /* MotionSensor.swift */; };
 		4E1805498B14BE706C1E378B /* SensorPlan.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1003FE193FE4A4EC3D6AFE6D /* SensorPlan.swift */; };
 		50379B232058CBB4000EE86E /* capacitor.config.json in Resources */ = {isa = PBXBuildFile; fileRef = 50379B222058CBB4000EE86E /* capacitor.config.json */; };
 		504EC3081FED79650016851F /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 504EC3071FED79650016851F /* AppDelegate.swift */; };
@@ -43,6 +46,7 @@
 		5F3760C21B23F0B54DAD586C /* hi.lproj in Resources */ = {isa = PBXBuildFile; fileRef = C7590E90D21F17C4933D822C /* hi.lproj */; };
 		6070086DE2AD4BC28A600A1F /* ko.lproj in Resources */ = {isa = PBXBuildFile; fileRef = B3C0FD71C76688635D841FEE /* ko.lproj */; };
 		62621A5F7FB1B57525967C5B /* WorkoutManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8C75FD957F6740E2CB3F281 /* WorkoutManager.swift */; };
+		62D3FF15BEB6B83FB4F3A065 /* RepTrackerModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8B3F53CE0FE1BA007BD1A5 /* RepTrackerModel.swift */; };
 		640A98079D5CEBFE03FE5907 /* de.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 6A4C6DE7C81EE9C771609A48 /* de.lproj */; };
 		64EB4F0C1C2EC5D78208C198 /* ko.lproj in Resources */ = {isa = PBXBuildFile; fileRef = FF68EF239CF0C59DEB70A72C /* ko.lproj */; };
 		6AE35C57F3EF49B9867B4FB2 /* es.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 2F34D346FCC384C39B90CF68 /* es.lproj */; };
@@ -57,12 +61,14 @@
 		86812C1E3D02DBC22706E2FC /* uk.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 2954722086788B327013149D /* uk.lproj */; };
 		8730C9F795283844CAAA94AA /* it.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 4E0620F5D4CA84B0116F64B7 /* it.lproj */; };
 		8EB92B1DA5408B75371B6163 /* pt-BR.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 0610888A7B85AB21F99EB3F4 /* pt-BR.lproj */; };
+		8F247C4A44BBD7C172D4A361 /* RepTrackerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1E61C83244F926CE422B835 /* RepTrackerView.swift */; };
 		9096FEC6E9C437A199E2FAA4 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7783FF2A53A7CF880172B448 /* SwiftUI.framework */; };
 		96FBF91D8B98A3A5FB6A1F8A /* ar.lproj in Resources */ = {isa = PBXBuildFile; fileRef = FF5EDA6F5A6C73FB87B99945 /* ar.lproj */; };
 		9AF7BEE7F5C0E05E2C071BCC /* WorkoutActivity.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0500000000000000000007 /* WorkoutActivity.swift */; };
 		A084ECDBA7D38E1E42DFC39D /* Pods_App.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = AF277DCFFFF123FFC6DF26C7 /* Pods_App.framework */; };
 		A27B8D0D5E6F4DA8438679FE /* th.lproj in Resources */ = {isa = PBXBuildFile; fileRef = EAC44B441B0BD2BFBA22812F /* th.lproj */; };
 		A35DC54DDDA59D8C782F7B2B /* zh-Hant.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 7D5898E51299ED624C431153 /* zh-Hant.lproj */; };
+		A44FD776D1A87224BA6CD2F3 /* MotionSensorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EE73DC2BC034D31E1F9B719 /* MotionSensorView.swift */; };
 		A8F6F94C0E987F6F4C6EEB8E /* zh-Hant.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 4622FDC62138E4A53141C590 /* zh-Hant.lproj */; };
 		AA0000000000000000000002 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000001 /* SceneDelegate.swift */; };
 		AA0100000000000000000002 /* PrintPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA0100000000000000000001 /* PrintPlugin.swift */; };
@@ -106,6 +112,7 @@
 		C5427ED7362E3AAFED38E90D /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8AD4DF76C43812D570895224 /* Foundation.framework */; };
 		C62D6FFC1E0CE287DCE7E33B /* tr.lproj in Resources */ = {isa = PBXBuildFile; fileRef = CB69F34B44E263D54BD0245B /* tr.lproj */; };
 		C7F0CA1D8FE4AE0C34B5ACC7 /* hu.lproj in Resources */ = {isa = PBXBuildFile; fileRef = 47114FCB79208E421636738C /* hu.lproj */; };
+		C9240A760D65493FF3645F1A /* WatchMotion.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C2C3A617462F45293AEDC49 /* WatchMotion.swift */; };
 		CAE1355A29659C0A39AFE594 /* AnimationPacksDownloader.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = C035A3DC527DE95D524501B5 /* AnimationPacksDownloader.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		CBE8FD950BBEC41A15960EDA /* Model.swift in Sources */ = {isa = PBXBuildFile; fileRef = 463F2682D517C7A1EF3F80E8 /* Model.swift */; };
 		CDC7DD4DBFD816023CDB530F /* OpenGymWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = AF29BF108B204C9D2BB2177B /* OpenGymWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -233,6 +240,8 @@
 		2954722086788B327013149D /* uk.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = uk.lproj; sourceTree = "<group>"; };
 		2B5A14DFEA5242F8CCFE606B /* bn.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = bn.lproj; sourceTree = "<group>"; };
 		2B78E1E177855367C80B1E96 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		2C2C3A617462F45293AEDC49 /* WatchMotion.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WatchMotion.swift; sourceTree = "<group>"; };
+		2C8B3F53CE0FE1BA007BD1A5 /* RepTrackerModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RepTrackerModel.swift; sourceTree = "<group>"; };
 		2F34D346FCC384C39B90CF68 /* es.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = es.lproj; sourceTree = "<group>"; };
 		2FAD9762203C412B000D30F8 /* config.xml */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = config.xml; sourceTree = "<group>"; };
 		30C85157E3E713CEB0026C27 /* SessionStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SessionStore.swift; sourceTree = "<group>"; };
@@ -247,6 +256,7 @@
 		47779810F43D421AB2BF8871 /* pt-PT.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "pt-PT.lproj"; sourceTree = "<group>"; };
 		4DC590C9F1ED8F0F207720AF /* hi.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = hi.lproj; sourceTree = "<group>"; };
 		4E0620F5D4CA84B0116F64B7 /* it.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = it.lproj; sourceTree = "<group>"; };
+		4EE73DC2BC034D31E1F9B719 /* MotionSensorView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotionSensorView.swift; sourceTree = "<group>"; };
 		4F002216FF457C8220854C93 /* zh-Hant.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "zh-Hant.lproj"; sourceTree = "<group>"; };
 		50379B222058CBB4000EE86E /* capacitor.config.json */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.json; path = capacitor.config.json; sourceTree = "<group>"; };
 		504EC3041FED79650016851F /* App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = App.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -270,6 +280,7 @@
 		78BCC94998C428FE810F04B1 /* Package.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = Package.swift; sourceTree = "<group>"; };
 		7D5898E51299ED624C431153 /* zh-Hant.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "zh-Hant.lproj"; sourceTree = "<group>"; };
 		8258CDC977B74F3758C4EBA3 /* zh-Hans.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "zh-Hans.lproj"; sourceTree = "<group>"; };
+		87D2D473AAD8A675D36EF8D7 /* MotionPlugin.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotionPlugin.swift; sourceTree = "<group>"; };
 		8A78CA9EDE2699FD31269710 /* pl.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = pl.lproj; sourceTree = "<group>"; };
 		8AD4DF76C43812D570895224 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS26.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		8AFC0BD89E8A6A25F7E4CE28 /* hi.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = hi.lproj; sourceTree = "<group>"; };
@@ -360,13 +371,16 @@
 		BCFF74B0986C261553918658 /* OpenGymWatch.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = OpenGymWatch.entitlements; sourceTree = "<group>"; };
 		BF6DF1B443F5DC22DF252D70 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C035A3DC527DE95D524501B5 /* AnimationPacksDownloader.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = AnimationPacksDownloader.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		C2CC628B24FB70F797366FD3 /* RepCore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RepCore.swift; sourceTree = "<group>"; };
 		C7590E90D21F17C4933D822C /* hi.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = hi.lproj; sourceTree = "<group>"; };
 		CB69F34B44E263D54BD0245B /* tr.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = tr.lproj; sourceTree = "<group>"; };
 		CD8EAAA844F012AEA30E627E /* en.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = en.lproj; sourceTree = "<group>"; };
 		CEC3B12707DE6EAD2E35BB3D /* OpenGymWidgets.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = OpenGymWidgets.entitlements; sourceTree = "<group>"; };
 		D346A18DFC4983B99D62ADDC /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		D8C75FD957F6740E2CB3F281 /* WorkoutManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = WorkoutManager.swift; sourceTree = "<group>"; };
+		DDF649340B228B88D4F6360C /* MotionSensor.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = MotionSensor.swift; sourceTree = "<group>"; };
 		DE5A67704EFB942E578B3731 /* fr.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = fr.lproj; sourceTree = "<group>"; };
+		E1E61C83244F926CE422B835 /* RepTrackerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RepTrackerView.swift; sourceTree = "<group>"; };
 		E3740B19B4572DCA4C87F5FC /* zh-Hans.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "zh-Hans.lproj"; sourceTree = "<group>"; };
 		E3E950FBB86E4C645B7947CC /* pt-BR.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = "pt-BR.lproj"; sourceTree = "<group>"; };
 		E4209C159D4061F6B07DB2EB /* es.lproj */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = folder; path = es.lproj; sourceTree = "<group>"; };
@@ -466,6 +480,11 @@
 				8258CDC977B74F3758C4EBA3 /* zh-Hans.lproj */,
 				7D5898E51299ED624C431153 /* zh-Hant.lproj */,
 				BCFF74B0986C261553918658 /* OpenGymWatch.entitlements */,
+				DDF649340B228B88D4F6360C /* MotionSensor.swift */,
+				4EE73DC2BC034D31E1F9B719 /* MotionSensorView.swift */,
+				2C2C3A617462F45293AEDC49 /* WatchMotion.swift */,
+				2C8B3F53CE0FE1BA007BD1A5 /* RepTrackerModel.swift */,
+				E1E61C83244F926CE422B835 /* RepTrackerView.swift */,
 			);
 			path = Watch;
 			sourceTree = "<group>";
@@ -488,6 +507,7 @@
 				463F2682D517C7A1EF3F80E8 /* Model.swift */,
 				1003FE193FE4A4EC3D6AFE6D /* SensorPlan.swift */,
 				A610312F6074B3261CD00084 /* SessionCore.swift */,
+				C2CC628B24FB70F797366FD3 /* RepCore.swift */,
 			);
 			name = WatchCore;
 			path = WatchCore/Sources/WatchCore;
@@ -595,6 +615,7 @@
 				504EC3131FED79650016851F /* Info.plist */,
 				2FAD9762203C412B000D30F8 /* config.xml */,
 				50B271D01FEDC1A000F3C39B /* public */,
+				87D2D473AAD8A675D36EF8D7 /* MotionPlugin.swift */,
 			);
 			path = App;
 			sourceTree = "<group>";
@@ -1068,6 +1089,12 @@
 				CBE8FD950BBEC41A15960EDA /* Model.swift in Sources */,
 				4E1805498B14BE706C1E378B /* SensorPlan.swift in Sources */,
 				D81888BCBE67D7D08021F188 /* SessionCore.swift in Sources */,
+				4BF5D7E8270DB665FE30E5A4 /* MotionSensor.swift in Sources */,
+				A44FD776D1A87224BA6CD2F3 /* MotionSensorView.swift in Sources */,
+				C9240A760D65493FF3645F1A /* WatchMotion.swift in Sources */,
+				62D3FF15BEB6B83FB4F3A065 /* RepTrackerModel.swift in Sources */,
+				8F247C4A44BBD7C172D4A361 /* RepTrackerView.swift in Sources */,
+				3C0028CDFACA7ED492971ECA /* RepCore.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1100,6 +1127,7 @@
 				AA0800000000000000000004 /* GymReminderRules.swift in Sources */,
 				AA1440000000000000000002 /* GymMapPickerPlugin.swift in Sources */,
 				AA1450000000000000000002 /* VoiceIntents.swift in Sources */,
+				41909294755DEAAE2F5FD7A4 /* MotionPlugin.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

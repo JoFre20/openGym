@@ -6,6 +6,7 @@ import { completedRepsOf, doneUnits, workoutVolume } from '../lib/history.js'
 import { t } from '../lib/i18n.js'
 import { inMuscleOrder, loadOf, MUSCLE_NAME, musclesOf } from '../lib/muscles.js'
 import { useUI } from '../store/useUI.js'
+import Icon from './Icon.jsx'
 import { Button } from './ui.jsx'
 import './ActivityExerciseSheet.css'
 
@@ -87,6 +88,7 @@ export function ActivityExerciseSheet({ item, exerciseId, close, localDetail = n
   const workoutMuscles = inMuscleOrder(Object.keys(workoutLoad).filter(slug => workoutLoad[slug] > 0))
 
   return <div className="act-ex-sheet">
+    <div className="fin-x"><button type="button" className="iconbtn" aria-label={t('Close')} onClick={close}><Icon name="xmark" /></button></div>
     <h3>{t('Exercise stats')}</h3>
     <div className="muted small act-ex-sub">
       {item.owner?.me ? t('You') : (item.owner?.name || '')}

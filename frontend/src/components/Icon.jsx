@@ -35,6 +35,8 @@ const P = {
   snowflake: <path d="M12 3.4v17.2M4.6 7.7l14.8 8.6M4.6 16.3l14.8-8.6M9.8 4.8 12 6.6l2.2-1.8M9.8 19.2l2.2-1.8 2.2 1.8M4.2 10.5l2.7-.9-.5-2.8M19.8 13.5l-2.7.9.5 2.8M4.2 13.5l2.7.9-.5 2.8M19.8 10.5l-2.7-.9.5-2.8" />,
   timer: <><circle cx="12" cy="13.4" r="7.2" /><path d="M12 9.6v3.8h2.8M9.6 3.4h4.8" /></>,
   clock: <><circle cx="12" cy="12" r="8.2" /><path d="M12 7.4V12l3.1 1.9" /></>,
+  // a measured movement trace: rep counting from the phone or the watch
+  waveform: <path d="M3.4 12h2.4l1.5-4.8 2.2 9.6 2.4-7.5 2.2 5.4 1.7-2.7h4.8" />,
 
   /* ---- status / achievement ---- */
   trophy: <><path d="M7.6 4h8.8v4.6a4.4 4.4 0 0 1-8.8 0Z" /><path d="M7.6 5.6H4.9v1.5a3 3 0 0 0 2.9 3M16.4 5.6h2.7v1.5a3 3 0 0 1-2.9 3M12 13v3.4M8.6 20.4h6.8l-.7-4H9.3Z" /></>,

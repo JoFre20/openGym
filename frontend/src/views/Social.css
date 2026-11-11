@@ -157,6 +157,13 @@
 .social-feed-who{min-width:0;display:flex;flex-direction:column;gap:1px}
 .social-feed-who b{font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .social-feed-title{font-size:20px;font-weight:600;line-height:1.15;letter-spacing:-.02em;margin-bottom:5px;overflow-wrap:break-word}
+.social-feed-title.act-workout-open{
+  display:flex;align-items:center;gap:6px;width:calc(100% + 8px);min-height:32px;
+  margin:0 -4px 5px;padding:2px 4px;border:0;border-radius:8px;background:none;
+  color:inherit;font:inherit;text-align:start;cursor:pointer;
+}
+.social-feed-title.act-workout-open:active{background:var(--surface-2)}
+.social-feed-title.act-workout-open .icn{font-size:15px;color:var(--label-3);flex:none;margin-inline-start:auto}
 .social-feed-meta{display:flex;flex-wrap:wrap;gap:5px 14px;font-size:13px;color:var(--label-2);margin-bottom:9px}
 .social-feed-meta span{display:inline-flex;align-items:center;gap:4px}
 .social-feed-meta .icn{font-size:14px}
@@ -179,7 +186,7 @@
 .social-top-set.act-ex-open .act-ex-chev{margin-inline-start:auto;flex:none;font-size:13px;color:var(--label-3)}
 .social-reactions{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:2px}
 .social-reaction{
-  display:inline-flex;align-items:center;gap:5px;min-width:45px;height:34px;padding:0 10px;
+  display:inline-flex;align-items:center;justify-content:center;gap:5px;min-width:45px;height:34px;padding:0 10px;
   border-radius:99px;background:var(--surface-2);color:var(--label-2);
   transition:background var(--fast),transform var(--fast),color var(--fast);
 }

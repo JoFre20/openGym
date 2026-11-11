@@ -223,6 +223,51 @@ const PLIST = {
   },
 }
 
+// The sensor screen is new; only German is translated here, every other language falls back to
+// English rather than inventing words for a status screen that shows a dot and a Stop button.
+const OWN_FALLBACK = {
+  'Watch sensor': { de: 'Watch-Sensor' },
+  'Sensor active': { de: 'Sensor aktiv' },
+  'Sensor stopped': { de: 'Sensor gestoppt' },
+  'The iPhone counts. This Watch only sends movement.': { de: 'Das iPhone zählt. Diese Watch sendet nur Bewegung.' },
+  'The motion sensor is not available.': { de: 'Der Bewegungssensor ist nicht verfügbar.' },
+  'The sensor stopped. Try again.': { de: 'Der Sensor wurde beendet. Versuche es erneut.' },
+  // The Watch's own tracker, for training without the iPhone.
+  'Count reps': { de: 'Wdh. zählen' },
+  'Calibrate this exercise': { de: 'Diese Übung kalibrieren' },
+  'Reference repetitions': { de: 'Referenz-Wiederholungen' },
+  'Record reference': { de: 'Referenz aufnehmen' },
+  'One repetition': { de: 'Eine Wiederholung' },
+  'Three repetitions': { de: 'Drei Wiederholungen' },
+  'Get ready': { de: 'Bereit machen' },
+  'Hold still, then move.': { de: 'Ruhig halten, dann bewegen.' },
+  'Recording': { de: 'Aufnahme läuft' },
+  'clean repetitions': { de: 'saubere Wiederholungen' },
+  'Finish recording': { de: 'Aufnahme beenden' },
+  'Calibration saved': { de: 'Kalibrierung gespeichert' },
+  'Calibration': { de: 'Kalibrierung' },
+  'Start set': { de: 'Satz starten' },
+  'Record again': { de: 'Neu aufnehmen' },
+  'Calibrate again': { de: 'Neu kalibrieren' },
+  'Hold still, then move.': { de: 'Ruhig halten, dann bewegen.' },
+  'Last rep %@ s': { de: 'Letzte Wdh. %@ s' },
+  'Set ends automatically': { de: 'Satz endet automatisch' },
+  'Finish set': { de: 'Satz beenden' },
+  'Accept': { de: 'Übernehmen' },
+  'Keep counting': { de: 'Weiterzählen' },
+  'Discard': { de: 'Verwerfen' },
+  'Motion counting': { de: 'Bewegungszählung' },
+  'Try again': { de: 'Erneut versuchen' },
+  'Set saved': { de: 'Satz gespeichert' },
+  'The recording was too short. Try again.': { de: 'Die Aufnahme war zu kurz. Versuche es erneut.' },
+  'Too little movement. Perform clean, full reps.': { de: 'Zu wenig Bewegung. Führe saubere, vollständige Wiederholungen aus.' },
+  'One direction only. Perform a full repetition.': { de: 'Nur eine Richtung erkannt. Führe eine vollständige Wiederholung aus.' },
+  'Not enough repetitions recognized. Try again.': { de: 'Nicht genug Wiederholungen erkannt. Versuche es erneut.' },
+  'Calibrate this exercise first.': { de: 'Kalibriere zuerst diese Übung.' },
+  'No repetitions were counted.': { de: 'Es wurden keine Wiederholungen gezählt.' },
+  'Motion counting could not start. Try again.': { de: 'Die Bewegungszählung konnte nicht starten. Versuche es erneut.' },
+}
+
 const esc = s => String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
 let problems = 0
 for (const [pack, lproj] of Object.entries(LANGS)) {
@@ -236,6 +281,7 @@ for (const [pack, lproj] of Object.entries(LANGS)) {
   for (const [k, appKey] of Object.entries(FROM_APP)) put(k, dict[appKey])
   for (const [k, [appKey, f]] of Object.entries(COMPOSED)) put(k, dict[appKey] && f(dict[appKey]))
   for (const [k, tr] of Object.entries(OWN)) put(k, tr[lproj])
+  for (const [k, tr] of Object.entries(OWN_FALLBACK)) put(k, tr[lproj] || k)
   mkdirSync(join(out, `${lproj}.lproj`), { recursive: true })
   writeFileSync(join(out, `${lproj}.lproj`, 'Localizable.strings'), lines.join('\n') + '\n')
   // The widget says a few of the same words (Rest, Start workout).
@@ -251,7 +297,7 @@ for (const [pack, lproj] of Object.entries(LANGS)) {
 // English: every key as itself. Without an en.lproj a watch set to another language could show
 // that language's words to an app in English.
 {
-  const keys = [...Object.keys(FROM_APP), ...Object.keys(COMPOSED), ...Object.keys(OWN)]
+  const keys = [...Object.keys(FROM_APP), ...Object.keys(COMPOSED), ...Object.keys(OWN), ...Object.keys(OWN_FALLBACK)]
   const lines = ['/* openGym on the Apple Watch, en. Written by ios/ci/watch-strings.mjs: change that, not this. */', '']
   for (const k of keys) lines.push(`"${esc(k)}" = "${esc(k)}";`)
   for (const dir of [out, widgets]) {

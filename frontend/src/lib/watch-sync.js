@@ -440,6 +440,9 @@ const watchPlugin = () => pluginP || (pluginP = (async () => {
   const { registerPlugin } = await import('@capacitor/core')
   return { WatchBridge: registerPlugin('WatchBridge') }
 })().catch(() => null))
+// The same loaded link the event queue uses. The motion tracker only needs the plugin's own
+// methods; keeping one loader means a watch link is not opened twice.
+export const watchBridge = watchPlugin
 
 let getStateRef = null
 let draining = null
@@ -702,7 +705,7 @@ async function runLink (p, { useStore, useUI }, { health = true, clips: withClip
         : { v: SNAPSHOT_VERSION, unit: S.unit === 'lb' ? 'lb' : 'kg', active: null, ready: null }
       // Apple Health on the watch pauses with the Health module, as the phone's own sync does.
       const hOn = healthOn && isOn(S, 'health')
-      snap.settings = { ...settingsForWatch(prefs, hOn), ...watchExtras(S) }
+      snap.settings = { ...settingsForWatch(prefs, hOn, { mode: S.repMotionMode, setEndSec: S.repMotionSetEndSec, calibReps: S.repMotionCalibReps }), ...watchExtras(S) }
       if (prefs.enabled && isOn(S, 'motivation')) snap.streak = streakFor(S)
       // Discarded here: the watch drops its Apple Health workout instead of saving it (#776).
       const discarded = discardedFor(Date.now(), S)

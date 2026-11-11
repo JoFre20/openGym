@@ -80,11 +80,12 @@ if you want to try it before installing anything.
 - Machine taken? A planned backup exercise swaps in with one tap and keeps the slot's sets and reps.
   Machines can carry their real weight stack, odd steps included, and progression sticks to it.
 - The session's volume runs live at the end of the progress bar.
-- **Sensor-based Auto-Rep & Set Tracker (`SmartSetTracker`)**: Hands-free repetition counting
-  and automatic set-finish detection using the phone's motion sensors (`DeviceMotionEvent`). Record
-  a single reference rep once per exercise; the app detects the dominant 3D axis, counts reps live
-  via a fatigue-tolerant hysteresis state machine, and triggers set completion when the weight is
-  racked.
+- **Motion rep counting (iPhone and Apple Watch app)**: record one or three clean reference repetitions for an
+  exercise, then count a set from the iPhone's CoreMotion sensor or from an Apple Watch used as a
+  pure motion sensor. The phone learns the dominant movement axis and counts with a
+  fatigue-tolerant hysteresis detector; after a configurable quiet window it can log the set and
+  start the rest timer. The Watch can be strapped to a machine and only sends movement data. No
+  camera, no cloud, and no browser fallback.
 
 **Progress**
 
@@ -128,13 +129,14 @@ if you want to try it before installing anything.
   Start. Once a day at most, never after you trained, and your gyms stay on the phone.
 - An Apple Watch app: tick off sets with the Digital Crown, RPE or RIR right on the wrist, a
   full-screen rest countdown, heart rate per set, a Lock button against stray crown presses, and
-  complications. No watch? AirPods Pro 3 do the heart rate on iOS 26.
+  complications. It can count a set from its own motion, or act as a pure motion sensor for the
+  iPhone while strapped to a machine. No watch? AirPods Pro 3 do the heart rate on iOS 26.
 - Widgets and a Live Activity on the iPhone: log a set, skip the rest or jump to the next exercise
   from the Lock Screen without opening the app.
-- **Auto-Rep & Set Tracking with Real-time Oscilloscope**: Put the phone in your pocket or armband.
-  3D Principal Component Analysis (Power Iteration) projects motion along the exercise trajectory
-  regardless of how the phone is oriented. Synthetic Web Audio API beeps and haptic pulses guide
-  countdown, reps and set end without needing external sound files or taking the phone out.
+- **Motion rep counting with the Watch as a sensor**: put the iPhone in a pocket or armband, or
+  fasten the Watch to the machine and let the iPhone count from its streamed movement. The
+  calibration and the detector stay on the iPhone; the Watch only reports motion. Counting is
+  deliberately unavailable in the web build and on Android.
 
 **Only what you use**
 
@@ -263,10 +265,13 @@ The [architecture overview](docs/ARCHITECTURE.md) has the longer version, with d
 frontend, sync, the exercise media and the watch.
 
 The training logic (progression rules, 1RM, how a logged session is read back) lives in pure
-functions under `frontend/src/lib/` with tests beside them. The sensor engine (`frontend/src/lib/useRepTracker.ts`
-and `frontend/src/components/SmartSetTracker.tsx`) implements high-pass gravity filtering, 3D PCA
-dominant-vector extraction, exponential moving average smoothing, a 3-phase hysteresis state machine
-with minimum duration debounce, and zero-dependency Web Audio / vibration synthesis. The HTTP API is documented as an
+functions under `frontend/src/lib/` with tests beside them. The motion rep engine
+(`frontend/src/lib/rep-core.js` and its tests) implements 3D PCA dominant-vector extraction,
+projection and smoothing, a fatigue-tolerant hysteresis state machine, minimum / maximum repetition
+durations and an inactivity window. The iPhone reads CoreMotion through
+`ios/App/App/MotionPlugin.swift`; the Watch can instead stream its CoreMotion samples over
+WatchConnectivity and the same phone-side detector counts them, or run the Swift twin of the
+detector for a session without the phone. The HTTP API is documented as an
 OpenAPI spec in [`api/openapi.yaml`](api/openapi.yaml), browsable at
 [opengym.ch/api.html](https://opengym.ch/api.html).
 

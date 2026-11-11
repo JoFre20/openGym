@@ -116,6 +116,9 @@ struct RootView: View {
                 store.show(entry: store.workout?.entries.count ?? 0)
             }
         }
+        // The iPhone asked this Watch to act as a pure motion sensor. The sheet is status and a
+        // Stop, not a second rep tracker: counting stays on the phone.
+        .sheet(isPresented: $store.showMotionSensor) { MotionSensorView() }
         // Any touch: the rest-over alarm was noticed (it would tap once more otherwise).
         .simultaneousGesture(TapGesture().onEnded { store.ackRestOver() })
         // The complication's Start: today's workout, when none runs yet.
@@ -364,6 +367,7 @@ struct ExercisePage: View {
     let index: Int
     @State private var editing: EditField?
     @State private var confirmSkip = false
+    @State private var showRepTracker = false
     @Environment(\.dynamicTypeSize) private var typeSize
     @ScaledMetric(relativeTo: .title) private var doneSizeScaled: CGFloat = 58
     /// Large enough to hit, small enough to leave room for the numbers at the largest text sizes.
@@ -375,7 +379,7 @@ struct ExercisePage: View {
             let si = store.setIndex(in: index)
             let current = index == store.entryIndex
             VStack(spacing: 0) {
-                header(entry)
+                header(entry, setIndex: si, current: current)
                 Spacer(minLength: 2)
                 if let si = si {
                     let row = entry.sets[si]
@@ -435,6 +439,11 @@ struct ExercisePage: View {
                 Button("Skip set") { store.skipSet() }
                 Button("Cancel", role: .cancel) {}
             }
+            .sheet(isPresented: $showRepTracker) {
+                if let si = si {
+                    RepTrackerView(store: store, entryIdx: index, setIdx: si, exerciseId: entry.id)
+                }
+            }
         }
     }
 
@@ -469,7 +478,7 @@ struct ExercisePage: View {
         }
     }
 
-    @ViewBuilder private func header(_ entry: Entry) -> some View {
+    @ViewBuilder private func header(_ entry: Entry, setIndex: Int?, current: Bool) -> some View {
         HStack(alignment: .top, spacing: 6) {
             if store.show.showClip, let clip = store.clips[entry.id] {
                 ClipView(clip: clip, animating: index == store.entryIndex).frame(width: 30, height: 30)
@@ -484,6 +493,18 @@ struct ExercisePage: View {
                 WorkoutExtras()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            if current, let si = setIndex, !entry.isTimed, !entry.isCardio,
+               !entry.sets[si].warmup, !entry.sets[si].done {
+                Button { showRepTracker = true } label: {
+                    Image(systemName: "waveform")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(Theme.accent)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(Theme.dim))
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text("Count reps"))
+            }
             OfflineSign()
             if store.show.showHr { HeartRateBadge(health: store.health) }
         }

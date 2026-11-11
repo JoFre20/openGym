@@ -1,0 +1,21 @@
+/* The Activity workout detail mirrors the finish summary: four tiles, the body map and the
+   workout's photos. The shared .tiles.fin and .fin-x rules do most of the work; only the sheet
+   header differs. */
+.act-workout-sheet{padding:8px 0;text-align:center}
+.act-workout-hero h3{margin:18px 0 8px}
+.act-workout-sub{
+  margin:2px 0 16px;font-size:13px;line-height:1.35;color:var(--label-2);
+  overflow-wrap:anywhere;
+}
+/* FinishSummary is a centred six-column dialog; this detail is a phone-width sheet, so it needs
+   the same six-column track explicitly or the wide/narrow tiles overflow the default two. */
+.act-workout-sheet .tiles.fin{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px;text-align:start}
+.act-workout-sheet .tiles.fin .tile{grid-column:span 3;min-width:0}
+.act-workout-sheet .tiles.fin .tile.wide{grid-column:span 4}
+.act-workout-sheet .tiles.fin .tile.narrow{grid-column:span 2}
+.act-workout-sheet .fin-actions{justify-content:center;margin-top:2px}
+.act-workout-sheet h4.sec{text-align:start;margin-top:20px}
+.act-workout-sheet .bodymap{margin-top:2px}
+.act-workout-sheet .bodymap .bm-v{max-height:min(34vh,260px)}
+.act-workout-sheet .bm-ph{height:170px}
+.act-workout-media{margin-top:18px;text-align:start}

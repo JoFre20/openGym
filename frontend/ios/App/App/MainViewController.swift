@@ -21,6 +21,7 @@ class MainViewController: CAPBridgeViewController {
     override open func capacitorDidLoad() {
         bridge?.registerPluginInstance(PrintPlugin())
         bridge?.registerPluginInstance(RestAlertPlugin())
+        bridge?.registerPluginInstance(MotionPlugin())
         bridge?.registerPluginInstance(DeviceAuthPlugin())
         bridge?.registerPluginInstance(AnimationPacksPlugin())
         bridge?.registerPluginInstance(NudgeCheckPlugin())

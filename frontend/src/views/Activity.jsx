@@ -4,6 +4,7 @@ import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Elapsed from '../components/Elapsed.jsx'
 import { activityExerciseSheet } from '../components/ActivityExerciseSheet.jsx'
+import { activityWorkoutSheet } from '../components/ActivityWorkoutSheet.jsx'
 import Icon from '../components/Icon.jsx'
 import { Button } from '../components/ui.jsx'
 import { EXIDX } from '../lib/exercises.js'
@@ -158,7 +159,7 @@ function GoalCard({ item, avatar, reactions, onReact, busy }) {
   </div>
 }
 
-function WorkoutCard({ item, avatar, reactions, onReact, busy, canInspect, onInspect }) {
+function WorkoutCard({ item, avatar, reactions, onReact, busy, canInspect, onInspect, onOpenWorkout }) {
   const w = item.workout || {}
   const duration = w.durationSec >= 60 ? fmtDur(w.durationSec * 1000) : null
   return <div className="card social-feed-card">
@@ -169,7 +170,12 @@ function WorkoutCard({ item, avatar, reactions, onReact, busy, canInspect, onIns
         {item.date && <span className="dim small">{fmtDate(item.date, true, true)}</span>}
       </div>
     </div>
-    <div className="social-feed-title">{w.name || t('Workout')}</div>
+    {canInspect
+      ? <button type="button" className="social-feed-title act-workout-open" onClick={onOpenWorkout}
+          aria-label={t('Details') + ' ' + (w.name || t('Workout'))}>
+          {w.name || t('Workout')}<Icon name="chevronRight" className="act-workout-chev" />
+        </button>
+      : <div className="social-feed-title">{w.name || t('Workout')}</div>}
     <div className="social-feed-meta">
       {duration && <span><Icon name="clock" />{duration}</span>}
       {w.volume > 0 && <span><Icon name="barbell" />{fmtVol(w.volume, w.unit || 'kg')}</span>}
@@ -373,15 +379,20 @@ export default function Activity() {
     [me],
   )
   const canInspect = item => !!item.owner?.me || closeIds.has(String(item.owner?.id))
-  const inspect = (item, exerciseId) => {
+  const localWorkoutOf = item => (item.owner?.me ? S.workouts.find(w => {
+    const id = w?.id != null ? String(w.id) : `${w?.d || ''}|${w?.start ?? ''}`
+    return `${userId ? String(userId) : 'me'}:${id}` === item.id
+  }) : null)
+  const localDetailOf = item => {
     // The owner's own copy can describe itself even with no server and no network. A close
     // friend's workout comes from GET /api/social/workout.
-    const own = item.owner?.me ? S.workouts.find(w => {
-      const id = w?.id != null ? String(w.id) : `${w?.d || ''}|${w?.start ?? ''}`
-      return `${userId ? String(userId) : 'me'}:${id}` === item.id
-    }) : null
-    activityExerciseSheet(item, exerciseId, own ? workoutDetailFromLocal(S, own) : null)
+    const own = localWorkoutOf(item)
+    return { detail: own ? workoutDetailFromLocal(S, own) : null, localWorkout: own || null }
   }
+  const inspect = (item, exerciseId) => {
+    activityExerciseSheet(item, exerciseId, localDetailOf(item).detail)
+  }
+  const openWorkout = item => activityWorkoutSheet(item, localDetailOf(item))
   const counts = activityCounts(items, { since: seenAt ?? Date.now() })
   const shown = filterActivity(items, filter)
   const incoming = (me?.pending || []).filter(row => row.direction === 'incoming')
@@ -457,6 +468,7 @@ export default function Activity() {
               ? <GoalCard key={item.id} item={item} avatar={avatars.get(item.owner.id)} reactions={reactionOverrides[item.id] || item.reactions} onReact={react} busy={busy === item.id} />
               : <WorkoutCard key={item.id} item={item} avatar={avatars.get(item.owner.id)} canInspect={canInspect(item)}
                   onInspect={exerciseId => inspect(item, exerciseId)}
+                  onOpenWorkout={() => openWorkout(item)}
                   reactions={reactionOverrides[item.id] || item.reactions} onReact={react} busy={busy === item.id} />)}
           </div>
           : <div className="card social-empty social-feed-empty">

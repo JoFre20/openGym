@@ -4,6 +4,7 @@ import AddFriendSheet from '../components/AddFriendSheet.jsx'
 import Avatar from '../components/Avatar.jsx'
 import Icon from '../components/Icon.jsx'
 import { activityExerciseSheet } from '../components/ActivityExerciseSheet.jsx'
+import { activityWorkoutSheet } from '../components/ActivityWorkoutSheet.jsx'
 import { Button, Row, Section, Segmented, SelectRow, Switch } from '../components/ui.jsx'
 import { SeasonDeco } from '../components/Seasonal.jsx'
 import Elapsed from '../components/Elapsed.jsx'
@@ -264,7 +265,7 @@ function topSetName(set) {
   return known ? exerciseNameText(known) : (set.name || t('Exercise'))
 }
 
-function FeedCard({ item, busy, onReact, avatar, canInspect, onInspect }) {
+function FeedCard({ item, busy, onReact, avatar, canInspect, onInspect, onOpenWorkout }) {
   const duration = item.durationSec >= 60 ? fmtDur(item.durationSec * 1000) : null
   const title = item.name || t('Workout')
   return <div className="card social-feed-card">
@@ -275,7 +276,12 @@ function FeedCard({ item, busy, onReact, avatar, canInspect, onInspect }) {
         {item.date && <span className="dim small">{fmtDate(item.date, true, true)}</span>}
       </div>
     </div>
-    <div className="social-feed-title">{title}</div>
+    {canInspect
+      ? <button type="button" className="social-feed-title act-workout-open" onClick={onOpenWorkout}
+          aria-label={t('Details') + ' ' + title}>
+          {title}<Icon name="chevronRight" />
+        </button>
+      : <div className="social-feed-title">{title}</div>}
     <div className="social-feed-meta">
       {duration && <span><Icon name="clock" />{duration}</span>}
       <span><Icon name="barbell" />{fmtVol(item.volume, item.unit)}</span>
@@ -308,13 +314,14 @@ function FeedCard({ item, busy, onReact, avatar, canInspect, onInspect }) {
   </div>
 }
 
-function FeedSection({ feed, busyId, onReact, avatarById, canInspect, onInspect }) {
+function FeedSection({ feed, busyId, onReact, avatarById, canInspect, onInspect, onOpenWorkout }) {
   return <section className="social-feed-section">
     <h4 className="sec">{t('Activity')}</h4>
     {feed.length
       ? <div className="social-feed">{feed.map(item => <FeedCard key={item.workoutId} item={item}
         avatar={avatarById.get(item.friend.id)} busy={busyId === item.workoutId} onReact={onReact}
-        canInspect={canInspect(item)} onInspect={exerciseId => onInspect(item, exerciseId)} />)}</div>
+        canInspect={canInspect(item)} onInspect={exerciseId => onInspect(item, exerciseId)}
+        onOpenWorkout={() => onOpenWorkout(item)} />)}</div>
       : <div className="card social-empty social-feed-empty">
         <div className="social-empty-ico"><Icon name="flame" /></div>
         <div className="muted small">{t('When your friends train, their workouts show up here.')}</div>
@@ -644,12 +651,14 @@ export default function Social({ crew = false }) {
   const avatarById = new Map(squadStats.filter(row => row.avatar).map(row => [row.id, row.avatar]))
   const closeIds = new Set((me?.friends || []).filter(row => row.close).map(row => String(row.id)))
   const canInspectFeed = item => closeIds.has(String(item.friend?.id))
-  const inspectFeed = (item, exerciseId) => activityExerciseSheet({
+  const feedWorkoutItem = item => ({
     id: item.workoutId,
     owner: { id: item.friend.id, name: item.friend.name },
     workout: { name: item.name, unit: item.unit },
     date: item.date,
-  }, exerciseId)
+  })
+  const inspectFeed = (item, exerciseId) => activityExerciseSheet(feedWorkoutItem(item), exerciseId)
+  const openFeedWorkout = item => activityWorkoutSheet(feedWorkoutItem(item))
   const pending = (me?.pending || []).filter(row => row.direction === 'incoming').length
   const ready = !!me && !!data
 
@@ -676,7 +685,8 @@ export default function Social({ crew = false }) {
             <SharedPlansSection plans={plans.received} busyId={planBusy}
               onOpen={openSharedPlan} onMenu={openSharedPlanMenu} />
             {!crew && squadStats.length > 0 && <FeedSection feed={feed} busyId={reactionBusy} onReact={react}
-              avatarById={avatarById} canInspect={canInspectFeed} onInspect={inspectFeed} />}
+              avatarById={avatarById} canInspect={canInspectFeed} onInspect={inspectFeed}
+              onOpenWorkout={openFeedWorkout} />}
           </>}
   </div>
 }

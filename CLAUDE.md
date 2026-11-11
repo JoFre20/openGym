@@ -98,6 +98,11 @@ machine, never in CI (see "Exercise media" below and docs/APP_STORES.md).
   - Native bridges: `mobile.js` (the `MOBILE` flag, file persistence, notifications),
     `channel.js` (APK or store build), `watch-sync.js`, `widgets.js`, `health-sync.js`,
     `anim-quality.js` / `anim-packs.js` (animation sizes in the store apps).
+  - Motion rep counting (`rep-core.js`, `rep-templates.js`, `motion-source.js`,
+    `use-rep-tracker.js`): native iPhone CoreMotion, an Apple Watch used as a pure sensor over
+    WatchConnectivity, or the Watch's own `RepCore.swift` tracker. Templates are device-local per
+    exercise and sensor. The web build and Android never show it. Design notes in
+    `docs/dev/REP_TRACKING.md`.
   - CONTRIBUTING.md is explicit: **anything that decides what you lift next, or reads a logged
     session back, is a pure helper here with a unit test beside it.**
 - **Body measurements (`lib/measurements.js`, `views/Measurements.jsx`)**: one check-in per day.

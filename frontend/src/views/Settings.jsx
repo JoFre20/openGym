@@ -61,6 +61,7 @@ import { showsConnection, showsLocalLine } from '../components/SyncBanner.jsx'
 import BackupFolderRow, { useBackupFolder, autoBackupSubtitle } from '../components/BackupFolderRow.jsx'
 import AppIconRow from '../components/AppIconRow.jsx'
 import { AnimationQualityRow } from '../components/Animations.jsx'
+import { RepMotionSettings } from '../components/RepMotionSettings.jsx'
 import { ServerSyncSection, KeptChangesRows, leaveServer, connectServer, passkeySignIn } from '../components/ServerSync.jsx'
 import { passwordOn, PasswordRow, openPasswordSignIn, openPasswordRegister } from '../components/PasswordAuth.jsx'
 import { usePasskeys, PasskeysRow, DeviceLinkRow, openDeviceLinkRedeem, PairSheet } from '../components/Passkeys.jsx'
@@ -631,6 +632,7 @@ export default function Settings({ page = null, find = null, via = null, entryKe
             onChange={v => update(s => { if (v) s.skipCompleted = true; else delete s.skipCompleted })} />
         </Row>
       </Section>
+      <RepMotionSettings />
       <Section title={t('Before and during')}>
         {/* The quick weigh-in that opens on Start (sheets.jsx startFlow, issue #137); off skips
             straight to the session. Home and Stats still log weight by hand. */}

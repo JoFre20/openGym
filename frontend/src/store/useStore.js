@@ -150,6 +150,15 @@ export const DEF = {
   // 'cards' behaviour. beginWorkout copies the value onto s.active, so the header ⋮ menu can
   // override it for the running session without touching this saved default.
   workoutView: 'cards',
+  // Motion rep counting (native iPhone app only): how automatic a set ends, the inactivity window
+  // in seconds, the calibration habit (1 or 3 reference reps) and the last sensor used. Each is a
+  // scalar of its own so a change on one device merges without dragging the others with it. The
+  // calibration templates themselves are device-local (lib/rep-templates.js): a wrist and a pocket
+  // do not share an axis.
+  repMotionMode: 'auto',
+  repMotionSetEndSec: 6,
+  repMotionCalibReps: 3,
+  repMotionSource: 'iphone',
   // List and Compact fold a finished exercise into one line (Settings → Workout; #241). The
   // workout's Layout menu can flip it for the running session (s.active.collapseCompleted).
   collapseCompleted: false,
